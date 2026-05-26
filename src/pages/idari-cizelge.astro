@@ -1,0 +1,282 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="İdari Çizelge">
+  <section class="idari-section">
+    <header class="idari-header">
+      <div class="idari-copy">
+        <h2 data-pages="title">İdari Ceza Çizelgesi</h2>
+      </div>
+    </header>
+
+    <div class="idari-viewer" id="idari-viewer">
+      <div class="idari-image-container" id="idari-image-container">
+        <img
+          id="idari-image"
+          src="/files/ceza-miktarlari.webp"
+          alt="İdari ceza çizelgesi"
+          draggable="false"
+        />
+      </div>
+      <div class="zoom-indicator" id="idari-zoom-indicator">100%</div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .idari-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .idari-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .idari-copy {
+    width: 100%;
+  }
+
+  .idari-copy h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .idari-copy p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    line-height: 1.6;
+  }
+
+  html[data-theme="dark"] .idari-copy p {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .idari-viewer {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    max-height: 80vh;
+    background: #f5f7fb;
+    border-radius: 16px;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .idari-viewer:active,
+  .idari-viewer.dragging {
+    cursor: grabbing;
+  }
+
+  .idari-image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+  }
+
+  .idari-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .zoom-indicator {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(27, 40, 69, 0.85);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .zoom-indicator.show {
+    opacity: 1;
+  }
+
+  .idari-hints {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    margin: 0;
+    list-style: none;
+  }
+
+  .idari-hints li {
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  html[data-theme="dark"] .idari-viewer {
+    background: #0e1525;
+    border-color: rgba(102, 126, 234, 0.25);
+  }
+
+  @media (max-width: 768px) {
+    .idari-viewer {
+      height: 60vh;
+      min-height: 320px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .idari-viewer {
+      height: 55vh;
+      min-height: 280px;
+    }
+  }
+</style>
+
+<script>
+  // Implement zoom/pan interactions similar to tren-saatleri.astro
+  const viewer = document.getElementById('idari-viewer');
+  const container = document.getElementById('idari-image-container');
+  const zoomIndicator = document.getElementById('idari-zoom-indicator');
+
+  if (viewer && container) {
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialDistance = 0;
+    let initialScale = 1;
+    let indicatorTimeout: number | undefined;
+
+    const MIN_SCALE = 0.5;
+    const MAX_SCALE = 5;
+    const ZOOM_STEP = 0.3;
+
+    const clampScale = (value: number): number => Math.max(MIN_SCALE, Math.min(MAX_SCALE, value));
+
+    const showIndicator = () => {
+      if (!zoomIndicator) return;
+      zoomIndicator.textContent = `${Math.round(scale * 100)}%`;
+      zoomIndicator.classList.add('show');
+      clearTimeout(indicatorTimeout);
+      indicatorTimeout = window.setTimeout(() => zoomIndicator.classList.remove('show'), 800);
+    };
+
+    const updateTransform = () => {
+      container.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      showIndicator();
+    };
+
+    const resetZoom = () => {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      updateTransform();
+    };
+
+    const zoomBy = (delta: number): void => {
+      scale = clampScale(scale + delta);
+      updateTransform();
+    };
+
+    viewer.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      zoomBy(delta);
+    }, { passive: false });
+
+    viewer.addEventListener('mousedown', (event) => {
+      isDragging = true;
+      startX = event.clientX - translateX;
+      startY = event.clientY - translateY;
+      viewer.classList.add('dragging');
+    });
+
+    document.addEventListener('mousemove', (event) => {
+      if (!isDragging) return;
+      translateX = event.clientX - startX;
+      translateY = event.clientY - startY;
+      updateTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      viewer.classList.remove('dragging');
+    });
+
+    viewer.addEventListener('touchstart', (event) => {
+      if (event.touches.length === 1) {
+        isDragging = true;
+        startX = event.touches[0].clientX - translateX;
+        startY = event.touches[0].clientY - translateY;
+        viewer.classList.add('dragging');
+      } else if (event.touches.length === 2) {
+        isDragging = false;
+        viewer.classList.remove('dragging');
+        initialDistance = Math.hypot(
+          event.touches[0].clientX - event.touches[1].clientX,
+          event.touches[0].clientY - event.touches[1].clientY
+        );
+        initialScale = scale;
+      }
+    }, { passive: true });
+
+    viewer.addEventListener('touchmove', (event) => {
+      if (event.touches.length === 1 && isDragging) {
+        translateX = event.touches[0].clientX - startX;
+        translateY = event.touches[0].clientY - startY;
+        updateTransform();
+      } else if (event.touches.length === 2) {
+        const currentDistance = Math.hypot(
+          event.touches[0].clientX - event.touches[1].clientX,
+          event.touches[0].clientY - event.touches[1].clientY
+        );
+        const scaleChange = currentDistance / initialDistance;
+        scale = clampScale(initialScale * scaleChange);
+        updateTransform();
+      }
+    }, { passive: true });
+
+    viewer.addEventListener('touchend', () => {
+      isDragging = false;
+      initialDistance = 0;
+      viewer.classList.remove('dragging');
+    }, { passive: true });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === '0') {
+        resetZoom();
+      } else if (event.key === '+' || event.key === '=') {
+        zoomBy(ZOOM_STEP);
+      } else if (event.key === '-' || event.key === '_') {
+        zoomBy(-ZOOM_STEP);
+      }
+    });
+
+    resetZoom();
+  }
+</script>

@@ -1,0 +1,1258 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+// Marmaray istasyonları
+const marmarayIstasyonlari = [
+  'Halkalı', 'Mustafa Kemal', 'Küçükçekmece', 'Florya', 'Florya Akvaryum', 'Yeşilköy', 'Yeşilyurt', 'Ataköy', 'Bakırköy', 'Yenimahalle', 'Zeytinburnu', 'Kazlıçeşme', 'Yenikapı', 'Sirkeci',
+  'Üsküdar', 'Ayrılık Çeşmesi', 'Acıbadem', 'Ünalan', 'Göztepe', 'Feneryolu', 'Bostancı', 'Küçükyalı', 'İdealtepe', 'Süreyya Plajı', 'Maltepe', 'Cevizli', 'Atalar', 'Kartal', 'Yunus', 'Pendik', 'Tersane', 'Güzelyalı', 'Aydıntepe', 'İçmeler', 'Tuzla', 'Çayırova', 'Osmangazi', 'Gebze'
+];
+---
+
+<PageLayout title="MMS Kayıtları">
+  <div class="mms-page modern-records-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">🔧</div>
+        <div class="header-text">
+          <h1>MMS Arıza Kayıtları</h1>
+          <p>Bakım ve arıza takip sistemi</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="reportBtn" class="btn-report">
+          <span class="btn-icon">📊</span>
+          Rapor Al
+        </button>
+        <button id="newRecordBtn" class="btn-new">
+          <span class="btn-icon">+</span>
+          Yeni Kayıt
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (MMS No, Arıza, İstasyon)" />
+        <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+      </div>
+      <div class="filter-row">
+        <div class="filter-chips">
+          <button class="chip active" data-durum="all">Tümü</button>
+          <button class="chip" data-durum="">⏳ Beklemede</button>
+          <button class="chip" data-durum="Onarıldı">✅ Onarıldı</button>
+          <button class="chip" data-durum="Onarılmadı">❌ Onarılmadı</button>
+          <button class="chip" data-durum="Onarımda">🔧 Onarımda</button>
+          <button class="chip" data-durum="Parça Bekleniyor">📦 Parça Bek.</button>
+        </div>
+        <div class="filter-station">
+          <select id="stationFilter" class="station-select">
+            <option value="">📍 Tüm İstasyonlar</option>
+            {marmarayIstasyonlari.map((istasyon) => (
+              <option value={istasyon}>{istasyon}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-value" id="totalCount">-</span><span class="stat-label">Toplam</span></div>
+      <div class="stat-item st-warning"><span class="stat-value" id="bekleyenCount">-</span><span class="stat-label">Beklemede</span></div>
+      <div class="stat-item st-success"><span class="stat-value" id="onarilanCount">-</span><span class="stat-label">Onarıldı</span></div>
+      <div class="stat-item st-danger"><span class="stat-value" id="onarilmadiCount">-</span><span class="stat-label">Onarılmadı</span></div>
+      <div class="stat-item st-info"><span class="stat-value" id="onarimdaCount">-</span><span class="stat-label">Onarımda</span></div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>MMS No</th>
+            <th>Tarih</th>
+            <th>Arıza Tanımı</th>
+            <th>İstasyon</th>
+            <th>Bildiren</th>
+            <th>Durum</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="loading-row">
+            <td colspan="7">
+              <div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results -->
+    <div id="noResults" class="no-results" style="display: none;">
+      <div class="no-results-icon">🔍</div>
+      <h3>Sonuç Bulunamadı</h3>
+    </div>
+
+    <!-- Load More -->
+    <div id="paginationContainer" class="pagination-container" style="display: none;"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="recordModal" class="modal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Yeni MMS Kaydı</h3>
+        <button id="closeModal" class="modal-close">✕</button>
+      </div>
+      <form id="recordForm">
+        <input type="hidden" id="recordId" />
+        <div class="form-grid">
+          <div class="form-group">
+            <label>MMS Numarası *</label>
+            <input type="text" id="mms_numarasi" required placeholder="Örn: 273210" />
+          </div>
+          <div class="form-group">
+            <label>İstasyon *</label>
+            <select id="istasyon" required>
+              <option value="">Seçiniz...</option>
+              {marmarayIstasyonlari.map(ist => <option value={ist}>{ist}</option>)}
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Arıza Tanımı *</label>
+          <textarea id="ariza_tanimi" rows="3" required placeholder="Arıza detayını yazın..."></textarea>
+        </div>
+        <div class="form-group" id="durumGroup" style="display: none;">
+          <label>Durum</label>
+          <select id="durum">
+            <option value="">⏳ Beklemede</option>
+            <option value="Onarıldı">✅ Onarıldı</option>
+            <option value="Onarılmadı">❌ Onarılmadı</option>
+            <option value="Onarımda">🔧 Onarımda</option>
+            <option value="Parça Bekleniyor">📦 Parça Bekleniyor</option>
+          </select>
+        </div>
+        <div id="formMessage" class="form-message" style="display: none;"></div>
+        <div class="form-actions">
+          <button type="button" id="deleteRecordBtn" class="btn-delete" style="display: none;">Sil</button>
+          <div class="form-actions-right">
+            <button type="button" id="cancelBtn" class="btn-cancel">İptal</button>
+            <button type="submit" class="btn-submit">Kaydet</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rapor Modal -->
+  <div id="reportModal" class="modal" style="display: none;">
+    <div class="modal-box report-modal-box">
+      <div class="modal-header">
+        <h3>📊 MMS Raporu Oluştur</h3>
+        <button id="closeReportModal" class="modal-close">✕</button>
+      </div>
+      <div class="report-form">
+        <div id="reportDateRangeRow" class="form-grid">
+          <div class="form-group">
+            <label>Başlangıç Tarihi</label>
+            <input type="date" id="reportStartDate" />
+          </div>
+          <div class="form-group">
+            <label>Bitiş Tarihi</label>
+            <input type="date" id="reportEndDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;">
+            <input type="checkbox" id="reportAllDates" />
+            Tüm Tarihler
+          </label>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>İstasyon</label>
+            <select id="reportStation">
+              <option value="">Tüm İstasyonlar</option>
+              {marmarayIstasyonlari.map((istasyon) => (
+                <option value={istasyon}>{istasyon}</option>
+              ))}
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Durum</label>
+            <select id="reportDurum">
+              <option value="">Tümü</option>
+              <option value="Beklemede">⏳ Beklemede</option>
+              <option value="Onarıldı">✅ Onarıldı</option>
+              <option value="Onarılmadı">❌ Onarılmadı</option>
+              <option value="Onarımda">🔧 Onarımda</option>
+              <option value="Parça Bekleniyor">📦 Parça Bekleniyor</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" id="downloadPdfBtn" class="btn-submit">📄 PDF Oluştur</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .mms-page { max-width: 100%; }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header-content { display: flex; align-items: center; gap: 0.75rem; }
+  .header-icon { font-size: 2rem; }
+  .header-text h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+  .header-text p { color: #666; margin: 0.2rem 0 0; font-size: 0.85rem; }
+  [data-theme="dark"] .header-text p { color: #999; }
+
+  .header-actions { display: flex; gap: 0.75rem; }
+
+  .btn-report {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .btn-report:hover { filter: brightness(1.1); }
+
+  .btn-new {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+  .btn-new:hover { opacity: 0.9; }
+  .btn-icon { font-size: 1.1rem; font-weight: bold; }
+
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    align-items: stretch;
+    width: 100%;
+  }
+  .search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1rem;
+    line-height: 1;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .search-input {
+    width: 100%;
+    padding: 0.65rem 2.2rem 0.65rem 2.8rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+  }
+  [data-theme="dark"] .search-input { background: #1a1a1a; border-color: #333; color: #fff; }
+  .search-input:focus { outline: none; border-color: #667eea; }
+  .search-clear {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #ddd;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    z-index: 2;
+    font-size: 0.7rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .filter-row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between; width: 100%; min-width: 0; }
+  .filter-chips { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .filter-station { flex-shrink: 0; }
+  .station-select {
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 14px;
+    min-width: 180px;
+  }
+  :global(html[data-theme="dark"]) .station-select {
+    background-color: #0b1220;
+    border-color: #334155;
+    color: #e5e7eb;
+    color-scheme: dark;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393c5fd' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  }
+  :global(html[data-theme="dark"]) .station-select option {
+    background: #0b1220;
+    color: #e5e7eb;
+  }
+  :global(html[data-theme="dark"]) .station-select option:checked {
+    background: #1e3a8a;
+    color: #dbeafe;
+  }
+  .station-select:focus { outline: none; border-color: #667eea; }
+  .chip {
+    padding: 0.4rem 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  [data-theme="dark"] .chip { background: #1a1a1a; border-color: #333; color: #ccc; }
+  .chip:hover { border-color: #667eea; }
+  .chip.active { background: #667eea; border-color: #667eea; color: white; }
+
+  .stats-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .stat-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  [data-theme="dark"] .stat-item { background: #1a1a1a; border-color: #333; }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: #667eea; }
+  .stat-label { color: #888; font-size: 0.75rem; }
+  .st-warning .stat-value { color: #f59e0b; }
+  .st-success .stat-value { color: #10b981; }
+  .st-danger .stat-value { color: #ef4444; }
+  .st-info .stat-value { color: #3b82f6; }
+
+  .table-container {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  [data-theme="dark"] .table-container { background: #1a1a1a; border-color: #333; }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table thead { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+  .data-table th { padding: 0.75rem; text-align: left; font-weight: 600; font-size: 0.8rem; }
+  .data-table tbody tr { border-bottom: 1px solid #e0e0e0; }
+  [data-theme="dark"] .data-table tbody tr { border-color: #333; }
+  .data-table tbody tr:hover { background: #f8f9ff; }
+  [data-theme="dark"] .data-table tbody tr:hover { background: #1e1e2e; }
+  .data-table td { padding: 0.6rem 0.75rem; vertical-align: middle; }
+
+  .mms-no { font-weight: 700; color: #667eea; font-family: monospace; }
+  [data-theme="dark"] .mms-no { color: #a5b4fc; }
+  .date-cell { color: #666; font-size: 0.8rem; white-space: nowrap; }
+  [data-theme="dark"] .date-cell { color: #aaa; }
+  .ariza-cell { max-width: 280px; line-height: 1.3; }
+  [data-theme="dark"] .ariza-cell { color: #e0e0e0; }
+  .istasyon-cell { font-weight: 500; }
+  [data-theme="dark"] .istasyon-cell { color: #e0e0e0; }
+  [data-theme="dark"] .data-table td { color: #e0e0e0; }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .status-warning { background: #fef3c7; color: #92400e; }
+  .status-success { background: #d1fae5; color: #065f46; }
+  .status-danger { background: #fee2e2; color: #991b1b; }
+  .status-info { background: #dbeafe; color: #1e40af; }
+  .status-purple { background: #ede9fe; color: #5b21b6; }
+  [data-theme="dark"] .status-warning { background: #451a03; color: #fcd34d; }
+  [data-theme="dark"] .status-success { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .status-danger { background: #450a0a; color: #fca5a5; }
+  [data-theme="dark"] .status-info { background: #1e3a8a; color: #93c5fd; }
+  [data-theme="dark"] .status-purple { background: #2e1065; color: #c4b5fd; }
+
+  .action-btns { display: flex; gap: 0.3rem; }
+  .btn-action {
+    padding: 0.3rem 0.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.75rem;
+  }
+  .btn-edit { background: #dbeafe; color: #1e40af; }
+  .btn-edit:hover { background: #bfdbfe; }
+  [data-theme="dark"] .btn-edit { background: #1e3a5f; color: #93c5fd; }
+
+  .loading-row td { padding: 2rem; }
+  .loading-state { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #888; }
+  .spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-results { text-align: center; padding: 2rem; }
+  [data-theme="dark"] .no-results { color: #ccc; }
+  .no-results-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .no-results h3 { margin: 0; font-size: 1rem; }
+  [data-theme="dark"] .no-results h3 { color: #e0e0e0; }
+
+   :global(.pagination-container) { display: flex; justify-content: center; gap: 0.45rem; margin-top: 1rem; flex-wrap: wrap; }
+   :global(.page-btn) {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+   :global(.page-btn:hover) { border-color: #667eea; color: #4338ca; }
+   :global(.page-btn.active) { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-color: transparent; }
+  [data-theme="dark"]  :global(.page-btn) { background: #111827; color: #d1d5db; border-color: #374151; }
+  [data-theme="dark"]  :global(.page-btn.active) { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; border-color: transparent; }
+
+  /* Modal */
+  .modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+    padding: 1rem;
+  }
+  .modal-box {
+    background: #fff;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  }
+  [data-theme="dark"] .modal-box { background: #1a1a1a; }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  [data-theme="dark"] .modal-header { border-color: #333; }
+  .modal-header h3 { margin: 0; font-size: 1.1rem; }
+  [data-theme="dark"] .modal-header h3 { color: #e0e0e0; }
+  .modal-close {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+  [data-theme="dark"] .modal-close { background: #333; color: #ccc; }
+  .modal-close:hover { background: #fee2e2; color: #dc2626; }
+
+  #recordForm { padding: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .form-group { margin-bottom: 0.75rem; }
+  .form-group label { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.8rem; }
+  [data-theme="dark"] .form-group label { color: #ccc; }
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: #fff;
+    font-size: 0.9rem;
+  }
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select,
+  [data-theme="dark"] .form-group textarea { background: #0a0a0a; border-color: #333; color: #fff; }
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus { outline: none; border-color: #667eea; }
+  .form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+
+  .form-message {
+    padding: 0.6rem;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+  }
+  .form-message.success { background: #d1fae5; color: #065f46; }
+  .form-message.error { background: #fee2e2; color: #991b1b; }
+
+  /* Rapor Modal */
+  .report-modal-box { max-width: 550px; }
+  .report-form { padding: 1rem; }
+  .report-form input[type="date"] { cursor: pointer; padding-right: 0.75rem; }
+  .report-form input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+    -webkit-appearance: none;
+  }
+
+  .modal-box,
+  .report-modal-box {
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  #recordForm,
+  .report-form,
+  .form-grid,
+  .form-group,
+  .form-actions,
+  .form-actions-right {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.75rem;
+    border-top: 1px solid #e0e0e0;
+  }
+  [data-theme="dark"] .form-actions { border-color: #333; }
+  .form-actions-right { display: flex; gap: 0.5rem; }
+  .btn-cancel {
+    padding: 0.6rem 1rem;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  [data-theme="dark"] .btn-cancel { background: #333; color: #ccc; }
+  .btn-submit {
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-delete {
+    padding: 0.6rem 1rem;
+    background: #fee2e2;
+    border: none;
+    border-radius: 6px;
+    color: #dc2626;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-delete:hover { background: #fecaca; }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+    .search-wrapper { width: 100%; min-width: 0; max-width: 100%; }
+    .filter-row { width: 100%; min-width: 0; gap: 0.65rem; }
+    .filter-station { width: 100%; min-width: 0; }
+    .station-select { width: 100%; min-width: 0; }
+    .filter-chips { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.5rem; }
+    .table-container { overflow-x: hidden; }
+    .data-table { min-width: 0; width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+    .modal { padding: 0.5rem; }
+    .modal-box,
+    .report-modal-box { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); }
+    .form-actions { flex-wrap: wrap; gap: 0.5rem; }
+    .form-actions-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const searchClear = document.getElementById('searchClear') as HTMLElement;
+    const chips = document.querySelectorAll('.chip');
+    const tableBody = document.getElementById('tableBody') as HTMLElement;
+    const noResults = document.getElementById('noResults') as HTMLElement;
+    const paginationContainer = document.getElementById('paginationContainer') as HTMLElement;
+    const newRecordBtn = document.getElementById('newRecordBtn') as HTMLButtonElement;
+    const modal = document.getElementById('recordModal') as HTMLElement;
+    const modalTitle = document.getElementById('modalTitle') as HTMLElement;
+    const closeModal = document.getElementById('closeModal') as HTMLElement;
+    const cancelBtn = document.getElementById('cancelBtn') as HTMLElement;
+    const recordForm = document.getElementById('recordForm') as HTMLFormElement;
+    const formMessage = document.getElementById('formMessage') as HTMLElement;
+    const durumGroup = document.getElementById('durumGroup') as HTMLElement;
+    const deleteRecordBtn = document.getElementById('deleteRecordBtn') as HTMLButtonElement;
+    const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement;
+    const allModals: HTMLElement[] = [];
+
+    const registerModal = (m?: HTMLElement | null) => {
+      if (!m) return;
+      if (m.parentElement !== document.body) document.body.appendChild(m);
+      if (!allModals.includes(m)) allModals.push(m);
+    };
+
+    const syncBodyScroll = () => {
+      const isAnyModalOpen = allModals.some((m) => m.style.display === 'flex');
+      document.body.style.overflow = isAnyModalOpen ? 'hidden' : '';
+    };
+
+    const showModal = (m?: HTMLElement | null) => {
+      if (!m) return;
+      m.style.display = 'flex';
+      syncBodyScroll();
+    };
+
+    const hideModal = (m?: HTMLElement | null) => {
+      if (!m) return;
+      m.style.display = 'none';
+      syncBodyScroll();
+    };
+
+    registerModal(modal);
+
+    let currentDurum: string | null = null; // null = all, '' = Beklemede
+    let currentStation: string = ''; // '' = all stations
+    let currentPage = 1;
+    let totalPages = 1;
+    const limit = 30;
+    let editingId: number | null = null;
+    let currentUserRole = 'user';
+    const pageParams = new URLSearchParams(window.location.search);
+    const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
+
+    function clearAutoEditQuery() {
+      const next = new URLSearchParams(window.location.search);
+      next.delete('editId');
+      next.delete('src');
+      const qs = next.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
+    }
+
+    // Kullanıcı rolü
+    function canEditMms() {
+      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+    }
+
+    function canDeleteMms() {
+      return currentUserRole === 'sef' || currentUserRole === 'admin';
+    }
+
+    function canCreateMms() {
+      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+    }
+
+    async function getUserRole() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          currentUserRole = data.user?.role || 'user';
+        }
+      } catch (e) { currentUserRole = 'user'; }
+      if (newRecordBtn) {
+        newRecordBtn.style.display = canCreateMms() ? 'inline-flex' : 'none';
+      }
+    }
+
+    async function tryOpenEditFromQuery() {
+      if (!Number.isFinite(autoEditId)) return;
+      clearAutoEditQuery();
+      try {
+        const res = await fetch(`/api/mms/${autoEditId}`, { credentials: 'include' });
+        const data = await res.json();
+        if (!res.ok || !data?.record) throw new Error(data?.error || 'Kayıt bulunamadı');
+        openEditModal(data.record);
+      } catch (error: any) {
+        alert(`Düzenleme penceresi açılamadı: ${error.message || 'Bilinmeyen hata'}`);
+      }
+    }
+
+    function getStatusBadge(durum: string | null) {
+      const d = durum || '';
+      if (d === '' || d === 'Beklemede') return `<span class="status-badge status-warning">⏳ Beklemede</span>`;
+      if (d === 'Onarıldı') return `<span class="status-badge status-success">✅ Onarıldı</span>`;
+      if (d === 'Onarılmadı') return `<span class="status-badge status-danger">❌ Onarılmadı</span>`;
+      if (d === 'Onarımda') return `<span class="status-badge status-info">🔧 Onarımda</span>`;
+      if (d === 'Parça Bekleniyor') return `<span class="status-badge status-purple">📦 Parça Bek.</span>`;
+      return `<span class="status-badge status-warning">⏳ Beklemede</span>`;
+    }
+
+    function renderPagination() {
+      if (!paginationContainer) return;
+      paginationContainer.innerHTML = '';
+      if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+      }
+      paginationContainer.style.display = 'flex';
+      for (let page = 1; page <= totalPages; page++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `page-btn${page === currentPage ? ' active' : ''}`;
+        btn.textContent = String(page);
+        btn.addEventListener('click', () => {
+          if (page === currentPage) return;
+          currentPage = page;
+          loadRecords();
+        });
+        paginationContainer.appendChild(btn);
+      }
+    }
+
+    async function loadRecords() {
+      tableBody.innerHTML = `<tr class="loading-row"><td colspan="7"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>`;
+      noResults.style.display = 'none';
+
+      try {
+        const params = new URLSearchParams();
+        if (searchInput?.value) params.set('search', searchInput.value);
+        if (currentDurum !== null) params.set('durum', currentDurum);
+        if (currentStation) params.set('istasyon', currentStation);
+        params.set('page', currentPage.toString());
+        params.set('limit', limit.toString());
+
+        const response = await fetch(`/api/mms?${params}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        tableBody.innerHTML = '';
+
+        // Stats
+        const total = document.getElementById('totalCount');
+        const bekleyen = document.getElementById('bekleyenCount');
+        const onarilan = document.getElementById('onarilanCount');
+        const onarilmadi = document.getElementById('onarilmadiCount');
+        const onarimda = document.getElementById('onarimdaCount');
+        
+        if (data.stats) {
+          if (total) total.textContent = data.stats.total || '0';
+          if (bekleyen) bekleyen.textContent = data.stats.beklemede || '0';
+          if (onarilan) onarilan.textContent = data.stats.onarilan || '0';
+          if (onarilmadi) onarilmadi.textContent = data.stats.onarilmadi || '0';
+          if (onarimda) onarimda.textContent = data.stats.onarimda || '0';
+        }
+
+        if (data.records.length === 0) {
+          noResults.style.display = 'block';
+          paginationContainer.style.display = 'none';
+          return;
+        }
+
+        data.records.forEach((r: any) => {
+          const row = document.createElement('tr');
+          const tarih = r.zaman_damgasi ? new Date(r.zaman_damgasi).toLocaleString('tr-TR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          }) : '-';
+          
+          row.innerHTML = `
+            <td data-label="MMS No"><span class="mms-no">${r.mms_numarasi || '-'}</span></td>
+            <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
+            <td class="ariza-cell" data-label="Arıza Tanımı">${r.ariza_tanimi || '-'}</td>
+            <td class="istasyon-cell" data-label="İstasyon">${r.istasyon || '-'}</td>
+            <td data-label="Bildiren">${r.acan_ad_soyad || '-'}</td>
+            <td data-label="Durum">${getStatusBadge(r.durum)}</td>
+            <td data-label="İşlem">${canEditMms() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
+          `;
+          
+          row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
+          tableBody.appendChild(row);
+        });
+        
+        const paginationTotalCount = Number(data.pagination?.totalCount ?? data.stats?.total ?? data.records?.length ?? 0);
+        totalPages = Math.max(1, Number(data.pagination?.totalPages ?? Math.ceil(paginationTotalCount / limit) ?? 1));
+        renderPagination();
+      } catch (error: any) {
+        console.error('Load error:', error);
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+      }
+    }
+
+    function openEditModal(record: any) {
+      editingId = record.id;
+      modalTitle.textContent = 'Kaydı Düzenle';
+      (document.getElementById('recordId') as HTMLInputElement).value = record.id;
+      (document.getElementById('mms_numarasi') as HTMLInputElement).value = record.mms_numarasi || '';
+      (document.getElementById('ariza_tanimi') as HTMLTextAreaElement).value = record.ariza_tanimi || '';
+      (document.getElementById('istasyon') as HTMLSelectElement).value = record.istasyon || '';
+      (document.getElementById('durum') as HTMLSelectElement).value = record.durum || '';
+      
+      durumGroup.style.display = 'block';
+      
+      const canEdit = canEditMms();
+      (document.getElementById('mms_numarasi') as HTMLInputElement).disabled = !canEdit;
+      (document.getElementById('ariza_tanimi') as HTMLTextAreaElement).disabled = !canEdit;
+      (document.getElementById('istasyon') as HTMLSelectElement).disabled = !canEdit;
+      
+      deleteRecordBtn.style.display = canDeleteMms() ? 'block' : 'none';
+      
+      formMessage.style.display = 'none';
+      showModal(modal);
+    }
+
+    function openNewRecordModal() {
+      if (!canCreateMms()) return;
+      editingId = null;
+      modalTitle.textContent = 'Yeni MMS Kaydı';
+      recordForm.reset();
+      durumGroup.style.display = 'none';
+      deleteRecordBtn.style.display = 'none';
+      
+      (document.getElementById('mms_numarasi') as HTMLInputElement).disabled = false;
+      (document.getElementById('ariza_tanimi') as HTMLTextAreaElement).disabled = false;
+      (document.getElementById('istasyon') as HTMLSelectElement).disabled = false;
+      
+      formMessage.style.display = 'none';
+      showModal(modal);
+    }
+
+    newRecordBtn?.addEventListener('click', openNewRecordModal);
+
+    closeModal?.addEventListener('click', () => hideModal(modal));
+    cancelBtn?.addEventListener('click', () => hideModal(modal));
+    modal?.addEventListener('click', (e) => { if (e.target === modal) hideModal(modal); });
+
+    const autoOpenNew = new URLSearchParams(window.location.search).get('open');
+    if ((autoOpenNew === 'new' || autoOpenNew === 'create') && canCreateMms()) {
+      setTimeout(() => openNewRecordModal(), 80);
+    }
+
+    recordForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!canCreateMms()) {
+        formMessage.className = 'form-message error';
+        formMessage.textContent = 'Bu işlem için yetkiniz yok';
+        formMessage.style.display = 'block';
+        return;
+      }
+      const payload: any = {
+        mms_numarasi: (document.getElementById('mms_numarasi') as HTMLInputElement).value,
+        ariza_tanimi: (document.getElementById('ariza_tanimi') as HTMLTextAreaElement).value,
+        istasyon: (document.getElementById('istasyon') as HTMLSelectElement).value,
+      };
+      if (editingId) {
+        payload.durum = (document.getElementById('durum') as HTMLSelectElement).value;
+      }
+
+      try {
+        const url = editingId ? `/api/mms/${editingId}` : '/api/mms';
+        const method = editingId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        formMessage.className = 'form-message success';
+        formMessage.textContent = editingId ? 'Güncellendi!' : 'Oluşturuldu!';
+        formMessage.style.display = 'block';
+        window.dispatchEvent(new Event('notifications:refresh'));
+
+        setTimeout(() => {
+          hideModal(modal);
+          currentPage = 1;
+          loadRecords();
+        }, 800);
+      } catch (error: any) {
+        formMessage.className = 'form-message error';
+        formMessage.textContent = error.message;
+        formMessage.style.display = 'block';
+      }
+    });
+
+    deleteRecordBtn?.addEventListener('click', async () => {
+      if (!editingId || !confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
+      
+      try {
+        const response = await fetch(`/api/mms/${editingId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        hideModal(modal);
+        window.dispatchEvent(new Event('notifications:refresh'));
+        currentPage = 1;
+        loadRecords();
+      } catch (error: any) {
+        alert('Silme hatası: ' + error.message);
+      }
+    });
+
+    let searchTimeout: ReturnType<typeof setTimeout>;
+    searchInput?.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const value = (e.target as HTMLInputElement).value;
+      searchClear.style.display = value ? 'flex' : 'none';
+      searchTimeout = setTimeout(() => { currentPage = 1; loadRecords(); }, 300);
+    });
+
+    searchClear?.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClear.style.display = 'none';
+      currentPage = 1;
+      loadRecords();
+    });
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        const durumVal = (chip as HTMLElement).dataset.durum;
+        currentDurum = durumVal === 'all' ? null : (durumVal ?? '');
+        currentPage = 1;
+        loadRecords();
+      });
+    });
+
+    // Station filter
+    stationFilter?.addEventListener('change', () => {
+      currentStation = stationFilter.value;
+      currentPage = 1;
+      loadRecords();
+    });
+
+
+    // Rapor Modal Elements
+    const reportBtn = document.getElementById('reportBtn') as HTMLButtonElement;
+    const reportModal = document.getElementById('reportModal') as HTMLElement;
+    const closeReportModal = document.getElementById('closeReportModal') as HTMLElement;
+    const reportStartDate = document.getElementById('reportStartDate') as HTMLInputElement;
+    const reportEndDate = document.getElementById('reportEndDate') as HTMLInputElement;
+    const reportAllDates = document.getElementById('reportAllDates') as HTMLInputElement;
+    const reportDateRangeRow = document.getElementById('reportDateRangeRow') as HTMLElement;
+    const reportStation = document.getElementById('reportStation') as HTMLSelectElement;
+    const reportDurum = document.getElementById('reportDurum') as HTMLSelectElement;
+    const downloadPdfBtn = document.getElementById('downloadPdfBtn') as HTMLButtonElement;
+    registerModal(reportModal);
+
+    function bindDatePickerOpen(input?: HTMLInputElement | null) {
+      if (!input) return;
+      const openPicker = () => {
+        if (typeof input.showPicker === 'function') {
+          try { input.showPicker(); } catch (_e) {}
+        }
+      };
+      input.addEventListener('click', openPicker);
+      input.addEventListener('focus', openPicker);
+    }
+
+    async function loadScriptOnce(src: string) {
+      const key = `script:${src}`;
+      if ((window as any)[key]) return;
+      await new Promise<void>((resolve, reject) => {
+        const existing = document.querySelector(`script[data-src="${src}"]`) as HTMLScriptElement | null;
+        if (existing?.getAttribute('data-loaded') === '1') {
+          (window as any)[key] = true;
+          resolve();
+          return;
+        }
+        const script = existing || document.createElement('script');
+        script.src = src;
+        script.async = true;
+        script.setAttribute('data-src', src);
+        script.onload = () => {
+          script.setAttribute('data-loaded', '1');
+          (window as any)[key] = true;
+          resolve();
+        };
+        script.onerror = () => reject(new Error(`Script yüklenemedi: ${src}`));
+        if (!existing) document.head.appendChild(script);
+      });
+    }
+
+    // Default dates - son 30 gün
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    if (reportStartDate) reportStartDate.value = thirtyDaysAgo.toISOString().split('T')[0];
+    if (reportEndDate) reportEndDate.value = today.toISOString().split('T')[0];
+    bindDatePickerOpen(reportStartDate);
+    bindDatePickerOpen(reportEndDate);
+
+    function applyReportAllDatesState() {
+      const allDates = Boolean(reportAllDates?.checked);
+      if (reportDateRangeRow) reportDateRangeRow.style.display = allDates ? 'none' : 'grid';
+    }
+    reportAllDates?.addEventListener('change', applyReportAllDatesState);
+    applyReportAllDatesState();
+
+    reportBtn?.addEventListener('click', () => {
+      if (reportAllDates) reportAllDates.checked = false;
+      applyReportAllDatesState();
+      showModal(reportModal);
+    });
+
+    closeReportModal?.addEventListener('click', () => {
+      hideModal(reportModal);
+    });
+
+    reportModal?.addEventListener('click', (e) => {
+      if (e.target === reportModal) hideModal(reportModal);
+    });
+
+    const normalizeText = (text) => String(text || '')
+      .toLocaleLowerCase('tr-TR')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/ı/g, 'i')
+      .trim();
+
+    const resolveStationForReport = (query) => {
+      const normalizedQuery = normalizeText(query);
+      if (!normalizedQuery) return '';
+      const options = Array.from(reportStation.options || []).map((opt) => String(opt.value || '')).filter(Boolean);
+      let bestStation = '';
+      let bestScore = 0;
+
+      for (const station of options) {
+        const normalizedStation = normalizeText(station);
+        const tokens = normalizedStation.split(/\s+/).filter((t) => t.length >= 3);
+        let score = 0;
+        if (normalizedQuery.includes(normalizedStation)) score = 120 + normalizedStation.length;
+        if (!score && tokens.length) {
+          const matched = tokens.filter((t) => normalizedQuery.includes(t)).length;
+          if (matched === tokens.length) score = 80 + tokens.length * 10;
+          else if (matched > 0 && tokens.length > 1) score = 45 + matched * 10;
+        }
+        if (score > bestScore) {
+          bestScore = score;
+          bestStation = station;
+        }
+      }
+
+      return bestScore >= 55 ? bestStation : '';
+    };
+
+    const createMmsReportPdf = async (openInNewWindow = false) => {
+      downloadPdfBtn.disabled = true;
+      downloadPdfBtn.textContent = 'Yükleniyor...';
+
+      const params = new URLSearchParams();
+      params.set('limit', '10000');
+      if (reportStation.value) params.set('istasyon', reportStation.value);
+      if (reportDurum.value) {
+        if (reportDurum.value === 'Beklemede') {
+          params.set('durum', '');
+        } else {
+          params.set('durum', reportDurum.value);
+        }
+      }
+
+      try {
+        const response = await fetch(`/api/mms?${params}`);
+        const data = await response.json();
+        
+        let reportData = data.records || [];
+        
+        // Tarihe göre filtrele
+        if (!reportAllDates?.checked && (reportStartDate.value || reportEndDate.value)) {
+          reportData = reportData.filter((r: any) => {
+            const recordDate = new Date(r.zaman_damgasi);
+            if (reportStartDate.value && recordDate < new Date(reportStartDate.value)) return false;
+            if (reportEndDate.value && recordDate > new Date(reportEndDate.value + 'T23:59:59')) return false;
+            return true;
+          });
+        }
+
+        if (reportData.length === 0) {
+          alert('Seçilen kriterlere uygun kayıt bulunamadı.');
+          downloadPdfBtn.disabled = false;
+          downloadPdfBtn.textContent = '📄 PDF Oluştur';
+          return;
+        }
+
+        await loadScriptOnce('/vendor/pdfmake.min.js');
+        await loadScriptOnce('/vendor/vfs_fonts.js');
+        const pdfMakeApi = (window as any).pdfMake;
+        if (!pdfMakeApi) throw new Error('PDF kütüphanesi başlatılamadı');
+
+        const dateRangeText = reportAllDates?.checked
+          ? 'Tüm Tarihler'
+          : `${reportStartDate.value || '-'} - ${reportEndDate.value || '-'}`;
+
+        const tableBody = [
+          [
+            { text: 'MMS No', style: 'tableHeader' },
+            { text: 'Tarih', style: 'tableHeader' },
+            { text: 'İstasyon', style: 'tableHeader' },
+            { text: 'Bildiren', style: 'tableHeader' },
+            { text: 'Arıza Tanımı', style: 'tableHeader' },
+            { text: 'Durum', style: 'tableHeader' },
+          ],
+          ...reportData.map((r: any) => [
+            String(r.mms_numarasi || '-'),
+            r.zaman_damgasi ? new Date(r.zaman_damgasi).toLocaleDateString('tr-TR') : '-',
+            String(r.istasyon || '-'),
+            String(r.acan_ad_soyad || '-'),
+            String(r.ariza_tanimi || '-'),
+            String(r.durum || 'Beklemede'),
+          ]),
+        ];
+
+        const content: any[] = [
+          { text: 'MMS Arıza Raporu', style: 'title' },
+          { text: `Tarih Aralığı: ${dateRangeText}`, style: 'subtitle' },
+        ];
+        if (reportStation.value) content.push({ text: `İstasyon: ${reportStation.value}`, style: 'subtitle' });
+        if (reportDurum.value) content.push({ text: `Durum: ${reportDurum.value}`, style: 'subtitle' });
+        content.push({
+          table: {
+            headerRows: 1,
+            widths: [52, 48, 65, 75, '*', 56],
+            body: tableBody,
+          },
+          layout: {
+            fillColor: (rowIndex: number) => (rowIndex === 0 ? '#667eea' : rowIndex % 2 === 0 ? '#f8fafc' : null),
+            hLineColor: () => '#dbe3ee',
+            vLineColor: () => '#dbe3ee',
+            hLineWidth: () => 0.6,
+            vLineWidth: () => 0.6,
+            paddingLeft: () => 6,
+            paddingRight: () => 6,
+            paddingTop: () => 4,
+            paddingBottom: () => 4,
+          },
+        });
+        content.push({ text: `Toplam: ${reportData.length} kayıt | Oluşturulma: ${new Date().toLocaleString('tr-TR')}`, style: 'footerNote' });
+
+        const docDefinition = {
+          pageSize: 'A4',
+          pageOrientation: 'landscape',
+          pageMargins: [20, 20, 20, 20],
+          defaultStyle: { font: 'Roboto', fontSize: 9 },
+          styles: {
+            title: { fontSize: 18, bold: true, alignment: 'center', margin: [0, 0, 0, 4] },
+            subtitle: { fontSize: 10, alignment: 'center', margin: [0, 0, 0, 4] },
+            tableHeader: { color: '#ffffff', bold: true, fontSize: 10 },
+            footerNote: { fontSize: 10, margin: [0, 10, 0, 0] },
+          },
+          content,
+        };
+
+        const fileName = `MMS_Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
+        if (openInNewWindow) {
+          pdfMakeApi.createPdf(docDefinition).getBlob((blob) => {
+            const blobUrl = URL.createObjectURL(blob);
+            const opened = window.open(blobUrl, '_blank', 'noopener,noreferrer');
+            if (!opened) {
+              pdfMakeApi.createPdf(docDefinition).download(fileName);
+            }
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+          });
+        } else {
+          pdfMakeApi.createPdf(docDefinition).download(fileName);
+        }
+        hideModal(reportModal);
+
+      } catch (err) {
+        console.error('Rapor verisi alınamadı:', err);
+        alert('Rapor oluşturulurken hata oluştu');
+      }
+
+      downloadPdfBtn.disabled = false;
+      downloadPdfBtn.textContent = '📄 PDF Oluştur';
+    };
+
+    downloadPdfBtn?.addEventListener('click', async () => {
+      await createMmsReportPdf(false);
+    });
+
+    const autoReport = pageParams.get('report');
+    const autoAllStations = pageParams.get('allStations');
+    const autoStation = pageParams.get('station');
+    const autoStationQuery = pageParams.get('stationQuery');
+    const shouldAutoReport = autoReport === 'pdf';
+    if (shouldAutoReport) {
+      const normalizedAll = normalizeText(autoAllStations || '');
+      const isAllStations = normalizedAll === '1' || normalizedAll === 'true' || normalizedAll === 'evet' || normalizedAll === 'tum';
+      const chosenStation = !isAllStations
+        ? (autoStation || resolveStationForReport(autoStationQuery || '') || resolveStationForReport(pageParams.get('search') || ''))
+        : '';
+      const nextParams = new URLSearchParams(window.location.search);
+      nextParams.delete('report');
+      nextParams.delete('allStations');
+      nextParams.delete('station');
+      nextParams.delete('stationQuery');
+      const nextQuery = nextParams.toString();
+      window.history.replaceState({}, '', `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash || ''}`);
+      reportStation.value = chosenStation || '';
+      reportAllDates.checked = true;
+      applyReportAllDatesState();
+      setTimeout(() => { createMmsReportPdf(true); }, 120);
+    }
+
+    getUserRole().finally(async () => {
+      await loadRecords();
+      await tryOpenEditFromQuery();
+    });
+  });
+</script>

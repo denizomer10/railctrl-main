@@ -1,0 +1,1114 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { MARMARAY_ISTASYONLARI } from '../lib/stations';
+
+// Giriş yapmış kullanıcı gerekli
+const user = Astro.locals.user;
+if (!user) {
+  return Astro.redirect('/login');
+}
+---
+
+<PageLayout title="Kullanıcı İşlemleri">
+  <div class="profile-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">👤</div>
+        <div class="header-text">
+          <h1>Kullanıcı İşlemleri</h1>
+          <p>Profil bilgilerinizi görüntüleyin ve güncelleyin</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Card -->
+    <div class="profile-container">
+      <div class="profile-card">
+        <div class="card-header">
+          <h2>📋 Profil Bilgileri</h2>
+        </div>
+        
+        <form id="profileForm" class="profile-form">
+          <div class="form-section">
+            <h3>Kişisel Bilgiler</h3>
+            
+            <div class="form-group">
+              <label for="fullName">Ad Soyad</label>
+              <input type="text" id="fullName" name="full_name" required placeholder="Adınız Soyadınız">
+            </div>
+            
+            <div class="form-group">
+              <label for="email">E-posta Adresi</label>
+              <input type="email" id="email" name="email" required placeholder="ornek@tcdd.gov.tr">
+              <small class="form-hint">E-posta değişikliği kullanıcı adınızı da değiştirir</small>
+            </div>
+
+            <div class="form-group">
+              <label for="station">Kayıtlı İstasyon</label>
+              <select id="station" name="istasyon">
+                <option value="">İstasyon seçiniz</option>
+                {MARMARAY_ISTASYONLARI.map((istasyon) => (
+                  <option value={istasyon}>{istasyon}</option>
+                ))}
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Bildirim Ayarları</label>
+              <div class="notification-options">
+                <label class="notification-option">
+                  <input type="checkbox" id="notifyMms" checked />
+                  MMS bildirimleri (varsayılan açık)
+                </label>
+                <label class="notification-option">
+                  <input type="checkbox" id="notifyCalisma" checked />
+                  Çalışma kayıt bildirimleri (varsayılan açık)
+                </label>
+                <label class="notification-option">
+                  <input type="checkbox" id="notifyVardiya" checked />
+                  Vardiya bildirimleri (varsayılan açık)
+                </label>
+                <label class="notification-option">
+                  <input type="checkbox" id="notifyKayipEsya" checked />
+                  Kayıp eşya bildirimleri (varsayılan açık)
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group readonly-group">
+              <label>Rol</label>
+              <div class="readonly-value" id="roleDisplay">-</div>
+            </div>
+            
+            <div class="form-group readonly-group">
+              <label>Kayıt Tarihi</label>
+              <div class="readonly-value" id="createdAtDisplay">-</div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3>🔐 Şifre Değiştir</h3>
+            <p class="section-hint">Şifrenizi değiştirmek için aşağıdaki alanları doldurun</p>
+            
+            <div class="form-group">
+              <label for="currentPassword">Mevcut Şifre</label>
+              <div class="password-input-container">
+                <input type="password" id="currentPassword" name="current_password" placeholder="Mevcut şifreniz">
+                <button type="button" class="password-toggle" data-target="currentPassword">
+                  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="newPassword">Yeni Şifre</label>
+              <div class="password-input-container">
+                <input type="password" id="newPassword" name="new_password" placeholder="En az 6 karakter" minlength="6">
+                <button type="button" class="password-toggle" data-target="newPassword">
+                  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+              <small class="form-hint">Şifre en az 6 karakter olmalıdır</small>
+            </div>
+            
+            <div class="form-group">
+              <label for="confirmPassword">Yeni Şifre (Tekrar)</label>
+              <div class="password-input-container">
+                <input type="password" id="confirmPassword" name="confirm_password" placeholder="Yeni şifreyi tekrar girin" minlength="6">
+                <button type="button" class="password-toggle" data-target="confirmPassword">
+                  <svg class="eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                  <svg class="eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn-primary" id="saveBtn">
+              <span class="btn-text">💾 Değişiklikleri Kaydet</span>
+              <span class="btn-loading" style="display:none">
+                <svg class="spinner" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+                </svg>
+                Kaydediliyor...
+              </span>
+            </button>
+          </div>
+        </form>
+
+        <div id="messageBox" class="message-box" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .profile-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-icon {
+    font-size: 3rem;
+  }
+
+  .header-text h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+  }
+
+  [data-theme="dark"] .header-text h1 {
+    color: #fff;
+  }
+
+  .header-text p {
+    margin: 5px 0 0;
+    color: #666;
+  }
+
+  [data-theme="dark"] .header-text p {
+    color: #aaa;
+  }
+
+  .profile-container {
+    display: flex;
+    justify-content: center;
+  }
+
+  .profile-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    overflow: hidden;
+  }
+
+  [data-theme="dark"] .profile-card {
+    background: #1e1e1e;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #e53935, #c62828);
+    color: #fff;
+    padding: 20px 25px;
+  }
+
+  .card-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+  }
+
+  .profile-form {
+    padding: 25px;
+  }
+
+  .form-section {
+    margin-bottom: 30px;
+    padding-bottom: 25px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  [data-theme="dark"] .form-section {
+    border-bottom-color: #333;
+  }
+
+  .form-section:last-of-type {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .form-section h3 {
+    margin: 0 0 15px;
+    font-size: 1.1rem;
+    color: #333;
+  }
+
+  [data-theme="dark"] .form-section h3 {
+    color: #fff;
+  }
+
+  .section-hint {
+    margin: 0 0 15px;
+    font-size: 0.9rem;
+    color: #666;
+  }
+
+  [data-theme="dark"] .section-hint {
+    color: #aaa;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+  }
+
+  [data-theme="dark"] .form-group label {
+    color: #ddd;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: #fff;
+    color: #333;
+  }
+
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select,
+  [data-theme="dark"] .form-group textarea {
+    background: #2a2a2a;
+    border-color: #444;
+    color: #fff;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #e53935;
+    box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+  }
+
+  .form-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.85rem;
+    color: #888;
+  }
+
+  .readonly-group .readonly-value {
+    padding: 12px 15px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    color: #666;
+    font-size: 1rem;
+  }
+
+  [data-theme="dark"] .readonly-group .readonly-value {
+    background: #2a2a2a;
+    color: #aaa;
+  }
+
+  .password-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .password-input-container input {
+    padding-right: 45px;
+  }
+
+  .password-toggle {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    color: #666;
+  }
+
+  [data-theme="dark"] .password-toggle {
+    color: #aaa;
+  }
+
+  .password-toggle svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .form-actions {
+    margin-top: 25px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 35px;
+    background: linear-gradient(135deg, #e53935, #c62828);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .spinner {
+    width: 18px;
+    height: 18px;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .message-box {
+    margin: 20px 25px 25px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    font-size: 0.95rem;
+  }
+
+  .message-box.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+  }
+
+  [data-theme="dark"] .message-box.success {
+    background: #1a3d1a;
+    color: #8fd88f;
+    border-color: #2a5a2a;
+  }
+
+  .message-box.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+  }
+
+  [data-theme="dark"] .message-box.error {
+    background: #3d1a1a;
+    color: #f88f8f;
+    border-color: #5a2a2a;
+  }
+
+  @media (max-width: 600px) {
+    .profile-page {
+      padding: 15px;
+    }
+
+    .profile-form {
+      padding: 20px;
+    }
+
+    .btn-primary {
+      width: 100%;
+    }
+  }
+
+  /* Modern responsive + dark override */
+  .profile-page {
+    max-width: 100%;
+    padding: clamp(10px, 2vw, 20px);
+  }
+
+  .profile-container {
+    width: 100%;
+  }
+
+  .profile-card {
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 16px;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, 0.12);
+  }
+
+  :global(html[data-theme="dark"]) .profile-card {
+    background: #111827;
+    border-color: #374151;
+    box-shadow: 0 18px 36px rgba(2, 6, 23, 0.45);
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    padding: 16px 20px;
+  }
+
+  .card-header h2 {
+    font-size: clamp(1rem, 2.8vw, 1.25rem);
+    line-height: 1.3;
+  }
+
+  .profile-form {
+    padding: clamp(14px, 2.8vw, 24px);
+  }
+
+  .form-section h3 {
+    font-size: clamp(1rem, 2.3vw, 1.1rem);
+    line-height: 1.35;
+  }
+
+  .form-group {
+    margin-bottom: 14px;
+    min-width: 0;
+  }
+
+  .form-group label {
+    font-size: 0.86rem;
+    color: #334155;
+  }
+
+  :global(html[data-theme="dark"]) .form-group label {
+    color: #cbd5e1;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    min-height: 42px;
+    width: 100%;
+    max-width: 100%;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    border-color: #cbd5e1;
+    background: #fff;
+    color: #0f172a;
+  }
+
+  :global(html[data-theme="dark"]) .form-group input,
+  :global(html[data-theme="dark"]) .form-group select,
+  :global(html[data-theme="dark"]) .form-group textarea {
+    background: #0b1220;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  .form-hint,
+  .section-hint {
+    color: #64748b;
+  }
+
+  :global(html[data-theme="dark"]) .form-hint,
+  :global(html[data-theme="dark"]) .section-hint {
+    color: #9ca3af;
+  }
+
+  .readonly-group .readonly-value {
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #334155;
+  }
+
+  :global(html[data-theme="dark"]) .readonly-group .readonly-value {
+    background: #1f2937;
+    border-color: #374151;
+    color: #cbd5e1;
+  }
+
+  .password-input-container {
+    min-width: 0;
+  }
+
+  .password-input-container input {
+    padding-right: 44px;
+  }
+
+  .password-toggle {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    right: 8px;
+  }
+
+  .btn-primary {
+    min-height: 44px;
+    border-radius: 10px;
+    padding: 12px 22px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+  }
+
+  .message-box {
+    margin: 16px;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 768px) {
+    .page-header {
+      margin-bottom: 18px;
+    }
+
+    .header-icon {
+      font-size: 2.2rem;
+    }
+
+    .header-text h1 {
+      font-size: 1.45rem;
+      line-height: 1.2;
+    }
+
+    .header-text p {
+      font-size: 0.9rem;
+      line-height: 1.35;
+    }
+
+    .profile-form {
+      padding: 14px;
+    }
+
+    .form-section {
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+    }
+
+    .form-actions {
+      margin-top: 12px;
+    }
+
+    .btn-primary {
+      width: 100%;
+      font-size: 0.95rem;
+    }
+  }
+
+  @media (max-width: 430px) {
+    .profile-page {
+      padding: 8px;
+    }
+
+    .card-header {
+      padding: 12px 14px;
+    }
+
+    .card-header h2 {
+      font-size: 1rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      font-size: 16px;
+      min-height: 44px;
+    }
+  }
+
+  :global(html[data-theme="dark"]) .profile-page .header-text h1,
+  :global(html[data-theme="dark"]) .profile-page .form-section h3,
+  :global(html[data-theme="dark"]) .profile-page .form-group label,
+  :global(html[data-theme="dark"]) .profile-page .section-hint,
+  :global(html[data-theme="dark"]) .profile-page .form-hint,
+  :global(html[data-theme="dark"]) .profile-page .readonly-group .readonly-value,
+  :global(html[data-theme="dark"]) .profile-page .card-header h2 {
+    color: #e5e7eb !important;
+  }
+
+  :global(html[data-theme="dark"]) .profile-page .header-text p {
+    color: #9ca3af !important;
+  }
+
+  :global(html[data-theme="dark"]) .profile-page .form-group input,
+  :global(html[data-theme="dark"]) .profile-page .form-group select,
+  :global(html[data-theme="dark"]) .profile-page .form-group textarea {
+    color: #f8fafc !important;
+    background: #0b1220 !important;
+    border-color: #374151 !important;
+  }
+
+  :global(html[data-theme="dark"]) .profile-page .form-group input::placeholder {
+    color: #94a3b8;
+  }
+
+  /* Liquid Glass Profile Page */
+  .profile-page {
+    max-width: min(980px, 100%);
+    padding: clamp(10px, 2.4vw, 28px);
+  }
+
+  .page-header {
+    margin-bottom: clamp(14px, 2.2vw, 24px);
+  }
+
+  .header-text h1 {
+    font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+    font-weight: 700;
+    color: var(--app-text, #0f172a);
+  }
+
+  .header-text p {
+    color: var(--app-text-muted, #475569);
+    font-size: clamp(0.95rem, 1.8vw, 1.05rem);
+  }
+
+  .profile-card {
+    background: var(--glass-bg-strong, rgba(255, 255, 255, 0.58));
+    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.3));
+    -webkit-backdrop-filter: blur(14px) saturate(145%);
+    backdrop-filter: blur(14px) saturate(145%);
+    border-radius: 24px;
+    box-shadow: 0 18px 42px rgba(15, 23, 42, 0.16);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(120deg, rgba(37, 99, 235, 0.38), rgba(14, 165, 233, 0.24), rgba(168, 85, 247, 0.24));
+    border-bottom: 1px solid var(--glass-border, rgba(148, 163, 184, 0.25));
+    padding: clamp(14px, 2vw, 20px) clamp(16px, 2.5vw, 26px);
+  }
+
+  .card-header h2 {
+    color: var(--app-text, #0f172a);
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .profile-form {
+    padding: clamp(14px, 2.4vw, 28px);
+  }
+
+  .form-section {
+    border-bottom-color: var(--glass-border, rgba(148, 163, 184, 0.25));
+  }
+
+  .form-section h3 {
+    color: var(--app-text, #0f172a);
+    font-weight: 700;
+  }
+
+  .form-group label {
+    color: var(--app-text, #1f2937);
+    font-weight: 600;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.46)) 84%, white 16%);
+    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.35));
+    border-radius: 14px;
+    color: var(--app-text, #0f172a);
+    min-height: 46px;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: color-mix(in srgb, #3b82f6 70%, var(--glass-border, rgba(148, 163, 184, 0.35)) 30%);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+  }
+
+  .readonly-group .readonly-value {
+    background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.46)) 88%, white 12%);
+    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.32));
+    color: var(--app-text, #1f2937);
+    border-radius: 14px;
+  }
+
+  .notification-options {
+    display: grid;
+    gap: 0.7rem;
+  }
+
+  .notification-option {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin: 0;
+    padding: 0.75rem 0.85rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.28));
+    background: color-mix(in srgb, var(--glass-bg, rgba(255, 255, 255, 0.46)) 86%, white 14%);
+    color: var(--app-text, #1f2937);
+    font-weight: 500;
+  }
+
+  .notification-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: #2563eb;
+    min-height: auto;
+  }
+
+  .password-toggle {
+    color: var(--app-text-muted, #64748b);
+  }
+
+  .btn-primary {
+    border-radius: 999px;
+    padding: 12px 26px;
+    min-height: 46px;
+    font-weight: 700;
+    background: linear-gradient(130deg, #2563eb, #7c3aed);
+    box-shadow: 0 14px 30px rgba(37, 99, 235, 0.25);
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 18px 30px rgba(37, 99, 235, 0.3);
+  }
+
+  .message-box {
+    background: var(--glass-bg, rgba(255, 255, 255, 0.46));
+    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.32));
+    color: var(--app-text, #0f172a);
+    border-radius: 14px;
+  }
+
+  :global(html[data-theme="dark"]) .profile-card {
+    background: rgba(12, 23, 41, 0.72);
+    border-color: rgba(96, 165, 250, 0.24);
+  }
+
+  :global(html[data-theme="dark"]) .card-header,
+  :global(html[data-theme="dark"]) .notification-option,
+  :global(html[data-theme="dark"]) .readonly-group .readonly-value,
+  :global(html[data-theme="dark"]) .form-group input,
+  :global(html[data-theme="dark"]) .form-group select,
+  :global(html[data-theme="dark"]) .form-group textarea {
+    color: #e6efff !important;
+  }
+
+  :global(html[data-theme="dark"]) .form-group input,
+  :global(html[data-theme="dark"]) .form-group select,
+  :global(html[data-theme="dark"]) .form-group textarea,
+  :global(html[data-theme="dark"]) .readonly-group .readonly-value,
+  :global(html[data-theme="dark"]) .notification-option {
+    background: rgba(11, 18, 32, 0.82) !important;
+    border-color: rgba(96, 165, 250, 0.24) !important;
+  }
+
+  :global(html[data-theme="dark"]) .header-text h1,
+  :global(html[data-theme="dark"]) .form-group label,
+  :global(html[data-theme="dark"]) .form-section h3,
+  :global(html[data-theme="dark"]) .card-header h2 {
+    color: #f8fbff !important;
+  }
+
+  @media (max-width: 768px) {
+    .profile-page {
+      padding: 10px;
+    }
+
+    .profile-card {
+      border-radius: 18px;
+    }
+
+    .card-header {
+      padding: 14px;
+    }
+
+    .profile-form {
+      padding: 12px;
+    }
+
+    .notification-option {
+      align-items: flex-start;
+      line-height: 1.35;
+      font-size: 0.92rem;
+    }
+
+    .form-actions {
+      margin-top: 14px;
+    }
+
+    .btn-primary {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 460px) {
+    .header-text h1 {
+      font-size: 1.4rem;
+    }
+
+    .header-text p {
+      font-size: 0.9rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      font-size: 16px;
+    }
+  }
+</style>
+
+<script>
+  function asBool(value: unknown, defaultValue = true): boolean {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value !== 0;
+    if (typeof value === 'string') {
+      const v = value.trim().toLowerCase();
+      if (['1', 'true', 't', 'yes', 'on'].includes(v)) return true;
+      if (['0', 'false', 'f', 'no', 'off'].includes(v)) return false;
+    }
+    return defaultValue;
+  }
+
+  // Load profile data
+  async function loadProfile() {
+    try {
+      const res = await fetch('/api/user/profile', { credentials: 'include' });
+      const data = await res.json();
+
+      if (data.user) {
+        const fullNameInput = document.getElementById('fullName') as HTMLInputElement;
+        const emailInput = document.getElementById('email') as HTMLInputElement;
+        const stationInput = document.getElementById('station') as HTMLSelectElement;
+        const notifyMmsInput = document.getElementById('notifyMms') as HTMLInputElement;
+        const notifyCalismaInput = document.getElementById('notifyCalisma') as HTMLInputElement;
+        const notifyVardiyaInput = document.getElementById('notifyVardiya') as HTMLInputElement;
+        const notifyKayipEsyaInput = document.getElementById('notifyKayipEsya') as HTMLInputElement;
+        const roleDisplay = document.getElementById('roleDisplay') as HTMLElement;
+        const createdAtDisplay = document.getElementById('createdAtDisplay') as HTMLElement;
+
+        if (fullNameInput) fullNameInput.value = data.user.full_name || '';
+        if (emailInput) emailInput.value = data.user.email || '';
+        if (stationInput) stationInput.value = data.user.istasyon || '';
+        if (notifyMmsInput) notifyMmsInput.checked = asBool(data.user.notify_mms, true);
+        if (notifyCalismaInput) notifyCalismaInput.checked = asBool(data.user.notify_calisma, true);
+        if (notifyVardiyaInput) notifyVardiyaInput.checked = asBool(data.user.notify_vardiya, true);
+        if (notifyKayipEsyaInput) notifyKayipEsyaInput.checked = asBool(data.user.notify_kayip_esya, true);
+
+        const roleMap: Record<string, string> = { admin: 'Admin', sef: 'Şef', gar_mudur: 'Gar Müdürü', user: 'Personel', personel: 'Personel' };
+        if (roleDisplay) roleDisplay.textContent = roleMap[data.user.role] || data.user.role;
+
+        if (data.user.created_at && createdAtDisplay) {
+          const date = new Date(data.user.created_at);
+          createdAtDisplay.textContent = date.toLocaleDateString('tr-TR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Profil yüklenemedi:', err);
+      showMessage('Profil bilgileri yüklenemedi', 'error');
+    }
+  }
+
+  // Password toggle
+  document.querySelectorAll('.password-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetId = btn.getAttribute('data-target');
+      if (!targetId) return;
+
+      const input = document.getElementById(targetId) as HTMLInputElement;
+      const eyeOpen = btn.querySelector('.eye-open') as HTMLElement;
+      const eyeClosed = btn.querySelector('.eye-closed') as HTMLElement;
+
+      if (!input || !eyeOpen || !eyeClosed) return;
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        eyeOpen.style.display = 'none';
+        eyeClosed.style.display = 'block';
+      } else {
+        input.type = 'password';
+        eyeOpen.style.display = 'block';
+        eyeClosed.style.display = 'none';
+      }
+    });
+  });
+
+  // Form submit
+  const form = document.getElementById('profileForm') as HTMLFormElement;
+  const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+  const btnText = saveBtn?.querySelector('.btn-text') as HTMLElement;
+  const btnLoading = saveBtn?.querySelector('.btn-loading') as HTMLElement;
+
+  if (!form || !saveBtn || !btnText || !btnLoading) {
+    console.error('Required form elements not found');
+  }
+
+  if (form && saveBtn && btnText && btnLoading) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const fullNameInput = document.getElementById('fullName') as HTMLInputElement;
+    const emailInput = document.getElementById('email') as HTMLInputElement;
+    const stationInput = document.getElementById('station') as HTMLSelectElement;
+    const notifyMmsInput = document.getElementById('notifyMms') as HTMLInputElement;
+    const notifyCalismaInput = document.getElementById('notifyCalisma') as HTMLInputElement;
+    const notifyVardiyaInput = document.getElementById('notifyVardiya') as HTMLInputElement;
+    const notifyKayipEsyaInput = document.getElementById('notifyKayipEsya') as HTMLInputElement;
+    const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
+    const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
+    const confirmPasswordInput = document.getElementById('confirmPassword') as HTMLInputElement;
+
+    if (!fullNameInput || !emailInput || !stationInput || !notifyMmsInput || !notifyCalismaInput || !notifyVardiyaInput || !notifyKayipEsyaInput || !currentPasswordInput || !newPasswordInput || !confirmPasswordInput) {
+      showMessage('Form elements not found', 'error');
+      return;
+    }
+
+    const fullName = fullNameInput.value.trim();
+    const email = emailInput.value.trim();
+    const station = stationInput.value;
+    const notifyMms = notifyMmsInput.checked;
+    const notifyCalisma = notifyCalismaInput.checked;
+    const notifyVardiya = notifyVardiyaInput.checked;
+    const notifyKayipEsya = notifyKayipEsyaInput.checked;
+    const currentPassword = currentPasswordInput.value;
+    const newPassword = newPasswordInput.value;
+    const confirmPassword = confirmPasswordInput.value;
+
+    // Validation
+    if (!fullName) {
+      showMessage('Ad Soyad alanı zorunludur', 'error');
+      return;
+    }
+
+    if (!email) {
+      showMessage('E-posta alanı zorunludur', 'error');
+      return;
+    }
+
+    // Password validation
+    if (newPassword || confirmPassword) {
+      if (!currentPassword) {
+        showMessage('Şifre değiştirmek için mevcut şifrenizi girmelisiniz', 'error');
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        showMessage('Yeni şifreler eşleşmiyor', 'error');
+        return;
+      }
+      if (newPassword.length < 6) {
+        showMessage('Yeni şifre en az 6 karakter olmalı', 'error');
+        return;
+      }
+    }
+
+    // Show loading
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline-flex';
+    saveBtn.disabled = true;
+
+    try {
+      const body: any = {
+        full_name: fullName,
+        email: email,
+        istasyon: station,
+        notify_mms: notifyMms,
+        notify_calisma: notifyCalisma,
+        notify_vardiya: notifyVardiya,
+        notify_kayip_esya: notifyKayipEsya
+      };
+
+      if (newPassword) {
+        body.current_password = currentPassword;
+        body.new_password = newPassword;
+      }
+
+      const res = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        showMessage('Profil başarıyla güncellendi!', 'success');
+        
+        // Clear password fields
+        const currentPasswordInput = document.getElementById('currentPassword') as HTMLInputElement;
+        const newPasswordInput = document.getElementById('newPassword') as HTMLInputElement;
+        const confirmPasswordInput = document.getElementById('confirmPassword') as HTMLInputElement;
+
+        if (currentPasswordInput) currentPasswordInput.value = '';
+        if (newPasswordInput) newPasswordInput.value = '';
+        if (confirmPasswordInput) confirmPasswordInput.value = '';
+
+        // Reload page after 1.5 seconds to update navbar
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        showMessage(data.error || 'Güncelleme hatası', 'error');
+      }
+    } catch (err) {
+      console.error('Güncelleme hatası:', err);
+      showMessage('Sunucu hatası', 'error');
+    } finally {
+      btnText.style.display = 'inline';
+      btnLoading.style.display = 'none';
+      saveBtn.disabled = false;
+    }
+  });
+  }
+
+  function showMessage(message: string, type: string): void {
+    const messageBox = document.getElementById('messageBox') as HTMLElement;
+    if (!messageBox) return;
+
+    messageBox.textContent = message;
+    messageBox.className = 'message-box ' + type;
+    messageBox.style.display = 'block';
+
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+      if (messageBox) {
+        messageBox.style.display = 'none';
+      }
+    }, 5000);
+  }
+
+  // Load profile on page load
+  loadProfile();
+
+</script>

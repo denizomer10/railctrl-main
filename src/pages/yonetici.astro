@@ -1,0 +1,1521 @@
+---
+const user = Astro.locals.user;
+if (!user || user.role !== 'admin') {
+  return Astro.redirect('/403');
+}
+const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
+---
+
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yönetici İşlemleri - TCDD</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1b2845" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
+    <script is:inline src={`/js/app-shell.js?v=${assetVersion}`}></script>
+    <script is:inline define:vars={{ assetVersion }}>
+      window.RailctrlShell?.init({ assetVersion });
+    </script>
+    <style is:global>
+      :root {
+        --bg: #f5f8ff;
+        --surface: #ffffff;
+        --surface-2: #f8fbff;
+        --line: #d9e4f7;
+        --text: #1f2a44;
+        --muted: #60708d;
+        --primary: #1d4ed8;
+        --primary-2: #2563eb;
+        --ok: #16a34a;
+        --danger: #dc2626;
+        --shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+        --glass-bg: rgba(255, 255, 255, 0.58);
+        --glass-bg-strong: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(148, 163, 184, 0.35);
+      }
+
+      html[data-theme='dark'] {
+        --bg: #0b1220;
+        --surface: #111827;
+        --surface-2: #0f172a;
+        --line: #2f3b51;
+        --text: #e5edf8;
+        --muted: #9fb0cc;
+        --primary: #3b82f6;
+        --primary-2: #60a5fa;
+        --ok: #22c55e;
+        --danger: #ef4444;
+        --shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+        --glass-bg: rgba(15, 23, 42, 0.68);
+        --glass-bg-strong: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(96, 165, 250, 0.25);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background:
+          radial-gradient(1000px 420px at 12% -10%, rgba(37, 99, 235, 0.12), transparent 70%),
+          radial-gradient(900px 380px at 100% -10%, rgba(14, 116, 144, 0.1), transparent 70%),
+          var(--bg);
+        overflow-x: hidden;
+      }
+
+      .admin-layout {
+        min-height: 100vh;
+        position: relative;
+        padding: 1rem;
+        overflow-x: clip;
+        max-width: 100%;
+      }
+
+      .sidebar {
+        width: min(300px, calc(100vw - 1.5rem));
+        border-radius: 20px;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg-strong);
+        color: var(--text);
+        -webkit-backdrop-filter: blur(14px) saturate(145%);
+        backdrop-filter: blur(14px) saturate(145%);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 20px 42px rgba(15, 23, 42, 0.22);
+        position: fixed;
+        left: 0.75rem;
+        top: 0.75rem;
+        bottom: 0.75rem;
+        z-index: 2100;
+        overflow: auto;
+        transform: translateX(calc(-100% - 1.1rem));
+        transition: transform 0.24s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .brand {
+        text-align: center;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--glass-border);
+      }
+
+      .brand img {
+        width: 180px;
+        max-width: 100%;
+        filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
+      }
+
+      html[data-theme='dark'] .brand img {
+        filter: brightness(0) invert(1) drop-shadow(0 8px 20px rgba(0,0,0,.35));
+      }
+
+      .brand h1 {
+        margin: 0.6rem 0 0;
+        font-size: 1.75rem;
+        color: var(--text);
+      }
+
+      .menu {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .mobile-menu-tools {
+        display: none;
+      }
+
+      .menu-btn {
+        appearance: none;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 0.7rem 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: .2s ease;
+      }
+
+      .menu-ico {
+        font-size: 0.95rem;
+        opacity: 0.9;
+      }
+
+      .menu-btn:hover,
+      .menu-btn.active {
+        background: linear-gradient(140deg, rgba(59,130,246,.22), rgba(14,165,233,.2));
+        border-color: color-mix(in srgb, var(--glass-border) 38%, #60a5fa 62%);
+      }
+
+      .right {
+        display: grid;
+        gap: 1rem;
+        grid-template-rows: auto 1fr;
+        transition: margin-left .24s ease;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .right.with-menu {
+        margin-left: 316px;
+      }
+
+      .topbar {
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 0.75rem 0.9rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .top-head {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-width: 0;
+      }
+
+      .topbar h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 0.52rem 0.75rem;
+        font-size: 0.83rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color: #fff;
+      }
+
+      .btn.soft {
+        background: var(--glass-bg);
+        color: var(--text);
+        border-color: var(--glass-border);
+      }
+
+      .btn.danger {
+        background: rgba(239, 68, 68, 0.14);
+        color: var(--danger);
+        border-color: rgba(239, 68, 68, 0.24);
+      }
+
+      .btn.icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.42rem;
+      }
+
+      .icon-only {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+      }
+
+      .refresh-icon {
+        display: inline-block;
+        font-size: 1rem;
+      }
+
+      .refresh-icon.spin {
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .theme-btn {
+        min-width: 130px;
+        justify-content: space-between;
+      }
+
+      .theme-pill {
+        width: 42px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid var(--glass-border);
+        background: rgba(15, 23, 42, 0.14);
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.25rem;
+        position: relative;
+      }
+
+      .theme-pill::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        left: 2px;
+        top: 2px;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        transition: transform 0.22s ease;
+      }
+
+      .theme-pill.to-light::after {
+        transform: translateX(20px);
+        background: linear-gradient(135deg, #fde68a, #f59e0b);
+      }
+
+      .theme-pill .sun,
+      .theme-pill .moon {
+        font-size: 0.72rem;
+        opacity: 0.8;
+      }
+
+      .audit-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .records-toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto;
+        gap: 0.45rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .records-pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.7rem;
+      }
+
+      .panel {
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 0.9rem;
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+        min-width: 0;
+      }
+
+      .panel-title {
+        margin: 0 0 0.65rem;
+        font-size: 1rem;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0,1fr));
+        gap: 0.65rem;
+      }
+
+      .card {
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        border-radius: 12px;
+        padding: 0.68rem;
+      }
+
+      .card .k { font-size: 0.78rem; color: var(--muted); }
+      .card .v { font-size: 1.4rem; font-weight: 800; margin-top: 0.2rem; }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 1rem;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0,1fr)) auto;
+        gap: 0.45rem;
+        min-width: 0;
+      }
+
+      input, select {
+        width: 100%;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 0.56rem 0.62rem;
+        font-size: 0.86rem;
+      }
+
+      .table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .82rem;
+      }
+      th, td { border-bottom: 1px solid var(--line); padding: .48rem .4rem; text-align: left; vertical-align: top; }
+      th { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .35px; }
+
+      td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .tag { display: inline-block; border-radius: 999px; padding: .16rem .48rem; font-size: .72rem; font-weight: 800; }
+      .tag.active { background: rgba(34,197,94,.15); color: var(--ok); }
+      .tag.passive { background: rgba(239,68,68,.14); color: var(--danger); }
+      .tag.role { background: rgba(59,130,246,.16); color: var(--primary); }
+
+      .actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+
+      .user-mobile-list {
+        display: none;
+      }
+
+      .user-mobile-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--glass-bg);
+        padding: 0.6rem;
+        margin-bottom: 0.55rem;
+      }
+
+      .user-mobile-row {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 0.4rem;
+        align-items: start;
+        padding: 0.3rem 0;
+        border-bottom: 1px dashed color-mix(in srgb, var(--line) 75%, transparent 25%);
+      }
+
+      .user-mobile-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .user-mobile-k {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+      }
+
+      .user-mobile-v {
+        min-width: 0;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        font-size: 0.84rem;
+      }
+
+      .user-mobile-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+      }
+
+      .user-mobile-actions .btn {
+        width: 100%;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        font-size: 0.76rem;
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        padding: .65rem .8rem;
+        box-shadow: var(--shadow);
+        z-index: 4000;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        display: grid;
+        place-items: center;
+        background: rgba(0,0,0,.35);
+      }
+
+      .modal-box {
+        width: min(560px, calc(100vw - 2rem));
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: .9rem;
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .menu-toggle {
+        min-width: 42px;
+      }
+
+      .mobile-drawer-toggle {
+        display: none;
+        position: fixed;
+        left: 0.85rem;
+        top: 0.85rem;
+        z-index: 2300;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg-strong);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.92rem;
+        font-weight: 800;
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .menu-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.28);
+        z-index: 2000;
+      }
+
+      html[data-theme='dark'] .menu-backdrop {
+        background: rgba(2, 6, 23, 0.48);
+      }
+
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .65rem;
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .5rem;
+      }
+
+      .full-span {
+        grid-column: span 2;
+      }
+
+      @media (max-width: 1200px) {
+        .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .split { grid-template-columns: 1fr; }
+        .form-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .records-toolbar { grid-template-columns: 1fr 1fr; }
+        .right.with-menu { margin-left: 0; }
+      }
+
+      @media (min-width: 1201px) {
+        .sidebar {
+          transform: translateX(0);
+        }
+
+        .menu-backdrop {
+          display: none;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .admin-layout { padding: .65rem; }
+        .cards { grid-template-columns: 1fr; }
+        .mobile-drawer-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+        .topbar {
+          padding-top: 3rem;
+        }
+        .top-head {
+          width: 100%;
+        }
+        .top-head > div {
+          min-width: 0;
+        }
+        .topbar h2 {
+          font-size: 1.05rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .top-actions {
+          display: none;
+        }
+        .btn {
+          min-height: 40px;
+        }
+        .form-grid { grid-template-columns: 1fr; }
+        .records-toolbar { grid-template-columns: 1fr; }
+        .modal-grid { grid-template-columns: 1fr; }
+        .full-span { grid-column: span 1; }
+        .table-wrap {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+        .table-wrap table {
+          min-width: 760px;
+          table-layout: auto;
+        }
+        .table-wrap table.users-table {
+          min-width: 100%;
+          width: 100%;
+        }
+        .table-wrap.users-desktop-table {
+          display: none;
+        }
+        .user-mobile-list {
+          display: block;
+        }
+        .sidebar {
+          width: min(300px, calc(100vw - 1rem));
+          left: 0.5rem;
+          top: 0.5rem;
+          bottom: 0.5rem;
+        }
+        .mobile-menu-tools {
+          display: grid;
+          gap: 0.5rem;
+          margin-top: auto;
+          padding-top: 0.65rem;
+          border-top: 1px solid var(--glass-border);
+        }
+        .mobile-menu-tools .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .table-wrap table {
+          min-width: 700px;
+          font-size: 0.79rem;
+        }
+        .user-mobile-row {
+          grid-template-columns: 92px minmax(0, 1fr);
+        }
+        .user-mobile-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="adminApp"></div>
+
+    <script is:inline>
+      (() => {
+        const stored = localStorage.getItem('theme');
+        const fallback = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', stored || fallback);
+      })();
+    </script>
+    <script is:inline>
+      window.RailctrlShell?.finalize({ enablePwa: true, responsiveTables: true });
+    </script>
+    <script is:inline src="/vendor/vue.global.prod.js"></script>
+    <script is:inline>
+      (() => {
+        const root = document.getElementById('adminApp');
+        const showFatal = (message) => {
+          if (!root) return;
+          root.innerHTML = `<div style="max-width:780px;margin:10vh auto;padding:1rem;border:1px solid #fca5a5;background:#fff1f2;border-radius:12px;color:#7f1d1d;">${message}</div>`;
+        };
+
+        if (!window.Vue || !window.Vue.createApp) {
+          showFatal('Vue yüklenemedi. /vendor/vue.global.prod.js kontrol edin.');
+          return;
+        }
+
+        const { createApp } = window.Vue;
+
+        createApp({
+          data() {
+            return {
+              activeTab: 'dashboard',
+              menuOpen: false,
+              isDesktop: window.innerWidth > 1200,
+              users: [],
+              logs: [],
+              feedbacks: [],
+              systemRecords: [],
+              files: [],
+              recordsLoading: false,
+              recordsPage: 1,
+              recordsLimit: 100,
+              recordsTotalCount: 0,
+              recordsTotalPages: 1,
+              recordsModule: 'mms',
+              recordsSearch: '',
+              report: null,
+              showCreateUserModal: false,
+              newUser: { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' },
+              editUser: null,
+              theme: document.documentElement.getAttribute('data-theme') || 'light',
+              toast: '',
+              lastSync: null,
+              autoTimer: null,
+              resizeHandler: null,
+              loading: false,
+              stations: [
+                'Halkalı',
+                'Mustafa Kemal',
+                'Küçükçekmece',
+                'Florya',
+                'Florya Akvaryum',
+                'Yeşilköy',
+                'Yeşilyurt',
+                'Ataköy',
+                'Bakırköy',
+                'Yenimahalle',
+                'Zeytinburnu',
+                'Kazlıçeşme',
+                'Yenikapı',
+                'Sirkeci',
+                'Üsküdar',
+                'Ayrılık Çeşmesi',
+                'Söğütlüçeşme',
+                'Acıbadem',
+                'Ünalan',
+                'Göztepe',
+                'Feneryolu',
+                'Bostancı',
+                'Küçükyalı',
+                'İdealtepe',
+                'Süreyya Plajı',
+                'Maltepe',
+                'Cevizli',
+                'Atalar',
+                'Kartal',
+                'Yunus',
+                'Pendik',
+                'Tersane',
+                'Güzelyalı',
+                'Aydıntepe',
+                'İçmeler',
+                'Tuzla',
+                'Çayırova',
+                'Osmangazi',
+                'Gebze',
+              ],
+            };
+          },
+          computed: {
+            lastSyncText() {
+              return this.lastSync ? new Date(this.lastSync).toLocaleString('tr-TR') : '-';
+            },
+            topTitle() {
+              if (this.activeTab === 'users') return 'Personel Yönetimi';
+              if (this.activeTab === 'feedback') return 'Geri Bildirimler';
+              if (this.activeTab === 'records') return 'Sistem Kayıtları';
+              if (this.activeTab === 'files') return 'Dosya Yönetimi';
+              if (this.activeTab === 'audit') return 'Audit Kayıtları';
+              return 'Yönetici Paneli';
+            }
+          },
+          mounted() {
+            this.handleResize();
+            this.resizeHandler = () => this.handleResize();
+            window.addEventListener('resize', this.resizeHandler, { passive: true });
+            this.refreshAll();
+            this.autoTimer = setInterval(() => this.refreshAll(false), 30000);
+          },
+          beforeUnmount() {
+            if (this.autoTimer) clearInterval(this.autoTimer);
+            if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
+          },
+          methods: {
+            async api(path, options = {}) {
+              const res = await fetch(path, {
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                ...options,
+              });
+              const data = await res.json().catch(() => ({}));
+              if (!res.ok) throw new Error(data.error || 'İşlem başarısız');
+              return data;
+            },
+            notify(msg) {
+              this.toast = msg;
+              setTimeout(() => {
+                if (this.toast === msg) this.toast = '';
+              }, 2400);
+            },
+            async refreshAll(showToast = false) {
+              try {
+                this.loading = true;
+                const [u, l, f, r, fs] = await Promise.all([
+                  this.api('/api/admin/users'),
+                  this.api('/api/admin/audit-logs?limit=300'),
+                  this.api('/api/feedback'),
+                  this.api('/api/admin/report'),
+                  this.api('/api/admin/files'),
+                ]);
+                this.users = u.users || [];
+                this.logs = l.logs || [];
+                this.feedbacks = f.feedbacks || [];
+                this.report = r.report || null;
+                this.files = fs.files || [];
+                await this.loadSystemRecords();
+                this.lastSync = Date.now();
+                if (showToast) this.notify('Veriler yenilendi');
+              } catch (error) {
+                this.notify(error.message || 'Veri alınamadı');
+              } finally {
+                this.loading = false;
+              }
+            },
+            toggleTheme() {
+              this.theme = this.theme === 'dark' ? 'light' : 'dark';
+              document.documentElement.setAttribute('data-theme', this.theme);
+              localStorage.setItem('theme', this.theme);
+            },
+            handleResize() {
+              this.isDesktop = window.innerWidth > 1200;
+              this.menuOpen = this.isDesktop;
+            },
+            toggleMenu() {
+              if (this.isDesktop) return;
+              this.menuOpen = !this.menuOpen;
+            },
+            closeMenu() {
+              if (this.isDesktop) return;
+              this.menuOpen = false;
+            },
+            setTab(tab) {
+              this.activeTab = tab;
+              if (tab === 'records') {
+                this.recordsPage = 1;
+                this.loadSystemRecords();
+              }
+              if (!this.isDesktop) this.menuOpen = false;
+            },
+            async loadSystemRecords() {
+              this.recordsLoading = true;
+              try {
+                const params = new URLSearchParams();
+                params.set('page', String(this.recordsPage));
+                params.set('limit', String(this.recordsLimit));
+                if (this.recordsModule) params.set('module', this.recordsModule);
+                if (this.recordsSearch.trim()) params.set('search', this.recordsSearch.trim());
+                const payload = await this.api('/api/admin/system-records?' + params.toString());
+                this.systemRecords = payload.records || [];
+                this.recordsTotalCount = payload.pagination?.totalCount || 0;
+                this.recordsTotalPages = payload.pagination?.totalPages || 1;
+              } catch (error) {
+                this.notify(error.message || 'Sistem kayıtları alınamadı');
+              } finally {
+                this.recordsLoading = false;
+              }
+            },
+            applyRecordFilters() {
+              this.recordsPage = 1;
+              this.loadSystemRecords();
+            },
+            clearRecordFilters() {
+              this.recordsModule = 'mms';
+              this.recordsSearch = '';
+              this.recordsPage = 1;
+              this.loadSystemRecords();
+            },
+            prevRecordsPage() {
+              if (this.recordsPage <= 1) return;
+              this.recordsPage -= 1;
+              this.loadSystemRecords();
+            },
+            nextRecordsPage() {
+              if (this.recordsPage >= this.recordsTotalPages) return;
+              this.recordsPage += 1;
+              this.loadSystemRecords();
+            },
+            recordsApiBaseParams() {
+              const params = new URLSearchParams();
+              if (this.recordsModule) params.set('module', this.recordsModule);
+              if (this.recordsSearch.trim()) params.set('search', this.recordsSearch.trim());
+              return params;
+            },
+            exportSystemRecordsCsv() {
+              const params = this.recordsApiBaseParams();
+              params.set('format', 'csv');
+              params.set('export_limit', '20000');
+              window.location.href = '/api/admin/system-records?' + params.toString();
+            },
+            exportSystemRecordsExcel() {
+              const params = this.recordsApiBaseParams();
+              params.set('format', 'excel');
+              params.set('export_limit', '20000');
+              window.location.href = '/api/admin/system-records?' + params.toString();
+            },
+            recordApiPath(moduleKey, recordId) {
+              const id = encodeURIComponent(String(recordId));
+              if (moduleKey === 'mms') return '/api/mms/' + id;
+              if (moduleKey === 'calisma') return '/api/calisma-izni/' + id;
+              if (moduleKey === 'dahili') return '/api/dahili-numaralar/' + id;
+              if (moduleKey === 'vardiya') return '/api/vardiya/' + id;
+              if (moduleKey === 'kayip_esya') return '/api/kayip-esya/' + id;
+              return '';
+            },
+            async editSystemRecord(record) {
+              const id = encodeURIComponent(String(record.record_id));
+              if (record.module_key === 'mms') {
+                window.location.href = `/mms?editId=${id}&src=admin-records`;
+                return;
+              }
+              if (record.module_key === 'calisma') {
+                window.location.href = `/calisma-izni?editId=${id}&src=admin-records`;
+                return;
+              }
+              if (record.module_key === 'dahili') {
+                window.location.href = `/dahili-numaralar?editId=${id}&src=admin-records`;
+                return;
+              }
+              if (record.module_key === 'kayip_esya') {
+                window.location.href = `/kayip-esya?editId=${id}&src=admin-records`;
+                return;
+              }
+              if (record.module_key === 'vardiya') {
+                window.location.href = `/vardiya?editId=${id}&src=admin-records`;
+                return;
+              }
+            },
+            async deleteSystemRecord(record) {
+              const apiPath = this.recordApiPath(record.module_key, record.record_id);
+              if (!apiPath) return;
+              if (!confirm(`${record.module_label} kaydı (#${record.record_id}) kaldırılsın mı?`)) return;
+              try {
+                await this.api(apiPath, { method: 'DELETE' });
+                this.notify('Kayıt kaldırıldı');
+                await this.loadSystemRecords();
+              } catch (error) {
+                this.notify(error.message || 'Kayıt kaldırılamadı');
+              }
+            },
+            goHome() {
+              window.location.href = '/';
+            },
+            escapeHtml(value) {
+              return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+            },
+            exportAuditExcel() {
+              window.location.href = '/api/admin/audit-logs?format=excel&limit=5000';
+            },
+            exportAuditCsv() {
+              window.location.href = '/api/admin/audit-logs?format=csv&limit=5000';
+            },
+            async clearAuditLogs() {
+              if (!confirm('Tüm audit kayıtları silinsin mi? Bu işlem geri alınamaz.')) return;
+              try {
+                await this.api('/api/admin/audit-logs', { method: 'DELETE' });
+                this.logs = [];
+                this.notify('Audit kayıtları temizlendi');
+              } catch (error) {
+                this.notify(error.message || 'Audit kayıtları silinemedi');
+              }
+            },
+            async createUser() {
+              if (!this.newUser.name || !this.newUser.email || !this.newUser.password) {
+                this.notify('Ad, email ve şifre zorunlu');
+                return;
+              }
+              try {
+                await this.api('/api/admin/users', {
+                  method: 'POST',
+                  body: JSON.stringify(this.newUser),
+                });
+                this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' };
+                this.showCreateUserModal = false;
+                this.notify('Personel eklendi');
+                await this.refreshAll();
+              } catch (error) {
+                this.notify(error.message || 'Personel eklenemedi');
+              }
+            },
+            openCreateUser() {
+              this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' };
+              this.showCreateUserModal = true;
+            },
+            closeCreateUser() {
+              this.showCreateUserModal = false;
+            },
+            openEdit(user) {
+              this.editUser = {
+                id: user.id,
+                name: user.name || '',
+                email: user.email || '',
+                role: user.role || 'user',
+                gorevi: user.gorevi || 'Personel',
+                istasyon: user.istasyon || '',
+                sicil_no: user.sicil_no || '',
+                kky_no: user.kky_no || '',
+                bagli_birim: user.bagli_birim || '',
+                password: '',
+              };
+            },
+            closeEdit() {
+              this.editUser = null;
+            },
+            async saveEdit() {
+              if (!this.editUser) return;
+              try {
+                const payload = {
+                  name: this.editUser.name,
+                  email: this.editUser.email,
+                  role: this.editUser.role,
+                  gorevi: this.editUser.gorevi,
+                  istasyon: this.editUser.istasyon,
+                  sicil_no: this.editUser.sicil_no,
+                  kky_no: this.editUser.kky_no,
+                  bagli_birim: this.editUser.bagli_birim,
+                  password: this.editUser.password || undefined,
+                };
+                await this.api('/api/admin/users/' + this.editUser.id, {
+                  method: 'PUT',
+                  body: JSON.stringify(payload),
+                });
+                this.notify('Personel güncellendi');
+                this.closeEdit();
+                await this.refreshAll();
+              } catch (error) {
+                this.notify(error.message || 'Güncelleme hatası');
+              }
+            },
+            async toggleUser(user) {
+              try {
+                await this.api('/api/admin/users/' + user.id + '/toggle', { method: 'POST' });
+                this.notify('Durum güncellendi');
+                await this.refreshAll();
+              } catch (error) {
+                this.notify(error.message || 'Durum güncellenemedi');
+              }
+            },
+            async deleteUser(user) {
+              if (!confirm(user.name + ' silinsin mi?')) return;
+              try {
+                await this.api('/api/admin/users/' + user.id, { method: 'DELETE' });
+                this.notify('Kullanıcı silindi');
+                await this.refreshAll();
+              } catch (error) {
+                this.notify(error.message || 'Silinemedi');
+              }
+            },
+            async deleteFeedback(feedback) {
+              if (!confirm('Geri bildirim silinsin mi?')) return;
+              try {
+                await this.api('/api/feedback/' + feedback.id, { method: 'DELETE' });
+                this.notify('Geri bildirim silindi');
+                await this.refreshAll();
+              } catch (error) {
+                this.notify(error.message || 'Geri bildirim silinemedi');
+              }
+            },
+            async refreshFiles() {
+              try {
+                const payload = await this.api('/api/admin/files');
+                this.files = payload.files || [];
+              } catch (error) {
+                this.notify(error.message || 'Dosyalar alınamadı');
+              }
+            },
+            async deleteFile(file) {
+              if (!confirm(file.name + ' dosyası silinsin mi?')) return;
+              try {
+                await this.api('/api/admin/files', {
+                  method: 'DELETE',
+                  body: JSON.stringify({ name: file.name }),
+                });
+                this.notify('Dosya silindi');
+                await this.refreshFiles();
+              } catch (error) {
+                this.notify(error.message || 'Dosya silinemedi');
+              }
+            },
+            formatFileSize(bytes) {
+              const size = Number(bytes || 0);
+              if (size < 1024) return size + ' B';
+              if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+              return (size / (1024 * 1024)).toFixed(2) + ' MB';
+            },
+            fmtDate(value) {
+              if (!value) return '-';
+              return new Date(value).toLocaleString('tr-TR');
+            },
+          },
+          template: `
+            <div class="admin-layout">
+              <div class="menu-backdrop" v-if="menuOpen && !isDesktop" @click="closeMenu"></div>
+              <button v-if="!isDesktop" class="mobile-drawer-toggle" @click="toggleMenu" title="Menü">
+                <span>☰</span>
+                <span>Menü</span>
+              </button>
+
+              <aside class="sidebar" :class="{ open: menuOpen }">
+                <div class="brand">
+                  <img src="/logo.png" alt="TCDD" />
+                  <h1>Yönetici İşlemleri</h1>
+                </div>
+                <div class="menu">
+                  <button class="menu-btn" :class="{active:activeTab==='dashboard'}" @click="setTab('dashboard')"><span class="menu-ico">📊</span><span>Genel Bakış</span></button>
+                  <button class="menu-btn" :class="{active:activeTab==='users'}" @click="setTab('users')"><span class="menu-ico">👤</span><span>Personel İşlemleri</span></button>
+                  <button class="menu-btn" :class="{active:activeTab==='feedback'}" @click="setTab('feedback')"><span class="menu-ico">💬</span><span>Geri Bildirimler</span></button>
+                  <button class="menu-btn" :class="{active:activeTab==='records'}" @click="setTab('records')"><span class="menu-ico">🗂️</span><span>Sistem Kayıtları</span></button>
+                  <button class="menu-btn" :class="{active:activeTab==='files'}" @click="setTab('files')"><span class="menu-ico">📁</span><span>Dosya Yönetimi</span></button>
+                  <button class="menu-btn" :class="{active:activeTab==='audit'}" @click="setTab('audit')"><span class="menu-ico">🧾</span><span>Audit Kayıtları</span></button>
+                  <button class="menu-btn" @click="goHome"><span class="menu-ico">🏠</span><span>Ana Sayfa</span></button>
+                </div>
+                <div class="mobile-menu-tools" v-if="!isDesktop">
+                  <button class="btn soft icon" @click="refreshAll(true); closeMenu()" title="Şimdi Yenile">
+                    <span class="refresh-icon" :class="{ spin: loading }">↻</span>
+                    <span>Yenile</span>
+                  </button>
+                  <button class="btn soft icon theme-btn" @click="toggleTheme" title="Tema Değiştir">
+                    <span class="theme-pill" :class="theme === 'dark' ? 'to-light' : 'to-dark'">
+                      <span class="sun">☀</span>
+                      <span class="moon">☾</span>
+                    </span>
+                    <span>{{ theme === 'dark' ? 'Açık Tema' : 'Gece Tema' }}</span>
+                  </button>
+                </div>
+              </aside>
+
+              <main class="right" :class="{ 'with-menu': menuOpen }">
+                <div class="topbar">
+                  <div class="top-head">
+                    <div>
+                      <h2>{{ topTitle }}</h2>
+                      <div class="muted">Son çekilme: {{ lastSyncText }} • Otomatik yenileme: 30 sn</div>
+                    </div>
+                  </div>
+                  <div class="top-actions" v-if="isDesktop">
+                    <button class="btn soft icon" @click="refreshAll(true)" title="Şimdi Yenile">
+                      <span class="refresh-icon" :class="{ spin: loading }">↻</span>
+                      <span>Yenile</span>
+                    </button>
+                    <button class="btn soft icon theme-btn" @click="toggleTheme" title="Tema Değiştir">
+                      <span class="theme-pill" :class="theme === 'dark' ? 'to-light' : 'to-dark'">
+                        <span class="sun">☀</span>
+                        <span class="moon">☾</span>
+                      </span>
+                      <span>{{ theme === 'dark' ? 'Açık Tema' : 'Gece Tema' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <section v-if="activeTab==='dashboard'" class="split">
+                  <div class="panel">
+                    <h3 class="panel-title">📈 Sistem Özeti</h3>
+                    <div class="cards" v-if="report">
+                      <div class="card"><div class="k">Toplam Kullanıcı</div><div class="v">{{ report.users }}</div></div>
+                      <div class="card"><div class="k">MMS Kayıt</div><div class="v">{{ report.mms }}</div></div>
+                      <div class="card"><div class="k">Çalışma Kayıt</div><div class="v">{{ report.calisma }}</div></div>
+                      <div class="card"><div class="k">Kayıp Eşya</div><div class="v">{{ report.kayip_esya }}</div></div>
+                      <div class="card"><div class="k">Notlar</div><div class="v">{{ report.notlar }}</div></div>
+                      <div class="card"><div class="k">Geri Bildirim</div><div class="v">{{ report.geri_bildirimler }}</div></div>
+                    </div>
+                    <div class="empty" v-else>Rapor verisi yok</div>
+                  </div>
+
+                  <div class="panel">
+                    <h3 class="panel-title">Son 10 Audit</h3>
+                    <div class="table-wrap" v-if="logs.length">
+                      <table>
+                        <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Aksiyon</th></tr></thead>
+                        <tbody>
+                          <tr v-for="l in logs.slice(0,10)" :key="l.id">
+                            <td>{{ fmtDate(l.created_at) }}</td>
+                            <td>{{ l.user_name || l.user_email || '-' }}</td>
+                            <td>{{ l.action }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="empty" v-else>Kayıt yok</div>
+                  </div>
+                </section>
+
+                <section v-else-if="activeTab==='users'" class="panel" style="display:grid;gap:1rem;">
+                  <div>
+                    <h3 class="panel-title">➕ Personel Ekle</h3>
+                    <button class="btn primary" @click="openCreateUser">Yeni Personel Ekle</button>
+                  </div>
+
+                  <div>
+                    <h3 class="panel-title">👥 Personel Listesi</h3>
+                    <div class="table-wrap users-desktop-table" v-if="users.length && isDesktop">
+                      <table class="users-table">
+                        <thead>
+                          <tr>
+                            <th>Ad Soyad</th>
+                            <th>Email</th>
+                            <th>Rol</th>
+                            <th>Görevi</th>
+                            <th>İstasyon</th>
+                            <th>Sicil / KKY</th>
+                            <th>Bağlı Birim</th>
+                            <th>Durum</th>
+                            <th>Son Giriş</th>
+                            <th>İşlem</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="u in users" :key="u.id">
+                            <td>{{ u.name }}</td>
+                            <td>{{ u.email }}</td>
+                            <td><span class="tag role">{{ u.role }}</span></td>
+                            <td>{{ u.gorevi || '-' }}</td>
+                            <td>{{ u.istasyon || '-' }}</td>
+                            <td>{{ (u.sicil_no || '-') + ' / ' + (u.kky_no || '-') }}</td>
+                            <td>{{ u.bagli_birim || '-' }}</td>
+                            <td><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></td>
+                            <td>{{ fmtDate(u.last_login) }}</td>
+                            <td>
+                              <div class="actions">
+                                <button class="btn soft" @click="openEdit(u)">Düzenle</button>
+                                <button class="btn soft" @click="toggleUser(u)">{{ u.is_active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
+                                <button class="btn danger" @click="deleteUser(u)">Sil</button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="user-mobile-list" v-else-if="users.length && !isDesktop">
+                      <div class="user-mobile-card" v-for="u in users" :key="'m-' + u.id">
+                        <div class="user-mobile-row"><div class="user-mobile-k">Ad Soyad</div><div class="user-mobile-v">{{ u.name }}</div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">E-posta</div><div class="user-mobile-v">{{ u.email }}</div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">{{ u.role }}</span></div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">Görevi</div><div class="user-mobile-v">{{ u.gorevi || '-' }}</div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">İstasyon</div><div class="user-mobile-v">{{ u.istasyon || '-' }}</div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">Durum</div><div class="user-mobile-v"><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">Son Giriş</div><div class="user-mobile-v">{{ fmtDate(u.last_login) }}</div></div>
+                        <div class="user-mobile-row">
+                          <div class="user-mobile-k">İşlem</div>
+                          <div class="user-mobile-v">
+                            <div class="user-mobile-actions">
+                              <button class="btn soft" @click="openEdit(u)">Düzenle</button>
+                              <button class="btn soft" @click="toggleUser(u)">{{ u.is_active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
+                              <button class="btn danger" @click="deleteUser(u)">Sil</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="empty" v-else>Personel yok</div>
+                  </div>
+                </section>
+
+                <section v-else-if="activeTab==='feedback'" class="panel">
+                  <h3 class="panel-title">Geri Bildirimler</h3>
+                  <div class="table-wrap" v-if="feedbacks.length">
+                    <table>
+                      <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>İstasyon</th><th>Mesaj</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="f in feedbacks" :key="f.id">
+                          <td>{{ fmtDate(f.created_at) }}</td>
+                          <td>{{ f.full_name || '-' }}</td>
+                          <td>{{ f.station || '-' }}</td>
+                          <td>{{ f.mesaj }}</td>
+                          <td><button class="btn danger" @click="deleteFeedback(f)">Sil</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty" v-else>Geri bildirim yok</div>
+                </section>
+
+                <section v-else-if="activeTab==='records'" class="panel">
+                  <h3 class="panel-title">Sistem Genel Kayıtları</h3>
+                  <div class="audit-actions">
+                    <button class="btn soft icon" @click="exportSystemRecordsExcel()"><span>📊</span><span>Excel Rapor</span></button>
+                    <button class="btn soft icon" @click="exportSystemRecordsCsv()"><span>📄</span><span>CSV Rapor</span></button>
+                  </div>
+                  <div class="records-toolbar">
+                    <select v-model="recordsModule" @change="applyRecordFilters">
+                      <option value="mms">MMS</option>
+                      <option value="calisma">Çalışma İzni</option>
+                      <option value="dahili">Dahili Numara</option>
+                      <option value="vardiya">Vardiya</option>
+                      <option value="kayip_esya">Kayıp Eşya</option>
+                    </select>
+                    <input v-model="recordsSearch" placeholder="Kayıt, konum, kullanıcı ara" @keyup.enter="applyRecordFilters" />
+                    <div class="muted" style="display:flex;align-items:center;padding:0 .2rem;">Toplam: {{ recordsTotalCount }}</div>
+                    <button class="btn soft" @click="clearRecordFilters">Temizle</button>
+                    <button class="btn primary" @click="applyRecordFilters">Filtrele</button>
+                  </div>
+                  <div class="table-wrap" v-if="systemRecords.length">
+                    <table v-if="recordsModule==='mms'">
+                      <thead><tr><th>MMS No</th><th>Arıza Tanımı</th><th>İstasyon</th><th>Durum</th><th>Bildiren</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
+                          <td>{{ r.details?.mms_numarasi || '-' }}</td>
+                          <td>{{ r.details?.ariza_tanimi || '-' }}</td>
+                          <td>{{ r.details?.istasyon || '-' }}</td>
+                          <td>{{ r.details?.durum || '-' }}</td>
+                          <td>{{ r.details?.bildiren || r.creator_name || '-' }}</td>
+                          <td>{{ fmtDate(r.created_at) }}</td>
+                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table v-else-if="recordsModule==='calisma'">
+                      <thead><tr><th>MMS No</th><th>Çalışma Kodu</th><th>Yapılacak İş</th><th>Çalışanlar</th><th>İstasyon</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
+                          <td>{{ r.details?.mms_numarasi || '-' }}</td>
+                          <td>{{ r.details?.calisma_kodu || '-' }}</td>
+                          <td>{{ r.details?.yapilacak_is || '-' }}</td>
+                          <td>{{ r.details?.calisanlar || '-' }}</td>
+                          <td>{{ r.details?.istasyon || '-' }}</td>
+                          <td>{{ fmtDate(r.created_at) }}</td>
+                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table v-else-if="recordsModule==='dahili'">
+                      <thead><tr><th>Dahili Numara</th><th>Birim</th><th>Açıklama</th><th>Oluşturan</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
+                          <td>{{ r.details?.dahili_numara || '-' }}</td>
+                          <td>{{ r.details?.birim || '-' }}</td>
+                          <td>{{ r.details?.aciklama || '-' }}</td>
+                          <td>{{ r.creator_name || '-' }}</td>
+                          <td>{{ fmtDate(r.created_at) }}</td>
+                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table v-else-if="recordsModule==='vardiya'">
+                      <thead><tr><th>İstasyon</th><th>Ay / Yıl</th><th>Personel Sayısı</th><th>Oluşturan</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
+                          <td>{{ r.details?.istasyon || '-' }}</td>
+                          <td>{{ r.details?.ay || '-' }} / {{ r.details?.yil || '-' }}</td>
+                          <td>{{ r.details?.personel_sayisi || 0 }}</td>
+                          <td>{{ r.creator_name || '-' }}</td>
+                          <td>{{ fmtDate(r.created_at) }}</td>
+                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <table v-else>
+                      <thead><tr><th>Belge No</th><th>Eşya Tanımı</th><th>Durum</th><th>Teslim Alan</th><th>Tarih</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
+                          <td>{{ r.details?.belge_no || '-' }}</td>
+                          <td>{{ r.details?.esya_tanimi || '-' }}</td>
+                          <td>{{ r.details?.durumu || '-' }}</td>
+                          <td>{{ r.details?.teslim_alan || '-' }}</td>
+                          <td>{{ fmtDate(r.created_at) }}</td>
+                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty" v-else-if="!recordsLoading">Sistem kaydı bulunamadı</div>
+                  <div class="empty" v-else>Yükleniyor...</div>
+                  <div class="records-pager">
+                    <button class="btn soft" :disabled="recordsPage <= 1 || recordsLoading" @click="prevRecordsPage">Önceki</button>
+                    <div class="muted">Sayfa {{ recordsPage }} / {{ recordsTotalPages }}</div>
+                    <button class="btn soft" :disabled="recordsPage >= recordsTotalPages || recordsLoading" @click="nextRecordsPage">Sonraki</button>
+                  </div>
+                </section>
+
+                <section v-else-if="activeTab==='files'" class="panel">
+                  <h3 class="panel-title">Public Files Yönetimi</h3>
+                  <div class="audit-actions">
+                    <button class="btn soft icon" @click="refreshFiles()"><span>↻</span><span>Dosyaları Yenile</span></button>
+                  </div>
+                  <div class="table-wrap" v-if="files.length">
+                    <table>
+                      <thead><tr><th>Dosya</th><th>Boyut</th><th>Güncelleme</th><th>Bağlantı</th><th>İşlem</th></tr></thead>
+                      <tbody>
+                        <tr v-for="f in files" :key="f.name">
+                          <td>{{ f.name }}</td>
+                          <td>{{ formatFileSize(f.size) }}</td>
+                          <td>{{ fmtDate(f.modifiedAt) }}</td>
+                          <td><a :href="f.url" target="_blank" rel="noopener noreferrer" class="btn soft">Aç</a></td>
+                          <td><button class="btn danger" @click="deleteFile(f)">Sil</button></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty" v-else>public/files içinde dosya bulunamadı</div>
+                </section>
+
+                <section v-else class="panel">
+                  <h3 class="panel-title">Audit Kayıtları</h3>
+                  <div class="audit-actions">
+                    <button class="btn soft icon" @click="exportAuditExcel()"><span>📊</span><span>Excel'e Aktar</span></button>
+                    <button class="btn soft icon" @click="exportAuditCsv()"><span>📄</span><span>CSV Olarak Aktar</span></button>
+                    <button class="btn danger icon" @click="clearAuditLogs()"><span>🗑</span><span>Tümünü Sil</span></button>
+                  </div>
+                  <div class="table-wrap" v-if="logs.length">
+                    <table>
+                      <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Aksiyon</th><th>Kaynak</th><th>IP</th></tr></thead>
+                      <tbody>
+                        <tr v-for="l in logs" :key="l.id">
+                          <td>{{ fmtDate(l.created_at) }}</td>
+                          <td>{{ l.user_name || l.user_email || '-' }}</td>
+                          <td>{{ l.action }}</td>
+                          <td>{{ l.resource_type || '-' }} #{{ l.resource_id || '-' }}</td>
+                          <td>{{ l.ip_address || '-' }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="empty" v-else>Audit kaydı bulunamadı</div>
+                </section>
+              </main>
+
+              <div class="modal" v-if="showCreateUserModal">
+                <div class="modal-box">
+                  <div class="modal-head">
+                    <strong>Yeni Personel Ekle</strong>
+                    <button class="btn soft" @click="closeCreateUser">Kapat</button>
+                  </div>
+                  <div class="modal-grid">
+                    <input v-model="newUser.name" placeholder="Ad Soyad" />
+                    <input v-model="newUser.email" placeholder="E-posta" />
+                    <input v-model="newUser.password" type="password" placeholder="Şifre" />
+                    <select v-model="newUser.gorevi">
+                      <option value="Şef">Şef</option>
+                      <option value="İstasyon Operasyon Sorumlusu">İstasyon Operasyon Sorumlusu</option>
+                      <option value="Gar Müdürü">Gar Müdürü</option>
+                      <option value="Personel">Personel</option>
+                    </select>
+                    <select v-model="newUser.role">
+                      <option value="user">Personel Yetkisi</option>
+                      <option value="sef">Şef Yetkisi</option>
+                      <option value="gar_mudur">Gar Müdürü Yetkisi</option>
+                      <option value="admin">Admin Yetkisi</option>
+                    </select>
+                    <select v-model="newUser.istasyon">
+                      <option value="">İstasyon</option>
+                      <option v-for="s in stations" :key="'new-' + s" :value="s">{{ s }}</option>
+                    </select>
+                    <input v-model="newUser.sicil_no" placeholder="Sicil No" />
+                    <input v-model="newUser.kky_no" placeholder="KKY No" />
+                    <input v-model="newUser.bagli_birim" placeholder="Bağlı Birim" />
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+                    <button class="btn soft" @click="closeCreateUser">İptal</button>
+                    <button class="btn primary" @click="createUser">Oluştur</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="modal" v-if="editUser">
+                <div class="modal-box">
+                  <div class="modal-head">
+                    <strong>Personel Düzenle</strong>
+                    <button class="btn soft" @click="closeEdit">Kapat</button>
+                  </div>
+                  <div class="modal-grid">
+                    <input v-model="editUser.name" placeholder="Ad Soyad" />
+                    <input v-model="editUser.email" placeholder="E-posta" />
+                    <select v-model="editUser.gorevi">
+                      <option value="Şef">Şef</option>
+                      <option value="İstasyon Operasyon Sorumlusu">İstasyon Operasyon Sorumlusu</option>
+                      <option value="Gar Müdürü">Gar Müdürü</option>
+                      <option value="Personel">Personel</option>
+                    </select>
+                    <select v-model="editUser.role">
+                      <option value="user">Personel</option>
+                      <option value="sef">Şef</option>
+                      <option value="gar_mudur">Gar Müdürü</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <select v-model="editUser.istasyon">
+                      <option value="">İstasyon</option>
+                      <option v-for="s in stations" :key="s" :value="s">{{ s }}</option>
+                    </select>
+                    <input v-model="editUser.sicil_no" placeholder="Sicil No" />
+                    <input v-model="editUser.kky_no" placeholder="KKY No" />
+                    <input v-model="editUser.bagli_birim" placeholder="Bağlı Birim" />
+                    <input class="full-span" v-model="editUser.password" type="password" placeholder="Yeni şifre (opsiyonel)" />
+                  </div>
+                  <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+                    <button class="btn soft" @click="closeEdit">İptal</button>
+                    <button class="btn primary" @click="saveEdit">Kaydet</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="toast" v-if="toast">{{ toast }}</div>
+            </div>
+          `,
+        }).mount('#adminApp');
+      })();
+    </script>
+  </body>
+</html>

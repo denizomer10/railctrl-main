@@ -1,0 +1,647 @@
+/* Common UI styles for search boxes, results and navigation
+   Applied site-wide via PageLayout.astro
+*/
+
+h2 {
+  text-align: center;
+}
+
+.search-container {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+#searchInput {
+  padding: 12px;
+  width: 300px;
+  border: 1px solid #ccc;
+  border-radius: 25px;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+#searchInput:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 8px rgba(0,123,255,0.3);
+}
+
+#searchBtn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 25px;
+  cursor: pointer;
+  font-size: 16px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+#searchBtn:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.search-results {
+  margin: 20px auto;
+  padding: 15px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background: #f9f9f9;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.search-results h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+#resultsList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  table-layout: auto;
+}
+
+.results-table th, .results-table td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+  word-wrap: break-word;
+  vertical-align: top;
+}
+
+.results-table th {
+  background-color: #f2f2f2;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.results-table tr:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+.navigation {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  gap: 24px;
+}
+
+.nav-btn {
+  width: 56px;
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#007bff,#0056b3);
+  color: #fff;
+  border: none;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  cursor: pointer;
+  font-size: 18px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.nav-btn:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+}
+
+.nav-btn:active {
+  transform: translateY(-1px) scale(0.99);
+}
+
+#currentView {
+  display: inline-block;
+  padding: 10px 18px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 16px;
+  min-width: 220px;
+  text-align: center;
+  color: inherit;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+/* Dark-mode: SADECE site-level switch ile kontrol edilir */
+html[data-theme="dark"] {
+  color: #fff;
+}
+
+html[data-theme="dark"] #currentView {
+  background: rgba(255,255,255,0.04) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45) !important;
+}
+
+html[data-theme="dark"] .nav-btn {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45) !important;
+}
+
+html[data-theme="dark"] main .search-container #searchInput {
+  background-color: #000 !important;
+  border-color: #333 !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="dark"] main .search-container #searchInput::placeholder {
+  color: #bbb !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] main .search-container #searchInput:focus {
+  border-color: #007bff !important;
+  box-shadow: 0 0 8px rgba(0,123,255,0.25) !important;
+  outline: none !important;
+}
+
+html[data-theme="dark"] main .search-container #searchBtn {
+  background: linear-gradient(135deg, #007bff, #0056b3) !important;
+  color: #fff !important;
+}
+
+html[data-theme="dark"] main .search-results {
+  background: #000 !important;
+  border-color: #222 !important;
+  color: #fff !important;
+}
+
+
+html[data-theme="dark"] main .search-results h3 {
+  color: #fff !important;
+}
+
+html[data-theme="dark"] main .results-table th,
+html[data-theme="dark"] main .results-table td {
+  border-color: #222 !important;
+  color: #fff !important;
+  background: #000 !important;
+}
+
+html[data-theme="dark"] main .results-table th {
+  background-color: #0b0b0b !important;
+}
+
+html[data-theme="dark"] main .results-table tr:hover {
+  background-color: #111 !important;
+}
+
+/* Embedded documents dark-mode adjustments -----------------------------------
+   Some pages embed external documents inside iframes. We can't change
+   their internal CSS, but a subtle filter + overlay improves readability in
+   dark mode. Use the `.no-invert` class on a wrapper to opt-out for embeds
+   where the inversion looks bad (images, custom-colors, etc.).
+*/
+
+.embed-container,
+.embed-iframe {
+  position: relative;
+}
+
+/* Apply a gentle invert+hue-rotate so embedded backgrounds become dark and text
+   remains readable. Keep pointer-events and interactivity intact. */
+html[data-theme="dark"] .embed-container iframe,
+html[data-theme="dark"] .embed-iframe iframe {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.02);
+  -webkit-filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(1.02);
+  transition: filter 0.25s ease;
+}
+
+/* Subtle overlay to increase separation / reduce glare from embedded content */
+html[data-theme="dark"] .embed-container::after,
+html[data-theme="dark"] .embed-iframe::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: linear-gradient(rgba(0,0,0,0.12), rgba(0,0,0,0.06));
+  mix-blend-mode: normal;
+}
+
+/* Opt-out: add `.no-invert` to the wrapper when inversion makes content unreadable */
+html[data-theme="dark"] .embed-container.no-invert iframe,
+html[data-theme="dark"] .embed-iframe.no-invert iframe {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* For accessibility: ensure iframe corner radius doesn't clip overlay on mobile */
+.embed-iframe iframe,
+.embed-container iframe {
+  border-radius: 8px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .search-container {
+    flex-direction: column;
+    padding: 0 15px;
+    gap: 12px;
+  }
+
+  #searchInput {
+    width: 100%;
+    max-width: 100%;
+    font-size: 16px;
+    padding: 14px 18px;
+  }
+
+  #searchBtn {
+    width: 100%;
+    padding: 14px 24px;
+    font-size: 16px;
+  }
+
+  .search-results {
+    margin: 15px;
+    padding: 12px;
+    border-radius: 8px;
+  }
+
+  .search-results h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+  }
+
+  /* Convert table to card-based layout on mobile */
+  .results-table {
+    display: block;
+    width: 100%;
+  }
+
+  .results-table thead {
+    display: none; /* Hide headers on mobile */
+  }
+
+  .results-table tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .results-table tr {
+    display: block;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    transition: all 0.2s ease;
+  }
+
+  .results-table tr:hover {
+    background: #f8f9fa;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+  }
+
+  .results-table td {
+    display: block;
+    border: none;
+    padding: 6px 0;
+    text-align: left;
+    word-wrap: break-word;
+    white-space: normal;
+    font-size: 14px;
+    min-width: auto;
+  }
+
+  .results-table td:before {
+    content: attr(data-label);
+    font-weight: 600;
+    display: inline-block;
+    margin-right: 8px;
+    color: #667eea;
+    min-width: 100px;
+  }
+
+  .results-table td:empty {
+    display: none;
+  }
+
+  /* Navigation buttons for mobile */
+  .navigation {
+    gap: 16px;
+    margin: 15px 0;
+  }
+
+  .nav-btn {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+  }
+
+  #currentView {
+    font-size: 14px;
+    padding: 8px 14px;
+    min-width: 160px;
+  }
+
+  /* Iframe container mobile adjustments */
+  .embed-iframe {
+    margin: 0 -15px;
+  }
+
+  .embed-iframe iframe {
+    border-radius: 0;
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 480px) {
+  .search-results {
+    margin: 10px;
+    padding: 10px;
+  }
+
+  .results-table tr {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .results-table td {
+    padding: 5px 0;
+    font-size: 13px;
+  }
+
+  .results-table td:before {
+    min-width: 90px;
+    font-size: 12px;
+  }
+
+  .navigation {
+    gap: 12px;
+  }
+
+  .nav-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 14px;
+  }
+
+  #currentView {
+    font-size: 13px;
+    padding: 6px 12px;
+    min-width: 140px;
+  }
+}
+
+/* Dark mode mobile adjustments */
+@media (max-width: 768px) {
+  html[data-theme="dark"] .results-table tr {
+    background: #1a1a1a !important;
+    border-color: #333 !important;
+  }
+
+  html[data-theme="dark"] .results-table tr:hover {
+    background: #222 !important;
+  }
+
+  html[data-theme="dark"] .results-table td:before {
+    color: #667eea !important;
+  }
+}
+
+/* ================================================
+   GLOBAL DARK MODE STYLES FOR ALL PAGES
+   ================================================ */
+
+/* Tablo hücreleri - tüm sayfalar için */
+html[data-theme="dark"] .data-table td {
+  color: #e0e0e0 !important;
+}
+
+html[data-theme="dark"] .data-table tbody tr {
+  border-color: #333 !important;
+}
+
+html[data-theme="dark"] .data-table tbody tr:hover {
+  background: rgba(102, 126, 234, 0.15) !important;
+}
+
+/* Tablo container */
+html[data-theme="dark"] .table-container {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+/* Search ve Filter */
+html[data-theme="dark"] .search-input {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #fff !important;
+}
+
+html[data-theme="dark"] .search-input::placeholder {
+  color: #888 !important;
+}
+
+html[data-theme="dark"] .select-filter {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+  color: #fff !important;
+}
+
+/* Chips */
+html[data-theme="dark"] .chip {
+  background: #1a1a2e !important;
+  border-color: #333 !important;
+  color: #ccc !important;
+}
+
+html[data-theme="dark"] .chip.active {
+  background: #667eea !important;
+  border-color: #667eea !important;
+  color: white !important;
+}
+
+/* Stats */
+html[data-theme="dark"] .stat-item {
+  background: #1a1a1a !important;
+  border-color: #333 !important;
+}
+
+html[data-theme="dark"] .stat-label {
+  color: #aaa !important;
+}
+
+html[data-theme="dark"] .stats-bar {
+  background: #1a1a2e !important;
+}
+
+/* Modal */
+html[data-theme="dark"] .modal-box {
+  background: #1a1a2e !important;
+}
+
+html[data-theme="dark"] .modal-header {
+  border-color: #333 !important;
+}
+
+html[data-theme="dark"] .modal-header h3 {
+  color: #e0e0e0 !important;
+}
+
+html[data-theme="dark"] .modal-close {
+  background: #333 !important;
+  color: #ccc !important;
+}
+
+/* Form */
+html[data-theme="dark"] .form-group label {
+  color: #ccc !important;
+}
+
+html[data-theme="dark"] .form-group input,
+html[data-theme="dark"] .form-group select,
+html[data-theme="dark"] .form-group textarea {
+  background: #0a0a0a !important;
+  border-color: #333 !important;
+  color: #fff !important;
+}
+
+html[data-theme="dark"] .form-actions {
+  border-color: #333 !important;
+}
+
+html[data-theme="dark"] .btn-cancel {
+  background: #333 !important;
+  color: #ccc !important;
+}
+
+/* Hücre özel stilleri */
+html[data-theme="dark"] .birim-cell,
+html[data-theme="dark"] .aciklama-cell,
+html[data-theme="dark"] .ariza-cell,
+html[data-theme="dark"] .istasyon-cell,
+html[data-theme="dark"] .is-cell,
+html[data-theme="dark"] .calisan-cell,
+html[data-theme="dark"] .esya-cell,
+html[data-theme="dark"] .baslik-cell,
+html[data-theme="dark"] .preview-cell {
+  color: #e0e0e0 !important;
+}
+
+html[data-theme="dark"] .date-cell {
+  color: #aaa !important;
+}
+
+/* Badges */
+html[data-theme="dark"] .numara-badge {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .kod-badge {
+  background: #1e3a8a !important;
+  color: #93c5fd !important;
+}
+
+html[data-theme="dark"] .istasyon-badge {
+  background: #064e3b !important;
+  color: #6ee7b7 !important;
+}
+
+html[data-theme="dark"] .mms-no {
+  color: #a5b4fc !important;
+}
+
+html[data-theme="dark"] .belge-no {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.2) !important;
+}
+
+/* No Results */
+html[data-theme="dark"] .no-results {
+  color: #ccc !important;
+}
+
+html[data-theme="dark"] .no-results h3 {
+  color: #e0e0e0 !important;
+}
+
+html[data-theme="dark"] .no-results p {
+  color: #aaa !important;
+}
+
+/* Load More Button */
+html[data-theme="dark"] .btn-load-more {
+  background: #333 !important;
+  color: #fff !important;
+}
+
+/* Status Badges */
+html[data-theme="dark"] .status-warning {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fbbf24 !important;
+}
+
+html[data-theme="dark"] .status-success {
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #34d399 !important;
+}
+
+html[data-theme="dark"] .status-danger {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+html[data-theme="dark"] .status-info {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+}
+
+html[data-theme="dark"] .status-purple {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: #c4b5fd !important;
+}
+
+html[data-theme="dark"] .status-secondary {
+  background: rgba(107, 114, 128, 0.2) !important;
+  color: #9ca3af !important;
+}
+
+/* Edit Button */
+html[data-theme="dark"] .btn-edit {
+  background: #1e3a5f !important;
+  color: #93c5fd !important;
+}
+
+/* Header Text */
+html[data-theme="dark"] .header-text p {
+  color: #cbd5e1 !important;
+}
+
+/* View Modal Content */
+html[data-theme="dark"] .view-content {
+  color: #e0e0e0 !important;
+}
+
+html[data-theme="dark"] .view-date {
+  color: #aaa !important;
+}
+
+html[data-theme="dark"] .view-body {
+  color: #e0e0e0 !important;
+}

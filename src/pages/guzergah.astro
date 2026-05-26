@@ -1,0 +1,418 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+const MAPS = [
+  {
+    label: 'Marmaray Haritası',
+    src: '/files/marmaray-haritasi.webp',
+    alt: 'Marmaray haritası'
+  },
+  {
+    label: 'İstanbul Ulaşım Haritası',
+    src: '/files/istanbul-raylisistemler-haritasi.webp',
+    fallbackSrc: '/files/guzergah.webp',
+    alt: 'İstanbul raylı sistemler haritası'
+  }
+] as const;
+---
+
+<PageLayout title="Haritalar">
+  <section class="guzergah-section">
+    <header class="guzergah-header">
+      <div class="guzergah-copy">
+        <h2 data-pages="title">Haritalar</h2>
+      </div>
+    </header>
+
+    <div class="map-switch">
+      {MAPS.map((map, index) => (
+        <button
+          type="button"
+          class={`map-btn ${index === 0 ? 'active' : ''}`}
+          data-src={map.src}
+          data-fallback-src={map.fallbackSrc ?? ''}
+          data-alt={map.alt}
+        >
+          {map.label}
+        </button>
+      ))}
+    </div>
+
+    <div class="guzergah-viewer" id="guzergah-viewer">
+      <div class="guzergah-image-container" id="guzergah-image-container">
+        <img
+          id="guzergah-image"
+          src={MAPS[0].src}
+          alt={MAPS[0].alt}
+          draggable="false"
+          decoding="async"
+        />
+      </div>
+      <div class="zoom-indicator" id="guzergah-zoom-indicator">100%</div>
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .guzergah-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .guzergah-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .guzergah-copy {
+    width: 100%;
+  }
+
+  .guzergah-copy h2 {
+    margin: 0 0 0.5rem 0;
+    padding: 0.8rem 1.1rem;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    background: rgba(255, 255, 255, 0.42);
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.14);
+    backdrop-filter: blur(12px) saturate(145%);
+    -webkit-backdrop-filter: blur(12px) saturate(145%);
+  }
+
+  .guzergah-copy p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    line-height: 1.6;
+  }
+
+  html[data-theme="dark"] .guzergah-copy p {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .guzergah-viewer {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    max-height: 80vh;
+    background: rgba(255, 255, 255, 0.42);
+    border-radius: 18px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    box-shadow: 0 18px 38px rgba(15, 23, 42, 0.16);
+    backdrop-filter: blur(12px) saturate(145%);
+    -webkit-backdrop-filter: blur(12px) saturate(145%);
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .map-switch {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .map-btn {
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 999px;
+    padding: 0.55rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .map-btn.active {
+    background: rgba(29, 78, 216, 0.9);
+    border-color: rgba(29, 78, 216, 0.9);
+    color: #fff;
+  }
+
+  html[data-theme="dark"] .map-btn {
+    background: rgba(15, 23, 42, 0.62);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #e2e8f0;
+  }
+
+  html[data-theme="dark"] .map-btn.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: #fff;
+  }
+
+  .guzergah-viewer:active,
+  .guzergah-viewer.dragging {
+    cursor: grabbing;
+  }
+
+  .guzergah-image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+  }
+
+  .guzergah-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .zoom-indicator {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(27, 40, 69, 0.85);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .zoom-indicator.show {
+    opacity: 1;
+  }
+
+  .guzergah-hints {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    margin: 0;
+    list-style: none;
+  }
+
+  .guzergah-hints li {
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  html[data-theme="dark"] .guzergah-viewer {
+    background: rgba(15, 23, 42, 0.5);
+    border-color: rgba(148, 163, 184, 0.3);
+  }
+
+  html[data-theme="dark"] .guzergah-copy h2 {
+    background: rgba(15, 23, 42, 0.56);
+    border-color: rgba(148, 163, 184, 0.28);
+    box-shadow: 0 18px 34px rgba(2, 6, 23, 0.45);
+  }
+
+  html[data-theme="dark"] .guzergah-hints {
+    background: rgba(102, 126, 234, 0.12);
+    border-color: rgba(102, 126, 234, 0.25);
+  }
+
+  html[data-theme="dark"] .guzergah-hints li {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  html[data-theme="dark"] kbd {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .guzergah-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .guzergah-viewer {
+      height: 60vh;
+      min-height: 320px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .guzergah-viewer {
+      height: 55vh;
+      min-height: 280px;
+    }
+  }
+</style>
+
+<script>
+  const viewer = document.getElementById('guzergah-viewer');
+  const container = document.getElementById('guzergah-image-container');
+  const zoomIndicator = document.getElementById('guzergah-zoom-indicator');
+
+  if (viewer && container) {
+    const mapButtons = Array.from(document.querySelectorAll('.map-btn'));
+    const image = document.getElementById('guzergah-image') as HTMLImageElement | null;
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let initialDistance = 0;
+    let initialScale = 1;
+    let indicatorTimeout: number | undefined;
+
+    const MIN_SCALE = 0.5;
+    const MAX_SCALE = 5;
+    const ZOOM_STEP = 0.3;
+
+    const clampScale = (value: number): number => Math.max(MIN_SCALE, Math.min(MAX_SCALE, value));
+
+    const showIndicator = () => {
+      if (!zoomIndicator) return;
+      zoomIndicator.textContent = `${Math.round(scale * 100)}%`;
+      zoomIndicator.classList.add('show');
+      clearTimeout(indicatorTimeout);
+      indicatorTimeout = window.setTimeout(() => zoomIndicator.classList.remove('show'), 800);
+    };
+
+    const updateTransform = () => {
+      container.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+      showIndicator();
+    };
+
+    const resetZoom = () => {
+      scale = 1;
+      translateX = 0;
+      translateY = 0;
+      updateTransform();
+    };
+
+    if (image) {
+      image.addEventListener('error', () => {
+        const fallbackSrc = image.dataset.fallbackSrc;
+        if (fallbackSrc && image.dataset.fallbackTried !== '1') {
+          image.dataset.fallbackTried = '1';
+          image.src = fallbackSrc;
+        }
+      });
+    }
+
+    mapButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const src = btn.getAttribute('data-src');
+        const fallbackSrc = btn.getAttribute('data-fallback-src') || '';
+        const alt = btn.getAttribute('data-alt') || 'Harita';
+        if (!image || !src) return;
+
+        image.dataset.fallbackSrc = fallbackSrc;
+        image.dataset.fallbackTried = '0';
+        image.src = src;
+        image.alt = alt;
+        mapButtons.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        resetZoom();
+      });
+    });
+
+    const zoomBy = (delta: number): void => {
+      scale = clampScale(scale + delta);
+      updateTransform();
+    };
+
+    viewer.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const delta = event.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      zoomBy(delta);
+    }, { passive: false });
+
+    viewer.addEventListener('mousedown', (event) => {
+      isDragging = true;
+      startX = event.clientX - translateX;
+      startY = event.clientY - translateY;
+      viewer.classList.add('dragging');
+    });
+
+    document.addEventListener('mousemove', (event) => {
+      if (!isDragging) return;
+      translateX = event.clientX - startX;
+      translateY = event.clientY - startY;
+      updateTransform();
+    });
+
+    document.addEventListener('mouseup', () => {
+      isDragging = false;
+      viewer.classList.remove('dragging');
+    });
+
+    viewer.addEventListener('touchstart', (event) => {
+      if (event.touches.length === 1) {
+        isDragging = true;
+        startX = event.touches[0].clientX - translateX;
+        startY = event.touches[0].clientY - translateY;
+        viewer.classList.add('dragging');
+      } else if (event.touches.length === 2) {
+        isDragging = false;
+        viewer.classList.remove('dragging');
+        initialDistance = Math.hypot(
+          event.touches[0].clientX - event.touches[1].clientX,
+          event.touches[0].clientY - event.touches[1].clientY
+        );
+        initialScale = scale;
+      }
+    }, { passive: true });
+
+    viewer.addEventListener('touchmove', (event) => {
+      if (event.touches.length === 1 && isDragging) {
+        translateX = event.touches[0].clientX - startX;
+        translateY = event.touches[0].clientY - startY;
+        updateTransform();
+      } else if (event.touches.length === 2) {
+        const currentDistance = Math.hypot(
+          event.touches[0].clientX - event.touches[1].clientX,
+          event.touches[0].clientY - event.touches[1].clientY
+        );
+        const scaleChange = currentDistance / initialDistance;
+        scale = clampScale(initialScale * scaleChange);
+        updateTransform();
+      }
+    }, { passive: true });
+
+    viewer.addEventListener('touchend', () => {
+      isDragging = false;
+      initialDistance = 0;
+      viewer.classList.remove('dragging');
+    }, { passive: true });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === '0') {
+        resetZoom();
+      } else if (event.key === '+' || event.key === '=') {
+        zoomBy(ZOOM_STEP);
+      } else if (event.key === '-' || event.key === '_') {
+        zoomBy(-ZOOM_STEP);
+      }
+    });
+
+    resetZoom();
+  }
+</script>

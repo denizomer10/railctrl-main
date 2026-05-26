@@ -1,0 +1,2167 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { MARMARAY_ISTASYONLARI } from '../lib/stations';
+
+const user = Astro.locals.user;
+const canSeePrivate = user?.role === 'admin' || user?.role === 'sef' || user?.role === 'gar_mudur';
+---
+
+<PageLayout title="Notlar">
+  <div class="notlar-page modern-records-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📝</div>
+        <div class="header-text">
+          <h1>Notlar</h1>
+          <p>Önemli bilgiler, prosedürler ve şifreler</p>
+        </div>
+      </div>
+      <button id="newNoteBtn" class="btn-new">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+        Yeni Not
+      </button>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <path d="m21 21-4.35-4.35"></path>
+        </svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Başlık, İçerik)" />
+        <div id="searchClear" class="search-clear" style="display: none;">✕</div>
+      </div>
+      <div class="filter-chips">
+        <button class="chip active" data-kategori="">Tümü</button>
+        <button class="chip" data-kategori="Prosedür">📋 Prosedür</button>
+        <button class="chip" data-kategori="Şifre">🔐 Şifre</button>
+        <button class="chip" data-kategori="Adres">📍 Adres</button>
+        <button class="chip" data-kategori="Vardiya">⏰ Vardiya</button>
+        <button class="chip" data-kategori="Genel">📌 Genel</button>
+        {canSeePrivate && <button class="chip" data-kategori="Özel">🔒 Özel</button>}
+      </div>
+      <select id="stationFilter" class="station-filter">
+        <option value="">Tüm İstasyonlar</option>
+        {MARMARAY_ISTASYONLARI.map((istasyon) => (
+          <option value={istasyon}>{istasyon}</option>
+        ))}
+      </select>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value" id="totalCount">-</span>
+        <span class="stat-label">Toplam Not</span>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th style="width: 200px;">Başlık</th>
+            <th style="width: 120px;">Kategori</th>
+            <th style="width: 130px;">İstasyon</th>
+            <th>İçerik Önizleme</th>
+            <th style="width: 150px;">Tarih</th>
+            <th style="width: 100px;">İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="loading-row">
+            <td colspan="6">
+              <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <span>Yükleniyor...</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results -->
+    <div id="noResults" class="no-results" style="display: none;">
+      <div class="no-results-icon">🔍</div>
+      <h3>Sonuç Bulunamadı</h3>
+      <p>Arama kriterlerinize uygun not bulunamadı.</p>
+    </div>
+    <div id="paginationContainer" class="pagination-container" style="display: none;"></div>
+  </div>
+
+  <!-- Modal - Yeni Not -->
+  <div id="noteModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Yeni Not</h3>
+        <button id="closeModal" class="btn-close">✕</button>
+      </div>
+      
+      <form id="noteForm" class="note-form">
+        <input type="hidden" id="noteId" name="noteId" />
+        <div class="form-group">
+          <label for="baslik">Başlık *</label>
+          <input type="text" id="baslik" name="baslik" required placeholder="Not başlığı" />
+        </div>
+
+        <div class="form-group">
+          <label for="kategori">Kategori</label>
+          <select id="kategori" name="kategori">
+            <option value="Genel">📌 Genel</option>
+            <option value="Prosedür">📋 Prosedür</option>
+            <option value="Şifre">🔐 Şifre</option>
+            <option value="Adres">📍 Adres</option>
+            <option value="Vardiya">⏰ Vardiya</option>
+            {canSeePrivate && <option value="Özel">🔒 Özel</option>}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="noteIstasyon">İstasyon (opsiyonel)</label>
+          <select id="noteIstasyon" name="istasyon">
+            <option value="">Tüm İstasyonlar</option>
+            {MARMARAY_ISTASYONLARI.map((istasyon) => (
+              <option value={istasyon}>{istasyon}</option>
+            ))}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="icerik">İçerik *</label>
+          <div class="editor-tools" id="editorTools">
+            <button type="button" data-cmd="bold" title="Kalın"><b>B</b></button>
+            <button type="button" data-cmd="italic" title="İtalik"><i>I</i></button>
+            <button type="button" data-cmd="underline" title="Altı Çizili"><u>U</u></button>
+            <button type="button" data-cmd="strikeThrough" title="Üstü Çizili"><s>S</s></button>
+            <button type="button" data-cmd="formatBlock" data-value="h2" title="Başlık">H2</button>
+            <button type="button" data-cmd="formatBlock" data-value="h3" title="Alt Başlık">H3</button>
+            <button type="button" data-cmd="formatBlock" data-value="blockquote" title="Alıntı">❝</button>
+            <button type="button" data-cmd="formatBlock" data-value="pre" title="Kod Blok">{ }</button>
+            <button type="button" data-cmd="insertUnorderedList" title="Madde Listesi">• Liste</button>
+            <button type="button" data-cmd="insertOrderedList" title="Numaralı Liste">1. Liste</button>
+            <button type="button" data-cmd="outdent" title="Girintiyi Azalt">⟵</button>
+            <button type="button" data-cmd="indent" title="Girintiyi Artır">⟶</button>
+            <button type="button" data-cmd="justifyLeft" title="Sola">⟸</button>
+            <button type="button" data-cmd="justifyCenter" title="Ortala">≡</button>
+            <button type="button" data-cmd="justifyRight" title="Sağa">⟹</button>
+            <button type="button" data-link="true" title="Bağlantı">Link</button>
+            <button type="button" data-cmd="unlink" title="Bağlantıyı Kaldır">Unlink</button>
+            <button type="button" data-cmd="insertHorizontalRule" title="Ayraç">―</button>
+            <label class="toolbar-color">
+              A
+              <input type="color" id="textColorPicker" value="#e5e7eb" title="Yazı Rengi" />
+            </label>
+            <label class="toolbar-color">
+              Bg
+              <input type="color" id="bgColorPicker" value="#fff59d" title="Vurgu Rengi" />
+            </label>
+            <button type="button" data-resize="down" title="Resmi Küçült">Resim -</button>
+            <button type="button" data-resize="up" title="Resmi Büyüt">Resim +</button>
+            <button type="button" data-cmd="removeFormat" title="Biçimi Temizle">Tx</button>
+          </div>
+          <div id="richEditor" class="rich-editor" contenteditable="true" data-placeholder="Not içeriği..."></div>
+          <textarea id="icerik" name="icerik" rows="10" style="display: none;"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="mediaFiles">Resim / Medya / Belge</label>
+          <input type="file" id="mediaFiles" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" />
+          <small class="upload-help">Dosyalar `public/files` içine kaydedilir. Maksimum 10MB/dosya.</small>
+          <div id="mediaList" class="media-list"></div>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="deleteFromFormBtn" class="btn-delete" style="display: none;">🗑️ Sil</button>
+          <div class="form-actions-right">
+            <button type="button" id="cancelBtn" class="btn-cancel">İptal</button>
+            <button type="submit" class="btn-submit">Kaydet</button>
+          </div>
+        </div>
+      </form>
+
+      <div id="formMessage" class="form-message" style="display: none;"></div>
+    </div>
+  </div>
+
+  <!-- Modal - Detay Görüntüleme -->
+  <div id="viewModal" class="modal-overlay" style="display: none;">
+    <div class="modal-content view-modal">
+      <div class="modal-header">
+        <h3 id="viewTitle">Not Detayı</h3>
+        <button id="closeViewModal" class="btn-close">✕</button>
+      </div>
+      <div class="view-body">
+        <div class="view-meta">
+          <span id="viewKategori" class="kategori-badge"></span>
+          <span id="viewTarih" class="view-date"></span>
+        </div>
+        <div id="viewMedia" class="view-media"></div>
+        <div id="viewContent" class="view-content"></div>
+        <div id="viewAttachments" class="view-attachments" style="display: none;"></div>
+      </div>
+      <div class="view-actions" id="viewActions" style="display: none;">
+        <button type="button" id="deleteNoteBtn" class="btn-delete">🗑️ Sil</button>
+        <button type="button" id="editNoteBtn" class="btn-edit-note">✏️ Düzenle</button>
+      </div>
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .notlar-page {
+    max-width: 100%;
+  }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .header-icon {
+    font-size: 2.5rem;
+  }
+
+  .header-text h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .header-text p {
+    color: #666;
+    margin: 0.25rem 0 0;
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] .header-text p {
+    color: #aaa;
+  }
+
+  .btn-new {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-new:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  }
+
+  .btn-new svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .station-filter {
+    min-width: 210px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 0.75rem;
+    background: #fff;
+    color: #333;
+  }
+
+  [data-theme="dark"] .station-filter {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #ddd;
+  }
+
+  .search-wrapper {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .search-icon {
+    position: absolute;
+    left: 0.9rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: #888;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 2.6rem 0.75rem 3rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fff;
+    color: #333;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .search-input {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #fff;
+  }
+
+  .search-input:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+
+  .search-clear {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0e0e0;
+    border-radius: 50%;
+    z-index: 2;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: #666;
+  }
+
+  .search-clear:hover {
+    background: #f59e0b;
+    color: white;
+  }
+
+  .filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 0.5rem 0.875rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 20px;
+    background: #fff;
+    color: #555;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="dark"] .chip {
+    background: #1a1a1a;
+    border-color: #333;
+    color: #ccc;
+  }
+
+  .chip:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+  }
+
+  .chip.active {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border-color: transparent;
+    color: white;
+  }
+
+   :global(.pagination-container) {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+  }
+   :global(.page-btn) {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.7rem;
+    border: 1px solid #fcd34d;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #fffbeb 100%);
+    color: #92400e;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(245, 158, 11, 0.14);
+    transition: all 0.2s ease;
+  }
+   :global(.page-btn:hover) { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(245, 158, 11, 0.22); }
+   :global(.page-btn.active) { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; border-color: transparent; box-shadow: 0 10px 22px rgba(245, 158, 11, 0.35); }
+  [data-theme="dark"]  :global(.page-btn) { border-color: #78350f; background: linear-gradient(180deg, #2a1b08 0%, #3a240a 100%); color: #fcd34d; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+  [data-theme="dark"]  :global(.page-btn.active) { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; }
+
+  /* Stats Bar */
+  .stats-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 0.75rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="dark"] .stat-item {
+    background: #1a1a1a;
+    border-color: #333;
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f59e0b;
+  }
+
+  .stat-label {
+    color: #888;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+
+  /* Table Container */
+  .table-container {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  }
+
+  [data-theme="dark"] .table-container {
+    background: #1a1a1a;
+    border-color: #333;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  .data-table thead {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .data-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .data-table tbody tr {
+    border-bottom: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+  }
+
+  [data-theme="dark"] .data-table tbody tr {
+    border-color: #333;
+  }
+
+  .data-table tbody tr:nth-child(even) {
+    background: #f8f9fa;
+  }
+
+  [data-theme="dark"] .data-table tbody tr:nth-child(even) {
+    background: #0d0d0d;
+  }
+
+  .data-table tbody tr:hover {
+    background: #fffbeb;
+  }
+
+  [data-theme="dark"] .data-table tbody tr:hover {
+    background: #292211;
+  }
+
+  .data-table td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+  }
+  [data-theme="dark"] .data-table td { color: #e0e0e0; }
+
+  .baslik-cell {
+    font-weight: 600;
+  }
+  [data-theme="dark"] .baslik-cell { color: #e0e0e0; }
+
+  .kategori-badge {
+    display: inline-block;
+    padding: 0.3rem 0.7rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .kategori-prosedur { background: #dbeafe; color: #1e40af; }
+  .kategori-sifre { background: #fee2e2; color: #b91c1c; }
+  .kategori-adres { background: #d1fae5; color: #065f46; }
+  .kategori-vardiya { background: #fef3c7; color: #92400e; }
+  .kategori-genel { background: #e5e7eb; color: #374151; }
+  .kategori-ozel { background: #ede9fe; color: #5b21b6; }
+
+  [data-theme="dark"] .kategori-prosedur { background: #1e3a5f; color: #93c5fd; }
+  [data-theme="dark"] .kategori-sifre { background: #450a0a; color: #fca5a5; }
+  [data-theme="dark"] .kategori-adres { background: #064e3b; color: #6ee7b7; }
+  [data-theme="dark"] .kategori-vardiya { background: #451a03; color: #fcd34d; }
+  [data-theme="dark"] .kategori-genel { background: #374151; color: #d1d5db; }
+  [data-theme="dark"] .kategori-ozel { background: #312e81; color: #ddd6fe; }
+
+  .preview-cell {
+    max-width: 400px;
+    color: #666;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-theme="dark"] .preview-cell {
+    color: #aaa;
+  }
+
+  .date-cell {
+    color: #666;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  [data-theme="dark"] .date-cell {
+    color: #aaa;
+  }
+
+  .btn-view {
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-view:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+  }
+
+  /* Light mode visibility fixes (Notlar page specific) */
+  :global(html:not([data-theme="dark"])) .notlar-page .table-container .btn-view {
+    background: #ffffff !important;
+    color: #111827 !important;
+    border: 2px solid #111827 !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.18) !important;
+    font-weight: 700 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) .notlar-page .table-container .btn-view:hover {
+    background: #f8fafc !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+  }
+
+  /* Loading State */
+  .loading-row td {
+    padding: 3rem 1rem;
+  }
+
+  .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: #888;
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #e0e0e0;
+    border-top-color: #f59e0b;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* No Results */
+  .no-results {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+  [data-theme="dark"] .no-results { color: #ccc; }
+
+  .no-results-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+  }
+
+  .no-results h3 {
+    margin: 0 0 0.5rem;
+  }
+  [data-theme="dark"] .no-results h3 { color: #e0e0e0; }
+
+  .no-results p {
+    color: #888;
+    margin: 0;
+  }
+  [data-theme="dark"] .no-results p { color: #aaa; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+    padding: 1rem;
+  }
+
+  .modal-content {
+    background: #fff;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .modal-content {
+    background: #1a1a1a;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .modal-content,
+  :global(html:not([data-theme="dark"])) #noteModal .modal-content {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2) !important;
+    color: #1f2937 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-modal {
+    background: #ffffff !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .modal-header,
+  :global(html:not([data-theme="dark"])) #noteModal .modal-header {
+    border-bottom: 1px solid #e2e8f0 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .modal-header h3,
+  :global(html:not([data-theme="dark"])) #noteModal .modal-header h3 {
+    color: #111827 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .btn-close,
+  :global(html:not([data-theme="dark"])) #noteModal .btn-close {
+    background: #f8fafc !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #334155 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-meta,
+  :global(html:not([data-theme="dark"])) #viewModal .view-meta span {
+    color: #475569 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-date {
+    color: #475569 !important;
+    font-weight: 600 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-content {
+    color: #1f2937 !important;
+    opacity: 1 !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-content,
+  :global(html:not([data-theme="dark"])) #viewModal .view-content p,
+  :global(html:not([data-theme="dark"])) #viewModal .view-content span,
+  :global(html:not([data-theme="dark"])) #viewModal .view-content div {
+    color: #1f2937 !important;
+    text-shadow: none !important;
+  }
+
+  :global(html:not([data-theme="dark"])) #viewModal .view-actions {
+    background: #ffffff !important;
+    border-top-color: #e2e8f0 !important;
+  }
+
+  .view-modal {
+    max-width: 700px;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.25rem;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  [data-theme="dark"] .modal-header {
+    border-color: #333;
+  }
+
+  .modal-header h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  .btn-close {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #666;
+    transition: all 0.2s;
+  }
+
+  [data-theme="dark"] .btn-close {
+    background: #333;
+    color: #ccc;
+  }
+
+  .btn-close:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  /* View Modal */
+  .view-body {
+    padding: 1.25rem;
+    overflow-x: hidden;
+  }
+
+  .view-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .view-date {
+    color: #888;
+    font-size: 0.85rem;
+  }
+
+  [data-theme="dark"] .view-date {
+    color: #aaa;
+  }
+
+  .view-content {
+    font-size: 0.95rem;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    font-family: inherit;
+    color: #333;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
+  }
+  .view-content * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  [data-theme="dark"] .view-content {
+    color: #e0e0e0;
+  }
+  .view-content img,
+  .view-content video,
+  .view-content iframe {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 520px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block;
+    margin: 0.4rem auto;
+    border-radius: 10px;
+  }
+  .view-content table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .view-media {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .view-media img,
+  .view-media video {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 520px !important;
+    height: auto !important;
+    object-fit: contain !important;
+    display: block;
+    margin: 0 auto;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+  }
+
+  .view-media .media-link {
+    display: block;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #1d4ed8;
+    background: #f8fafc;
+    word-break: break-all;
+  }
+
+  .view-attachments {
+    margin-top: 0.85rem;
+    display: grid;
+    gap: 0.55rem;
+  }
+
+  .view-attachments-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #64748b;
+  }
+
+  .attachment-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.62rem 0.8rem;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #0f172a;
+    background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+    border: 1px solid #cbd5e1;
+    width: fit-content;
+    max-width: 100%;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+  }
+
+  .attachment-btn .name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+  }
+
+  [data-theme="dark"] .view-attachments-title { color: #94a3b8; }
+  [data-theme="dark"] .attachment-btn {
+    color: #e2e8f0;
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    border-color: #334155;
+    box-shadow: 0 8px 18px rgba(2, 6, 23, 0.45);
+  }
+
+  /* Form */
+  .note-form {
+    padding: 1.25rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fff;
+    color: inherit;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+  }
+
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select,
+  [data-theme="dark"] .form-group textarea {
+    background: #0a0a0a;
+    border-color: #333;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: #f59e0b;
+  }
+
+  .form-group textarea {
+    resize: vertical;
+    min-height: 180px;
+    font-family: inherit;
+    line-height: 1.5;
+  }
+
+  .editor-tools {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px 12px 0 0;
+    background: linear-gradient(180deg, #fffbeb 0%, #fff7ed 100%);
+  }
+
+  .editor-tools button {
+    border: 1px solid #d1d5db;
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 0.3rem 0.55rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+  .toolbar-color {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.35rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .toolbar-color input {
+    width: 22px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  [data-theme="dark"] .editor-tools button {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+  [data-theme="dark"] .toolbar-color {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  [data-theme="dark"] .editor-tools {
+    background: linear-gradient(180deg, #151515 0%, #101010 100%);
+    border-color: #333;
+  }
+  :global(html[data-theme="dark"]) #noteModal .editor-tools {
+    background: linear-gradient(180deg, #151515 0%, #101010 100%) !important;
+    border-color: #333 !important;
+  }
+  :global(html[data-theme="dark"]) #noteModal .editor-tools button {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+  }
+  :global(html[data-theme="dark"]) #noteModal .toolbar-color {
+    background: #111827 !important;
+    color: #e5e7eb !important;
+    border-color: #374151 !important;
+  }
+
+  .rich-editor {
+    min-height: 220px;
+    border: 2px solid #e0e0e0;
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 0.95rem 1rem;
+    background: #fff;
+    line-height: 1.6;
+    overflow-y: auto;
+  }
+  .rich-editor img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+    display: block;
+    margin: 0.5rem 0;
+    border: 1px solid #e5e7eb;
+  }
+  .rich-editor img.selected-image {
+    outline: 2px solid #f59e0b;
+    outline-offset: 2px;
+  }
+
+  .rich-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+  }
+
+  .rich-editor:focus {
+    outline: none;
+    border-color: #f59e0b;
+  }
+  .rich-editor.dragover {
+    border-color: #f59e0b;
+    background: #fffbeb;
+  }
+
+  [data-theme="dark"] .rich-editor {
+    background: #0a0a0a;
+    border-color: #333;
+    color: #e5e7eb;
+  }
+  [data-theme="dark"] .rich-editor,
+  [data-theme="dark"] .rich-editor p,
+  [data-theme="dark"] .rich-editor li,
+  [data-theme="dark"] .rich-editor h1,
+  [data-theme="dark"] .rich-editor h2,
+  [data-theme="dark"] .rich-editor h3,
+  [data-theme="dark"] .rich-editor blockquote,
+  [data-theme="dark"] .rich-editor pre,
+  [data-theme="dark"] .rich-editor span,
+  [data-theme="dark"] .rich-editor div {
+    color: #e5e7eb;
+  }
+  :global(html[data-theme="dark"]) #noteModal .rich-editor {
+    background: #0a0a0a !important;
+    border-color: #333 !important;
+    color: #e5e7eb !important;
+    caret-color: #f8fafc !important;
+  }
+  :global(html[data-theme="dark"]) #noteModal .rich-editor p,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor li,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor h1,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor h2,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor h3,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor span,
+  :global(html[data-theme="dark"]) #noteModal .rich-editor div {
+    color: #e5e7eb !important;
+  }
+  [data-theme="dark"] .rich-editor.dragover {
+    background: #2a1e0a;
+  }
+
+  .upload-help {
+    display: block;
+    margin-top: 0.35rem;
+    color: #6b7280;
+    font-size: 0.78rem;
+  }
+
+  .media-list {
+    margin-top: 0.65rem;
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .media-list.dragover {
+    border: 2px dashed #f59e0b;
+    border-radius: 12px;
+    padding: 0.5rem;
+    background: #fffbeb;
+  }
+
+  .media-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 0.5rem 0.75rem;
+    background: #fff;
+  }
+
+  .media-name {
+    color: #374151;
+    word-break: break-all;
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] .media-item {
+    background: #0a0a0a;
+    border-color: #333;
+  }
+  [data-theme="dark"] .media-name { color: #e5e7eb; }
+
+  .media-remove {
+    border: none;
+    background: #fee2e2;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 0.3rem 0.55rem;
+    cursor: pointer;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  [data-theme="dark"] .form-actions {
+    border-color: #333;
+  }
+
+  .btn-cancel {
+    padding: 0.75rem 1.25rem;
+    background: #f0f0f0;
+    border: none;
+    border-radius: 10px;
+    color: #333;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  [data-theme="dark"] .btn-cancel {
+    background: #333;
+    color: #ccc;
+  }
+
+  .btn-cancel:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+
+  .btn-submit {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-submit:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  }
+
+  .form-message {
+    margin: 0 1.25rem 1.25rem;
+    padding: 0.875rem;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .form-message.success {
+    background: #d1fae5;
+    color: #065f46;
+  }
+
+  .form-message.error {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+
+  /* Form actions */
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .form-actions-right {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .btn-delete {
+    padding: 0.75rem 1.25rem;
+    background: #fee2e2;
+    border: none;
+    border-radius: 10px;
+    color: #dc2626;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-delete:hover {
+    background: #dc2626;
+    color: white;
+  }
+
+  /* View Actions */
+  .view-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid #eee;
+  }
+
+  [data-theme="dark"] .view-actions {
+    border-top-color: #333;
+  }
+
+  .btn-edit-note {
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-edit-note:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  }
+
+  #noteForm,
+  .modal-body,
+  .modal-footer,
+  .form-group {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .page-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .toolbar {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.75rem;
+    }
+
+    .search-wrapper {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+    }
+
+    .search-input {
+      font-size: 16px;
+      padding: 0.75rem 2.4rem 0.75rem 2.6rem;
+    }
+
+    .search-clear {
+      right: 0.6rem;
+    }
+
+    .filter-chips {
+      width: 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 0.35rem;
+      gap: 0.45rem;
+    }
+
+    .filter-chips .chip {
+      flex: 0 0 auto;
+    }
+
+    .table-container { overflow-x: hidden; }
+    .data-table { min-width: 0; width: 100%; }
+    .modal-overlay { padding: 0.5rem; }
+    .modal-content { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); }
+    .view-content img,
+    .view-content video,
+    .view-content iframe {
+      width: auto !important;
+      max-width: 100% !important;
+      max-height: 42vh !important;
+      margin: 0.35rem auto;
+    }
+    .view-media img,
+    .view-media video {
+      width: auto !important;
+      max-width: 100% !important;
+      max-height: 42vh !important;
+    }
+    .attachment-btn { width: 100%; }
+  }
+</style>
+
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const searchClear = document.getElementById('searchClear');
+    const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement;
+    const chips = document.querySelectorAll('.chip');
+    const tableBody = document.getElementById('tableBody');
+    const noResults = document.getElementById('noResults');
+    const paginationContainer = document.getElementById('paginationContainer');
+    const totalCount = document.getElementById('totalCount');
+    const newNoteBtn = document.getElementById('newNoteBtn');
+    const modal = document.getElementById('noteModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const closeModal = document.getElementById('closeModal');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const noteForm = document.getElementById('noteForm') as HTMLFormElement;
+    const richEditor = document.getElementById('richEditor') as HTMLDivElement;
+    const mediaFilesInput = document.getElementById('mediaFiles') as HTMLInputElement;
+    const mediaList = document.getElementById('mediaList');
+    const editorTools = document.getElementById('editorTools');
+    const textColorPicker = document.getElementById('textColorPicker') as HTMLInputElement;
+    const bgColorPicker = document.getElementById('bgColorPicker') as HTMLInputElement;
+    const formMessage = document.getElementById('formMessage');
+    const viewModal = document.getElementById('viewModal');
+    const closeViewModal = document.getElementById('closeViewModal');
+    const viewTitle = document.getElementById('viewTitle');
+    const viewKategori = document.getElementById('viewKategori');
+    const viewTarih = document.getElementById('viewTarih');
+    const viewMedia = document.getElementById('viewMedia');
+    const viewContent = document.getElementById('viewContent');
+    const viewAttachments = document.getElementById('viewAttachments');
+    const viewActions = document.getElementById('viewActions');
+    const editNoteBtn = document.getElementById('editNoteBtn');
+    const deleteNoteBtn = document.getElementById('deleteNoteBtn');
+    const deleteFromFormBtn = document.getElementById('deleteFromFormBtn');
+    const noteIdInput = document.getElementById('noteId') as HTMLInputElement;
+    const allModals: HTMLElement[] = [modal, viewModal].filter(Boolean) as HTMLElement[];
+
+    allModals.forEach((m) => {
+      if (m.parentElement !== document.body) document.body.appendChild(m);
+    });
+
+    const syncBodyScroll = () => {
+      const isAnyModalOpen = allModals.some((m) => m.style.display === 'flex');
+      document.body.style.overflow = isAnyModalOpen ? 'hidden' : '';
+    };
+
+    const showModal = (m?: HTMLElement | null) => {
+      if (!m) return;
+      m.style.display = 'flex';
+      syncBodyScroll();
+    };
+
+    const hideModal = (m?: HTMLElement | null) => {
+      if (!m) return;
+      m.style.display = 'none';
+      syncBodyScroll();
+    };
+
+    let currentKategori = '';
+    let currentIstasyon = '';
+    let allNotes: any[] = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    const limit = 30;
+    let currentUserRole = 'user';
+    let currentViewNote: any = null;
+    let editingId: number | null = null;
+    let attachedMedia: any[] = [];
+    let selectedEditorImage: HTMLImageElement | null = null;
+    const pageParams = new URLSearchParams(window.location.search);
+    const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
+    const autoViewId = Number.parseInt(pageParams.get('viewId') || '', 10);
+
+    const clearAutoQueryParams = () => {
+      const next = new URLSearchParams(window.location.search);
+      next.delete('editId');
+      next.delete('viewId');
+      const query = next.toString();
+      const nextUrl = `${window.location.pathname}${query ? `?${query}` : ''}${window.location.hash || ''}`;
+      window.history.replaceState({}, '', nextUrl);
+    };
+
+    function toPlainText(html: string): string {
+      const div = document.createElement('div');
+      div.innerHTML = html || '';
+      return (div.textContent || '').trim();
+    }
+
+    function sanitizeHtml(raw: string): string {
+      const template = document.createElement('template');
+      template.innerHTML = raw || '';
+      const allowed = new Set(['P', 'BR', 'B', 'STRONG', 'I', 'EM', 'U', 'H1', 'H2', 'H3', 'UL', 'OL', 'LI', 'A', 'BLOCKQUOTE', 'CODE', 'PRE', 'SPAN']);
+      const walker = document.createTreeWalker(template.content, NodeFilter.SHOW_ELEMENT);
+      const toRemove: Element[] = [];
+      while (walker.nextNode()) {
+        const el = walker.currentNode as Element;
+        if (!allowed.has(el.tagName)) {
+          toRemove.push(el);
+          continue;
+        }
+        [...el.attributes].forEach((attr) => {
+          const name = attr.name.toLowerCase();
+          if (name.startsWith('on')) el.removeAttribute(attr.name);
+          if (el.tagName === 'A' && name === 'href') {
+            const href = (el.getAttribute('href') || '').trim().toLowerCase();
+            const safe = href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:') || href.startsWith('/');
+            if (!safe) el.removeAttribute('href');
+            return;
+          }
+          if (name !== 'style' && !(el.tagName === 'A' && name === 'target') && !(el.tagName === 'A' && name === 'rel')) {
+            el.removeAttribute(attr.name);
+          }
+        });
+      }
+      toRemove.forEach((el) => el.replaceWith(...Array.from(el.childNodes)));
+      return template.innerHTML;
+    }
+
+    function syncEditorToTextarea() {
+      const textarea = document.getElementById('icerik') as HTMLTextAreaElement;
+      textarea.value = sanitizeHtml(richEditor?.innerHTML || '');
+    }
+
+    function applyEditorThemeDefaults() {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (textColorPicker) textColorPicker.value = isDark ? '#e5e7eb' : '#111827';
+      if (bgColorPicker && !bgColorPicker.value) bgColorPicker.value = '#fff59d';
+      if (richEditor && !richEditor.innerHTML.trim()) {
+        richEditor.style.color = isDark ? '#e5e7eb' : '#111827';
+      }
+    }
+
+    function addMediaToList(items: any[]) {
+      const byPath = new Map(attachedMedia.map((m: any) => [m.path, m]));
+      items.forEach((item) => {
+        if (item?.path && !byPath.has(item.path)) byPath.set(item.path, item);
+      });
+      attachedMedia = Array.from(byPath.values());
+      renderMediaList();
+    }
+
+    function insertMediaIntoEditor(items: any[]) {
+      items.forEach((item) => {
+        if (!item?.path) return;
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.path;
+          img.alt = item.name || 'gorsel';
+          img.style.width = '420px';
+          richEditor.appendChild(img);
+          richEditor.appendChild(document.createElement('br'));
+          return;
+        }
+        const link = document.createElement('a');
+        link.href = item.path;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = item.name || 'Dosya';
+        richEditor.appendChild(link);
+        richEditor.appendChild(document.createElement('br'));
+      });
+      syncEditorToTextarea();
+    }
+
+    // Kullanıcı rolünü al
+    async function getUserRole() {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          currentUserRole = data.user?.role || 'user';
+        }
+      } catch (e) { currentUserRole = 'user'; }
+    }
+    getUserRole();
+    applyEditorThemeDefaults();
+
+    async function loadNotes() {
+      tableBody!.innerHTML = `
+        <tr class="loading-row">
+          <td colspan="6">
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <span>Yükleniyor...</span>
+            </div>
+          </td>
+        </tr>
+      `;
+      noResults!.style.display = 'none';
+
+      try {
+        const params = new URLSearchParams();
+        if (searchInput?.value) params.set('search', searchInput.value);
+        if (currentKategori) params.set('kategori', currentKategori);
+        if (currentIstasyon) params.set('istasyon', currentIstasyon);
+
+        const response = await fetch(`/api/notlar?${params}`);
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        tableBody!.innerHTML = '';
+        allNotes = data.notes || [];
+
+        totalCount!.textContent = allNotes.length.toString();
+
+        if (allNotes.length === 0) {
+          noResults!.style.display = 'block';
+          if (paginationContainer) paginationContainer.style.display = 'none';
+          return;
+        }
+
+        totalPages = Math.max(1, Math.ceil(allNotes.length / limit));
+        if (currentPage > totalPages) currentPage = totalPages;
+        renderRows(allNotes);
+        renderPagination();
+
+      } catch (error: any) {
+        console.error('Load error:', error);
+        tableBody!.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 2rem; color: #dc2626;">
+              Hata: ${error.message}
+            </td>
+          </tr>
+        `;
+      }
+    }
+
+    function getKategoriClass(kategori: string): string {
+      switch (kategori?.toLowerCase()) {
+        case 'prosedür': return 'kategori-prosedur';
+        case 'şifre': return 'kategori-sifre';
+        case 'adres': return 'kategori-adres';
+        case 'vardiya': return 'kategori-vardiya';
+        case 'özel': return 'kategori-ozel';
+        default: return 'kategori-genel';
+      }
+    }
+
+    function getKategoriIcon(kategori: string): string {
+      switch (kategori?.toLowerCase()) {
+        case 'prosedür': return '📋';
+        case 'şifre': return '🔐';
+        case 'adres': return '📍';
+        case 'vardiya': return '⏰';
+        case 'özel': return '🔒';
+        default: return '📌';
+      }
+    }
+
+    function renderRows(notes: any[]) {
+      tableBody!.innerHTML = '';
+      const start = (currentPage - 1) * limit;
+      const pageNotes = notes.slice(start, start + limit);
+      pageNotes.forEach(note => {
+        const row = document.createElement('tr');
+        
+        const tarih = note.created_at ? new Date(note.created_at).toLocaleDateString('tr-TR', {
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+          timeZone: 'Europe/Istanbul'
+        }) : '-';
+        
+        const kategori = note.kategori || 'Genel';
+        const plain = toPlainText(note.icerik || '');
+        const preview = plain.substring(0, 100) + (plain.length > 100 ? '...' : '');
+        
+        row.innerHTML = `
+          <td class="baslik-cell" data-label="Başlık">${note.baslik || 'İsimsiz Not'}</td>
+          <td data-label="Kategori"><span class="kategori-badge ${getKategoriClass(kategori)}">${getKategoriIcon(kategori)} ${kategori}</span></td>
+            <td data-label="İstasyon">${note.istasyon || 'Genel'}</td>
+            <td class="preview-cell" data-label="İçerik Önizleme">${preview}</td>
+            <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
+            <td data-label="İşlem"><button class="btn-view" data-id="${note.id}">Görüntüle</button></td>
+        `;
+        
+        const viewBtn = row.querySelector('.btn-view');
+        viewBtn?.addEventListener('click', () => openViewModal(note));
+        
+        tableBody!.appendChild(row);
+      });
+    }
+
+    function renderPagination() {
+      if (!paginationContainer) return;
+      paginationContainer.innerHTML = '';
+      if (totalPages <= 1) {
+        paginationContainer.style.display = 'none';
+        return;
+      }
+      paginationContainer.style.display = 'flex';
+      for (let page = 1; page <= totalPages; page++) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `page-btn${page === currentPage ? ' active' : ''}`;
+        btn.textContent = String(page);
+        btn.addEventListener('click', () => {
+          if (page === currentPage) return;
+          currentPage = page;
+          renderRows(allNotes);
+          renderPagination();
+        });
+        paginationContainer.appendChild(btn);
+      }
+    }
+
+    function openViewModal(note: any) {
+      currentViewNote = note;
+      viewTitle!.textContent = note.baslik || 'İsimsiz Not';
+      const kategori = note.kategori || 'Genel';
+      viewKategori!.className = `kategori-badge ${getKategoriClass(kategori)}`;
+      viewKategori!.textContent = `${getKategoriIcon(kategori)} ${kategori}`;
+      
+      const tarih = note.created_at ? new Date(note.created_at).toLocaleString('tr-TR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Istanbul'
+      }) : '-';
+      viewTarih!.textContent = tarih;
+      
+      const medya = Array.isArray(note.medya) ? note.medya : (() => {
+        try { return JSON.parse(note.medya || '[]'); } catch { return []; }
+      })();
+      const contentHtml = sanitizeHtml(note.icerik || '');
+      const contentReferencedPaths = new Set<string>();
+      const refMatches = contentHtml.matchAll(/(?:src|href)=["'](\/files\/[^"']+)["']/gi);
+      for (const match of refMatches) {
+        if (match[1]) contentReferencedPaths.add(match[1]);
+      }
+      viewMedia!.innerHTML = '';
+      viewAttachments!.innerHTML = '';
+      const attachmentItems: any[] = [];
+      medya.forEach((item: any) => {
+        if (!item?.path) return;
+        if (item.type === 'image') {
+          const img = document.createElement('img');
+          img.src = item.path;
+          img.alt = item.name || 'resim';
+          viewMedia!.appendChild(img);
+        } else if (item.type === 'video') {
+          const video = document.createElement('video');
+          video.src = item.path;
+          video.controls = true;
+          viewMedia!.appendChild(video);
+        }
+        attachmentItems.push(item);
+      });
+
+      contentReferencedPaths.forEach((path) => {
+        if (!attachmentItems.some((i: any) => i.path === path)) {
+          attachmentItems.push({ path, name: path.split('/').pop() || 'Dosya' });
+        }
+      });
+
+      if (attachmentItems.length > 0) {
+        viewAttachments!.style.display = 'grid';
+        const title = document.createElement('div');
+        title.className = 'view-attachments-title';
+        title.textContent = 'Ek Dosyalar';
+        viewAttachments!.appendChild(title);
+
+        attachmentItems.forEach((item: any) => {
+          const link = document.createElement('a');
+          link.className = 'attachment-btn';
+          link.href = item.path;
+          link.target = '_blank';
+          link.rel = 'noopener noreferrer';
+          link.innerHTML = `<span>📄</span><span class="name">${item.name || 'Dosya'}</span>`;
+          viewAttachments!.appendChild(link);
+        });
+      } else {
+        viewAttachments!.style.display = 'none';
+      }
+
+      viewContent!.innerHTML = contentHtml;
+
+      const fitEls = [...viewMedia!.querySelectorAll('img,video,iframe'), ...viewContent!.querySelectorAll('img,video,iframe')];
+      fitEls.forEach((el) => {
+        const node = el as HTMLElement;
+        node.style.width = '100%';
+        node.style.maxWidth = '100%';
+        node.style.height = 'auto';
+        node.style.maxHeight = window.innerWidth <= 768 ? '42vh' : '520px';
+        node.style.objectFit = 'contain';
+        node.style.display = 'block';
+        node.style.margin = '0.35rem auto';
+        node.style.boxSizing = 'border-box';
+      });
+      
+      // Şef veya admin ise düzenleme/silme butonlarını göster
+      const canEdit = currentUserRole === 'sef' || currentUserRole === 'admin';
+      viewActions!.style.display = canEdit ? 'flex' : 'none';
+      
+      showModal(viewModal as HTMLElement);
+    }
+
+    // Düzenleme modalını aç
+    function openEditModal(note: any) {
+      editingId = note.id;
+      modalTitle!.textContent = 'Notu Düzenle';
+      noteIdInput.value = note.id;
+      (document.getElementById('baslik') as HTMLInputElement).value = note.baslik || '';
+      (document.getElementById('kategori') as HTMLSelectElement).value = note.kategori || 'Genel';
+      (document.getElementById('noteIstasyon') as HTMLSelectElement).value = note.istasyon || '';
+      richEditor.innerHTML = sanitizeHtml(note.icerik || '');
+      syncEditorToTextarea();
+      attachedMedia = Array.isArray(note.medya) ? note.medya : (() => {
+        try { return JSON.parse(note.medya || '[]'); } catch { return []; }
+      })();
+      renderMediaList();
+      
+      // Şef veya admin ise silme butonunu göster
+      const canDelete = currentUserRole === 'sef' || currentUserRole === 'admin';
+      deleteFromFormBtn!.style.display = canDelete ? 'block' : 'none';
+      
+      formMessage!.style.display = 'none';
+      showModal(modal as HTMLElement);
+    }
+
+    function renderMediaList() {
+      if (!mediaList) return;
+      mediaList.innerHTML = '';
+      if (attachedMedia.length === 0) {
+        mediaList.innerHTML = '<small>Henüz dosya eklenmedi.</small>';
+        return;
+      }
+
+      attachedMedia.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'media-item';
+        row.innerHTML = `
+          <span class="media-name">${item.name || 'Dosya'}</span>
+          <button type="button" class="media-remove" data-index="${index}">Kaldır</button>
+        `;
+        row.querySelector('.media-remove')?.addEventListener('click', async () => {
+          const removed = attachedMedia[index];
+          attachedMedia.splice(index, 1);
+          renderMediaList();
+          if (removed?.path) {
+            await deleteMediaPaths([removed.path]);
+          }
+        });
+        mediaList.appendChild(row);
+      });
+    }
+
+    async function deleteMediaPaths(paths: string[]) {
+      if (!paths.length) return;
+      await fetch('/api/notlar/upload', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paths }),
+      });
+    }
+
+    function getEditorFilePaths(): Set<string> {
+      const paths = new Set<string>();
+      richEditor.querySelectorAll('img, a, video, audio').forEach((el) => {
+        const anyEl = el as any;
+        const srcOrHref = anyEl.currentSrc || anyEl.src || anyEl.href || '';
+        const match = String(srcOrHref).match(/\/files\/([^?#]+)/);
+        if (match?.[1]) paths.add(`/files/${decodeURIComponent(match[1])}`);
+      });
+      return paths;
+    }
+
+    async function reconcileEditorRemovedMedia() {
+      const editorPaths = getEditorFilePaths();
+      const removed = attachedMedia.filter((m: any) => m?.source === 'editor' && m?.path && !editorPaths.has(m.path));
+      if (!removed.length) return;
+      attachedMedia = attachedMedia.filter((m: any) => !removed.some((r: any) => r.path === m.path));
+      renderMediaList();
+      await deleteMediaPaths(removed.map((m: any) => m.path));
+    }
+
+    async function uploadMedia(files: FileList, source: 'editor' | 'list' = 'list') {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => formData.append('files', file));
+
+      const response = await fetch('/api/notlar/upload', { method: 'POST', body: formData });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Dosya yüklenemedi');
+      const filesWithSource = (data.files || []).map((file: any) => ({ ...file, source }));
+      addMediaToList(filesWithSource);
+      return filesWithSource;
+    }
+
+    // Not silme fonksiyonu
+    async function deleteNote(noteId: number) {
+      if (!confirm('Bu notu silmek istediğinizden emin misiniz?')) return;
+      
+      try {
+        const response = await fetch(`/api/notlar/${noteId}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        hideModal(viewModal as HTMLElement);
+        hideModal(modal as HTMLElement);
+        loadNotes();
+      } catch (error: any) {
+        alert('Silme hatası: ' + error.message);
+      }
+    }
+
+    async function tryOpenEditFromQuery() {
+      if (!Number.isFinite(autoEditId)) return;
+      clearAutoQueryParams();
+      try {
+        const response = await fetch(`/api/notlar/${autoEditId}`, { credentials: 'include' });
+        const data = await response.json();
+        if (!response.ok || !data?.record) throw new Error(data?.error || 'Not bulunamadı');
+        openEditModal(data.record);
+      } catch (error: any) {
+        alert(`Düzenleme penceresi açılamadı: ${error.message || 'Bilinmeyen hata'}`);
+      }
+    }
+
+    async function tryOpenViewFromQuery() {
+      if (!Number.isFinite(autoViewId)) return;
+      clearAutoQueryParams();
+      try {
+        const response = await fetch(`/api/notlar/${autoViewId}`, { credentials: 'include' });
+        const data = await response.json();
+        if (!response.ok || !data?.record) throw new Error(data?.error || 'Not bulunamadı');
+        openViewModal(data.record);
+      } catch (error: any) {
+        alert(`Görüntüleme penceresi açılamadı: ${error.message || 'Bilinmeyen hata'}`);
+      }
+    }
+
+    let searchTimeout: number;
+    searchInput?.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      const value = (e.target as HTMLInputElement).value;
+      searchClear!.style.display = value ? 'flex' : 'none';
+      
+      searchTimeout = window.setTimeout(() => {
+        currentPage = 1;
+        loadNotes();
+      }, 300);
+    });
+
+    searchClear?.addEventListener('click', () => {
+      searchInput!.value = '';
+      searchClear!.style.display = 'none';
+      currentPage = 1;
+      loadNotes();
+    });
+
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        currentKategori = (chip as HTMLElement).dataset.kategori || '';
+        currentPage = 1;
+        loadNotes();
+      });
+    });
+
+    stationFilter?.addEventListener('change', () => {
+      currentIstasyon = stationFilter.value || '';
+      currentPage = 1;
+      loadNotes();
+    });
+
+    newNoteBtn?.addEventListener('click', () => {
+      editingId = null;
+      modalTitle!.textContent = 'Yeni Not';
+      noteForm?.reset();
+      richEditor.innerHTML = '';
+      applyEditorThemeDefaults();
+      syncEditorToTextarea();
+      noteIdInput.value = '';
+      attachedMedia = [];
+      renderMediaList();
+      deleteFromFormBtn!.style.display = 'none';
+      showModal(modal as HTMLElement);
+      formMessage!.style.display = 'none';
+    });
+
+    closeModal?.addEventListener('click', () => hideModal(modal as HTMLElement));
+    cancelBtn?.addEventListener('click', () => hideModal(modal as HTMLElement));
+    modal?.addEventListener('click', (e) => { if (e.target === modal) hideModal(modal as HTMLElement); });
+
+    closeViewModal?.addEventListener('click', () => hideModal(viewModal as HTMLElement));
+    viewModal?.addEventListener('click', (e) => { if (e.target === viewModal) hideModal(viewModal as HTMLElement); });
+
+    // Detay modalından düzenlemeye geç
+    editNoteBtn?.addEventListener('click', () => {
+      if (currentViewNote) {
+        hideModal(viewModal as HTMLElement);
+        openEditModal(currentViewNote);
+      }
+    });
+
+    // Detay modalından silme
+    deleteNoteBtn?.addEventListener('click', () => {
+      if (currentViewNote) {
+        deleteNote(currentViewNote.id);
+      }
+    });
+
+    // Form içinden silme
+    deleteFromFormBtn?.addEventListener('click', () => {
+      if (editingId) {
+        deleteNote(editingId);
+      }
+    });
+
+    noteForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      syncEditorToTextarea();
+      const htmlContent = (document.getElementById('icerik') as HTMLTextAreaElement).value.trim();
+      if (!htmlContent && attachedMedia.length === 0) {
+        formMessage!.className = 'form-message error';
+        formMessage!.textContent = 'Açıklama veya en az bir dosya ekleyin.';
+        formMessage!.style.display = 'block';
+        return;
+      }
+      const payload: Record<string, any> = {
+        baslik: (document.getElementById('baslik') as HTMLInputElement).value,
+        kategori: (document.getElementById('kategori') as HTMLSelectElement).value,
+        istasyon: (document.getElementById('noteIstasyon') as HTMLSelectElement).value,
+        icerik: (document.getElementById('icerik') as HTMLTextAreaElement).value,
+        medya: attachedMedia,
+      };
+      if (payload.kategori === 'Özel') {
+        payload.hedef_roller = ['sef', 'gar_mudur', 'admin'];
+      }
+
+      try {
+        const url = editingId ? `/api/notlar/${editingId}` : '/api/notlar';
+        const method = editingId ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        formMessage!.className = 'form-message success';
+        formMessage!.textContent = editingId ? 'Not güncellendi!' : 'Not kaydedildi!';
+        formMessage!.style.display = 'block';
+
+        setTimeout(() => {
+          hideModal(modal as HTMLElement);
+          loadNotes();
+        }, 1000);
+
+      } catch (error: any) {
+        formMessage!.className = 'form-message error';
+        formMessage!.textContent = error.message;
+        formMessage!.style.display = 'block';
+      }
+    });
+
+    mediaFilesInput?.addEventListener('change', async () => {
+      if (!mediaFilesInput.files || mediaFilesInput.files.length === 0) return;
+      try {
+        await uploadMedia(mediaFilesInput.files, 'list');
+        mediaFilesInput.value = '';
+      } catch (error: any) {
+        formMessage!.className = 'form-message error';
+        formMessage!.textContent = error.message;
+        formMessage!.style.display = 'block';
+      }
+    });
+
+    richEditor?.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      richEditor.classList.add('dragover');
+    });
+    richEditor?.addEventListener('dragleave', () => {
+      richEditor.classList.remove('dragover');
+    });
+    richEditor?.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      richEditor.classList.remove('dragover');
+      const dt = (e as DragEvent).dataTransfer;
+      if (!dt?.files || dt.files.length === 0) return;
+      try {
+        const uploaded = await uploadMedia(dt.files, 'editor');
+        insertMediaIntoEditor(uploaded);
+      } catch (error: any) {
+        formMessage!.className = 'form-message error';
+        formMessage!.textContent = error.message;
+        formMessage!.style.display = 'block';
+      }
+    });
+
+    richEditor?.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (selectedEditorImage) selectedEditorImage.classList.remove('selected-image');
+      if (target.tagName === 'IMG') {
+        selectedEditorImage = target as HTMLImageElement;
+        selectedEditorImage.classList.add('selected-image');
+      } else {
+        selectedEditorImage = null;
+      }
+    });
+
+    ['dragenter', 'dragover'].forEach((evt) => {
+      mediaList?.addEventListener(evt, (e) => {
+        e.preventDefault();
+        mediaList.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach((evt) => {
+      mediaList?.addEventListener(evt, (e) => {
+        e.preventDefault();
+        mediaList.classList.remove('dragover');
+      });
+    });
+    mediaList?.addEventListener('drop', async (e) => {
+      const dt = (e as DragEvent).dataTransfer;
+      if (!dt?.files || dt.files.length === 0) return;
+      try {
+        await uploadMedia(dt.files, 'list');
+      } catch (error: any) {
+        formMessage!.className = 'form-message error';
+        formMessage!.textContent = error.message;
+        formMessage!.style.display = 'block';
+      }
+    });
+
+    editorTools?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.tagName !== 'BUTTON') return;
+      richEditor.focus();
+
+      if (target.dataset.link === 'true') {
+        const url = prompt('Bağlantı adresini girin (https://...)');
+        if (!url) return;
+        document.execCommand('createLink', false, url);
+        document.execCommand('styleWithCSS', false, 'true');
+        document.execCommand('foreColor', false, '#1d4ed8');
+        syncEditorToTextarea();
+        return;
+      }
+
+      const resize = target.dataset.resize;
+      if (resize && selectedEditorImage) {
+        const current = parseInt(selectedEditorImage.style.width || '420', 10);
+        const next = resize === 'up' ? current + 60 : Math.max(120, current - 60);
+        selectedEditorImage.style.width = `${next}px`;
+        syncEditorToTextarea();
+        return;
+      }
+
+      const cmd = target.dataset.cmd;
+      const value = target.dataset.value || null;
+      if (!cmd) return;
+      document.execCommand(cmd, false, value);
+      syncEditorToTextarea();
+    });
+
+    richEditor?.addEventListener('input', async () => {
+      syncEditorToTextarea();
+      await reconcileEditorRemovedMedia();
+    });
+    textColorPicker?.addEventListener('input', () => {
+      richEditor.focus();
+      document.execCommand('foreColor', false, textColorPicker.value);
+      syncEditorToTextarea();
+    });
+    bgColorPicker?.addEventListener('input', () => {
+      richEditor.focus();
+      document.execCommand('hiliteColor', false, bgColorPicker.value);
+      syncEditorToTextarea();
+    });
+
+    renderMediaList();
+    loadNotes();
+    tryOpenViewFromQuery();
+    tryOpenEditFromQuery();
+  });
+</script>

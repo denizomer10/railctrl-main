@@ -1,0 +1,33 @@
+{
+  "name": "railctrl",
+  "type": "module",
+  "version": "2.0.0",
+  "description": "TCDD Yönetim Sistemi V2 - Türkiye Cumhuriyeti Devlet Demiryolları İçin Kapsamlı Yönetim Platformu",
+  "author": "TCDD",
+  "license": "MIT",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@astrojs/db": "^0.21.1",
+    "@astrojs/node": "^10.0.6",
+    "astro": "^6.2.1",
+    "bcryptjs": "^3.0.3",
+    "exceljs": "^4.4.0",
+    "jsonwebtoken": "^9.0.3",
+    "pdfmake": "^0.2.10"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "sharp": "^0.34.5",
+    "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "rollup": "^4.59.0"
+  }
+}

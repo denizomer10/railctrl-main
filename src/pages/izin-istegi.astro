@@ -1,0 +1,1550 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="İzin İsteği">
+  <div class="izin-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📅</div>
+        <div class="header-text">
+          <h1>İzin İsteği</h1>
+          <p>8005 modeline uygun izin formu oluşturun</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ana İçerik -->
+    <div class="main-content">
+      <!-- Personel Bilgileri ve İzin Oluştur -->
+      <div id="createSection" class="create-section">
+        <!-- Kayıtlı Personel Bilgisi Gösterimi -->
+        <div id="personelInfo" class="personel-info" style="display: none;">
+          <div class="info-card">
+            <div class="info-header">
+              <span class="info-icon">👤</span>
+              <span class="info-title">Kullanıcı Bilgileriniz</span>
+            </div>
+            <div class="info-content">
+              <div class="info-row">
+                <span class="info-label">Ad Soyad:</span>
+                <span id="infoAdSoyad" class="info-value"></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Sicil / KKY:</span>
+                <span id="infoSicilKky" class="info-value"></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Birim:</span>
+                <span id="infoBirim" class="info-value"></span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Görevi:</span>
+                <span id="infoGorevi" class="info-value"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button id="createNewBtn" class="create-btn">
+          <span class="btn-icon">➕</span>
+          <span class="btn-text">İzin İsteği Oluştur</span>
+        </button>
+        <p class="create-hint">Yeni bir izin formu oluşturmak için tıklayın</p>
+      </div>
+    </div>
+
+    <!-- Modal: İzin Türü Seçimi -->
+    <div id="typeModal" class="modal" style="display: none;">
+      <div class="modal-content modal-small">
+        <div class="modal-header">
+          <h3>İzin Türü Seçin</h3>
+          <button class="modal-close" data-close="typeModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="type-options">
+            <button class="type-btn" data-type="yillik">
+              <span class="type-icon">🏖️</span>
+              <span class="type-label">Yıllık İzin</span>
+            </button>
+            <button class="type-btn" data-type="mazeret">
+              <span class="type-icon">📋</span>
+              <span class="type-label">Mazeret İzni</span>
+            </button>
+            <button class="type-btn" data-type="hastalik">
+              <span class="type-icon">🏥</span>
+              <span class="type-label">Hastalık İzni</span>
+            </button>
+            <button class="type-btn" data-type="ucretsiz">
+              <span class="type-icon">💼</span>
+              <span class="type-label">Ücretsiz İzin</span>
+            </button>
+          </div>
+
+        </div>
+        <div class="modal-footer">
+          <button id="continueTypeBtn" class="btn-primary" disabled>Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: Personel Kayıt Formu -->
+    <div id="personelModal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>👤 Personel Bilgileri</h3>
+          <button class="modal-close" data-close="personelModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="personelForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="adSoyad">Ad Soyad *</label>
+                <input type="text" id="adSoyad" name="ad_soyad" required placeholder="Adınız Soyadınız">
+              </div>
+              <div class="form-group">
+                <label for="sicilNo">Sicil No *</label>
+                <input type="text" id="sicilNo" name="sicil_no" required placeholder="Örn: 10004321">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="kkyNo">KKY No *</label>
+                <input type="text" id="kkyNo" name="kky_no" required placeholder="Örn: 89823">
+              </div>
+              <div class="form-group">
+                <!-- Boş alan -->
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="birim">Birim *</label>
+                <input type="text" id="birim" name="birim" required placeholder="Çalıştığınız birim">
+              </div>
+              <div class="form-group">
+                <label for="gorevi">Görevi *</label>
+                <input type="text" id="gorevi" name="gorevi" required placeholder="Göreviniz (örn: İstasyon Operasyon İşçisi)">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="izindekiAdresKayit">İzindeki Adres</label>
+                <input type="text" id="izindekiAdresKayit" name="izindeki_adres" placeholder="İzin sırasında kalacağınız adres">
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" data-close="personelModal">İptal</button>
+          <button type="button" id="savePersonelBtn" class="btn-primary">Kaydet ve Devam Et</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: İzin Formu -->
+    <div id="izinModal" class="modal" style="display: none;">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h3>📝 İzin Formu</h3>
+          <button class="modal-close" data-close="izinModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <form id="izinForm">
+            <input type="hidden" id="izinTuru" name="izin_turu">
+            <input type="hidden" id="personelId" name="personel_id">
+            
+            <div class="form-section">
+              <h4>Personel Bilgileri</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Ad Soyad</label>
+                  <input type="text" id="izinAdSoyad" name="ad_soyad" readonly>
+                </div>
+                <div class="form-group">
+                  <label>Sicil No / KKY</label>
+                  <input type="text" id="izinSicilNoDisplay" readonly>
+                  <input type="hidden" id="izinSicilNo" name="sicil_no">
+                  <input type="hidden" id="izinKkyNo" name="kky_no">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Birim</label>
+                  <input type="text" id="izinBirim" name="birim" readonly>
+                </div>
+                <div class="form-group">
+                  <label>Görevi</label>
+                  <input type="text" id="izinGorevi" name="gorevi" readonly>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Ait Olduğu Yıl</label>
+                  <input type="number" id="aitOlduguYil" name="ait_oldugu_yil" readonly>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>İzin Bilgileri</h4>
+              <div class="izin-type-display">
+                <span id="izinTuruDisplay" class="type-badge"></span>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="baslangicTarihi">Başlangıç Tarihi *</label>
+                  <input type="date" id="baslangicTarihi" name="baslangic_tarihi" required>
+                </div>
+                <div class="form-group">
+                  <label for="bitisTarihi">Bitiş Tarihi *</label>
+                  <input type="date" id="bitisTarihi" name="bitis_tarihi" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="yolIzni">Yol İzni (Gün)</label>
+                  <input type="number" id="yolIzni" name="yol_izni" min="0" value="0">
+                </div>
+                <div class="form-group">
+                  <label for="izinGunSayisi">Kullanılacak İzin Toplamı (Gün) *</label>
+                  <input type="number" id="izinGunSayisi" name="izin_gun_sayisi" min="1" required>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="kalanIzin">Kalan İzin (Gün)</label>
+                  <input type="number" id="kalanIzin" name="kalan_izin" min="0">
+                </div>
+                <div class="form-group">
+                  <label for="isBasiTarihi">İş Başı Tarihi</label>
+                  <input type="date" id="isBasiTarihi" name="is_basi_tarihi">
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label for="aciklama">Açıklama</label>
+                  <textarea id="aciklama" name="aciklama" rows="2" placeholder="Varsa açıklama yazınız"></textarea>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label for="izindekiAdres">İzindeki Adres</label>
+                  <input type="text" id="izindekiAdres" name="izindeki_adres" placeholder="İzin süresince kalacağınız adres">
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h4>İstemde Bulunanın</h4>
+              <div class="form-row">
+                <div class="form-group">
+                  <label>Tarih</label>
+                  <input type="text" id="istemTarihi" readonly>
+                </div>
+                <div class="form-group">
+                  <label>İmza</label>
+                  <div class="signature-placeholder">
+                    <span id="signatureName"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" data-close="izinModal">İptal</button>
+          <button type="button" id="previewPdfBtn" class="btn-primary">PDF Önizle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal: PDF Önizleme -->
+    <div id="pdfModal" class="modal" style="display: none;">
+      <div class="modal-content modal-pdf">
+        <div class="modal-header">
+          <h3>📄 İzin Formu - 8005 Modeli</h3>
+          <button class="modal-close" data-close="pdfModal">&times;</button>
+        </div>
+        <div class="modal-body pdf-body">
+          <div id="pdfPreview" class="pdf-preview"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" data-close="pdfModal">Kapat</button>
+          <button type="button" id="downloadPdfBtn" class="btn-success">
+            <span>📥</span> İndir
+          </button>
+          <button type="button" id="printPdfBtn" class="btn-primary">
+            <span>🖨️</span> Yazdır
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .izin-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .header-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-icon {
+    font-size: 3rem;
+  }
+
+  .header-text h1 {
+    margin: 0;
+    font-size: 2rem;
+    color: #333;
+  }
+
+  [data-theme="dark"] .header-text h1 {
+    color: #fff;
+  }
+
+  .header-text p {
+    margin: 5px 0 0;
+    color: #666;
+  }
+
+  [data-theme="dark"] .header-text p {
+    color: #aaa;
+  }
+
+  /* Create Section */
+  .create-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    padding: 40px;
+  }
+
+  /* Personel Bilgi Kartı */
+  .personel-info {
+    width: 100%;
+    max-width: 500px;
+    margin-bottom: 30px;
+  }
+
+  .info-card {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+
+  [data-theme="dark"] .info-card {
+    background: #1a1a2e;
+  }
+
+  .info-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 15px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+
+  .info-icon {
+    font-size: 1.3rem;
+  }
+
+  .info-title {
+    flex: 1;
+    font-weight: 600;
+    font-size: 1rem;
+  }
+
+  .edit-btn, .delete-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 8px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s;
+  }
+
+  .edit-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+
+  .delete-btn:hover {
+    background: rgba(255, 100, 100, 0.4);
+  }
+
+  .info-content {
+    padding: 15px 20px;
+  }
+
+  .info-row {
+    display: flex;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+  }
+
+  [data-theme="dark"] .info-row {
+    border-bottom-color: #333;
+  }
+
+  .info-row:last-child {
+    border-bottom: none;
+  }
+
+  .info-label {
+    width: 100px;
+    font-weight: 600;
+    color: #666;
+    font-size: 0.85rem;
+  }
+
+  [data-theme="dark"] .info-label {
+    color: #aaa;
+  }
+
+  .info-value {
+    flex: 1;
+    color: #333;
+    font-size: 0.9rem;
+  }
+
+  [data-theme="dark"] .info-value {
+    color: #fff;
+  }
+
+  .create-btn {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 25px 50px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+  }
+
+  .create-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+  }
+
+  .btn-icon {
+    font-size: 1.5rem;
+  }
+
+  .create-hint {
+    margin-top: 20px;
+    color: #888;
+    font-size: 0.9rem;
+  }
+
+  /* Modal Styles */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 12000;
+    padding: 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  .modal-content {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    position: relative;
+    pointer-events: auto;
+  }
+
+  [data-theme="dark"] .modal-content {
+    background: #1a1a2e;
+    color: #fff;
+  }
+
+  .modal-small {
+    max-width: 450px;
+  }
+
+  .modal-large {
+    max-width: 700px;
+  }
+
+  .modal-pdf {
+    max-width: 900px;
+    height: 90vh;
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  [data-theme="dark"] .modal-header {
+    border-bottom-color: #333;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #666;
+    padding: 0;
+    line-height: 1;
+  }
+
+  [data-theme="dark"] .modal-close {
+    color: #aaa;
+  }
+
+  .modal-body {
+    padding: 25px;
+  }
+
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 20px 25px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  [data-theme="dark"] .modal-footer {
+    border-top-color: #333;
+  }
+
+  /* Type Options */
+  .type-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+  }
+
+  .type-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 2px solid transparent;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 110px;
+    color: #1f2937;
+  }
+
+  [data-theme="dark"] .type-btn {
+    background: #111827;
+    border-color: #334155;
+    color: #f8fafc;
+  }
+
+  .type-btn:hover {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+  }
+
+  [data-theme="dark"] .type-btn:hover {
+    border-color: #60a5fa;
+    background: #1e293b;
+    color: #f8fafc;
+  }
+
+  [data-theme="dark"] .type-btn:hover .type-label {
+    color: #f8fafc !important;
+    opacity: 1 !important;
+  }
+
+  .type-btn.selected {
+    border-color: #667eea;
+    background: rgba(102, 126, 234, 0.15);
+    color: #1f2937;
+  }
+
+  [data-theme="dark"] .type-btn.selected {
+    background: #1e3a8a;
+    border-color: #60a5fa;
+    color: #f8fafc;
+  }
+
+  .type-icon {
+    font-size: 2rem;
+  }
+
+  .type-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: #333;
+  }
+
+  [data-theme="dark"] .type-label {
+    color: #fff;
+  }
+
+  /* Record Check */
+  .record-check {
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  [data-theme="dark"] .record-check {
+    border-top-color: #333;
+  }
+
+  .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.95rem;
+  }
+
+  .checkbox-label input {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Form Styles */
+  .form-section {
+    margin-bottom: 25px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  [data-theme="dark"] .form-section {
+    border-bottom-color: #333;
+  }
+
+  .form-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .form-section h4 {
+    margin: 0 0 15px;
+    color: #667eea;
+    font-size: 1rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin-bottom: 15px;
+  }
+
+  @media (max-width: 600px) {
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .form-group.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #555;
+  }
+
+  [data-theme="dark"] .form-group label {
+    color: #aaa;
+  }
+
+  .form-group input,
+  .form-group textarea {
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    transition: border-color 0.2s;
+    font-family: inherit;
+  }
+
+  .form-group textarea {
+    resize: vertical;
+  }
+
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group textarea {
+    background: #252545;
+    border-color: #444;
+    color: #fff;
+  }
+
+  [data-theme="dark"] .form-group input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.2);
+    opacity: 0.9;
+    cursor: pointer;
+  }
+
+  :global(html[data-theme="dark"] #izinModal input[type="date"]::-webkit-calendar-picker-indicator) {
+    filter: invert(1) brightness(1.2);
+    opacity: 0.9;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: #667eea;
+  }
+
+  .form-group input[readonly] {
+    background: #f5f5f5;
+    cursor: not-allowed;
+  }
+
+  [data-theme="dark"] .form-group input[readonly] {
+    background: #1a1a2e;
+  }
+
+  /* İzin Type Display */
+  .izin-type-display {
+    margin-bottom: 15px;
+  }
+
+  .type-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  /* Signature Placeholder */
+  .signature-placeholder {
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px dashed #ddd;
+    border-radius: 10px;
+    text-align: center;
+    font-style: italic;
+    color: #666;
+  }
+
+  [data-theme="dark"] .signature-placeholder {
+    background: #252545;
+    border-color: #444;
+    color: #aaa;
+  }
+
+  /* Modallar body altina tasindigi icin dark mode'da dogrudan modal id ile de zorla */
+  :global(html[data-theme="dark"] #izinModal .signature-placeholder) {
+    background: #111827 !important;
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+  }
+
+  :global(html[data-theme="dark"] #izinModal #signatureName) {
+    color: #f8fafc !important;
+    opacity: 1 !important;
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* Buttons */
+  .btn-primary, .btn-secondary, .btn-success {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 25px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  body.modal-open {
+    overflow: hidden;
+    height: 100dvh;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff;
+  }
+
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  }
+
+  .btn-primary:disabled {
+    opacity: 1;
+    cursor: not-allowed;
+    background: #4b5563;
+    color: #d1d5db;
+  }
+
+  .btn-secondary {
+    background: #e5e7eb;
+    color: #333;
+  }
+
+  [data-theme="dark"] .btn-secondary {
+    background: #333;
+    color: #fff;
+  }
+
+  .btn-success {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: #fff;
+  }
+
+  /* PDF Preview */
+  .pdf-body {
+    padding: 0;
+    height: calc(90vh - 140px);
+    overflow: auto;
+  }
+
+  .pdf-preview {
+    background: #fff;
+    padding: 40px;
+    min-height: 100%;
+  }
+
+  :global(html[data-theme="dark"] #pdfModal .modal-content) {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #e5e7eb !important;
+  }
+
+  :global(html[data-theme="dark"] #pdfModal .pdf-preview) {
+    background: #0b1220 !important;
+    color: #e5e7eb !important;
+  }
+
+  /* Requests Section */
+  .requests-section {
+    margin-top: 40px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 15px;
+  }
+
+  [data-theme="dark"] .requests-section {
+    background: #1a1a2e;
+  }
+
+  .requests-section h3 {
+    margin: 0 0 20px;
+    color: #333;
+  }
+
+  [data-theme="dark"] .requests-section h3 {
+    color: #fff;
+  }
+
+  /* iPhone 7 / küçük cihazlar için dokunma ve modal iyileştirmeleri */
+  @media (max-width: 430px) {
+    .izin-page {
+      padding: 12px;
+    }
+
+    .create-section {
+      padding: 16px 8px;
+      min-height: 220px;
+    }
+
+    .create-btn {
+      width: 100%;
+      max-width: 100%;
+      justify-content: center;
+      padding: 16px;
+      font-size: 1rem;
+      min-height: 52px;
+      touch-action: manipulation;
+    }
+
+    .modal {
+      padding: 8px;
+      align-items: flex-start;
+      min-height: 100dvh;
+      -webkit-overflow-scrolling: touch;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+
+    .modal-content {
+      margin-top: 8px;
+      max-height: calc(100dvh - 16px);
+      border-radius: 14px;
+    }
+
+    .modal-header,
+    .modal-body,
+    .modal-footer {
+      padding: 14px;
+    }
+
+    .modal-header h3 {
+      font-size: 1.05rem;
+    }
+
+    .modal-close {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      touch-action: manipulation;
+    }
+
+    .type-options {
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .type-btn {
+      flex-direction: row;
+      justify-content: flex-start;
+      min-height: 56px;
+      padding: 14px;
+      gap: 12px;
+    }
+
+    .type-icon {
+      font-size: 1.5rem;
+    }
+
+    .type-label {
+      font-size: 0.92rem;
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      font-size: 16px;
+      min-height: 44px;
+    }
+
+    .btn-primary,
+    .btn-secondary,
+    .btn-success {
+      flex: 1;
+      justify-content: center;
+      min-height: 44px;
+      font-size: 0.95rem;
+    }
+
+    .modal button,
+    .modal input,
+    .modal select,
+    .modal textarea {
+      touch-action: manipulation;
+    }
+
+  .modal-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .header-text h1 {
+    color: #f8fafc !important;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .header-text p,
+  :global(html[data-theme="dark"]) .izin-page .create-hint {
+    color: #e2e8f0 !important;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .modal-content {
+    background: #0f172a;
+    color: #e5e7eb;
+    border: 1px solid #334155;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .modal-header h3,
+  :global(html[data-theme="dark"]) .izin-page .form-section h4 {
+    color: #f1f5f9;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .modal-close {
+    color: #cbd5e1;
+    background: #1e293b;
+    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .type-btn {
+    background: #1e293b;
+    border-color: #334155;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .type-label {
+    color: #f8fafc !important;
+    opacity: 1 !important;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover .type-label,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover .type-icon {
+    color: #f8fafc !important;
+  }
+
+  /* Force readable text on all states in dark mode (hover/active/focus/selected) */
+  :global(html[data-theme="dark"]) .izin-page .type-btn,
+  :global(html[data-theme="dark"]) .izin-page .type-btn span,
+  :global(html[data-theme="dark"]) .izin-page .type-btn .type-label,
+  :global(html[data-theme="dark"]) .izin-page .type-btn .type-icon,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover span,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:hover .type-label,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:focus,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:focus span,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:active,
+  :global(html[data-theme="dark"]) .izin-page .type-btn:active span,
+  :global(html[data-theme="dark"]) .izin-page .type-btn.selected,
+  :global(html[data-theme="dark"]) .izin-page .type-btn.selected span {
+    color: #f8fafc !important;
+    opacity: 1 !important;
+    text-shadow: none !important;
+    -webkit-text-fill-color: #f8fafc !important;
+  }
+
+  /* Modal is moved to body; enforce dark-mode text colors directly on modal id */
+  :global(html[data-theme="dark"] #typeModal .type-btn),
+  :global(html[data-theme="dark"] #typeModal .type-btn .type-label),
+  :global(html[data-theme="dark"] #typeModal .type-btn .type-icon),
+  :global(html[data-theme="dark"] #typeModal .type-btn:hover),
+  :global(html[data-theme="dark"] #typeModal .type-btn:hover .type-label),
+  :global(html[data-theme="dark"] #typeModal .type-btn:focus),
+  :global(html[data-theme="dark"] #typeModal .type-btn:focus .type-label),
+  :global(html[data-theme="dark"] #typeModal .type-btn.selected),
+  :global(html[data-theme="dark"] #typeModal .type-btn.selected .type-label) {
+    background: #111827 !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+    -webkit-text-fill-color: #f8fafc !important;
+    opacity: 1 !important;
+  }
+
+  :global(html[data-theme="dark"] #typeModal .type-btn:hover) {
+    background: #1e293b !important;
+    border-color: #60a5fa !important;
+  }
+
+  :global(html[data-theme="dark"] #typeModal .type-btn.selected) {
+    background: #1e3a8a !important;
+    border-color: #60a5fa !important;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .form-group label {
+    color: #cbd5e1;
+  }
+
+  :global(html[data-theme="dark"]) .izin-page .form-group input,
+  :global(html[data-theme="dark"]) .izin-page .form-group textarea,
+  :global(html[data-theme="dark"]) .izin-page .form-group select {
+    background: #0b1220;
+    border-color: #334155;
+    color: #e5e7eb;
+  }
+</style>
+
+<script>
+  // State
+  let selectedType: string | null = null;
+  let personelData: any = null;
+
+  // Elements
+  const createNewBtn = document.getElementById('createNewBtn');
+  const personelInfo = document.getElementById('personelInfo');
+  const typeModal = document.getElementById('typeModal');
+  const izinModal = document.getElementById('izinModal');
+  const pdfModal = document.getElementById('pdfModal');
+  const typeBtns = document.querySelectorAll('.type-btn');
+  const continueTypeBtn = document.getElementById('continueTypeBtn') as HTMLButtonElement;
+  const previewPdfBtn = document.getElementById('previewPdfBtn');
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+  const printPdfBtn = document.getElementById('printPdfBtn');
+
+  function gorevFromRole(role: string | null | undefined) {
+    if (role === 'admin') return 'Admin';
+    if (role === 'gar_mudur') return 'Gar Müdürü';
+    if (role === 'sef') return 'Şef';
+    return 'Personel';
+  }
+
+  // Sayfa yüklendiğinde kullanıcı bilgilerini getir
+  async function loadPersonelData() {
+    try {
+      const res = await fetch('/api/user/profile');
+      const data = await res.json();
+
+      if (!res.ok || !data.user) return;
+
+      const user = data.user;
+      personelData = {
+        id: null,
+        user_id: user.id,
+        ad_soyad: user.full_name || '',
+        sicil_no: user.sicil_no || '',
+        kky_no: user.kky_no || '',
+        birim: user.bagli_birim || user.istasyon || '',
+        gorevi: user.gorevi || gorevFromRole(user.role),
+        izindeki_adres: null,
+      };
+      showPersonelInfo();
+    } catch (err) {
+      console.error('Personel bilgisi yüklenemedi:', err);
+    }
+  }
+
+  function showPersonelInfo() {
+    if (!personelData) return;
+    
+    document.getElementById('infoAdSoyad')!.textContent = personelData.ad_soyad;
+    document.getElementById('infoSicilKky')!.textContent = personelData.sicil_no + ' / ' + (personelData.kky_no || '');
+    document.getElementById('infoBirim')!.textContent = personelData.birim;
+    document.getElementById('infoGorevi')!.textContent = personelData.gorevi || '-';
+    personelInfo!.style.display = 'block';
+  }
+
+  // Sayfa yüklendiğinde personel bilgilerini getir
+  loadPersonelData();
+
+  // Modal close buttons
+  document.querySelectorAll('[data-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modalId = btn.getAttribute('data-close');
+      const modal = document.getElementById(modalId!);
+      if (modal) modal.style.display = 'none';
+    });
+  });
+
+  // Close modal on backdrop click
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        (modal as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+
+  // Create new button
+  createNewBtn?.addEventListener('click', () => {
+    selectedType = null;
+    typeBtns.forEach(btn => btn.classList.remove('selected'));
+    continueTypeBtn.disabled = true;
+    typeModal!.style.display = 'flex';
+  });
+
+  // Type selection
+  typeBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      typeBtns.forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedType = btn.getAttribute('data-type');
+      updateContinueBtn();
+    });
+  });
+
+  function updateContinueBtn() {
+    continueTypeBtn.disabled = !selectedType;
+  }
+
+  // Continue from type selection
+  continueTypeBtn?.addEventListener('click', async () => {
+    typeModal!.style.display = 'none';
+
+    if (!personelData) {
+      await loadPersonelData();
+    }
+    if (!personelData?.ad_soyad || !personelData?.sicil_no || !personelData?.kky_no || !personelData?.birim || !personelData?.gorevi) {
+      alert('İzin oluşturmak için kullanıcı kartında Sicil No, KKY No, Bağlı Birim ve Görevi bilgileri dolu olmalı.');
+      return;
+    }
+
+    openIzinForm();
+  });
+
+  function openIzinForm() {
+    if (!personelData) return;
+
+    // Personel bilgilerini doldur
+    (document.getElementById('izinAdSoyad') as HTMLInputElement).value = personelData.ad_soyad;
+    // Sicil No / KKY formatında göster (sadece görüntü için)
+    const sicilKky = personelData.sicil_no + ' / ' + (personelData.kky_no || '');
+    (document.getElementById('izinSicilNoDisplay') as HTMLInputElement).value = sicilKky;
+    // Gerçek değerleri hidden input'lara yaz
+    (document.getElementById('izinSicilNo') as HTMLInputElement).value = personelData.sicil_no;
+    (document.getElementById('izinKkyNo') as HTMLInputElement).value = personelData.kky_no || '';
+    (document.getElementById('izinBirim') as HTMLInputElement).value = personelData.birim;
+    (document.getElementById('izinGorevi') as HTMLInputElement).value = personelData.gorevi || '';
+    (document.getElementById('personelId') as HTMLInputElement).value = personelData.id || '';
+    (document.getElementById('izinTuru') as HTMLInputElement).value = selectedType!;
+    (document.getElementById('izindekiAdres') as HTMLInputElement).value = personelData.izindeki_adres || '';
+
+    // Yıl
+    const currentYear = new Date().getFullYear();
+    (document.getElementById('aitOlduguYil') as HTMLInputElement).value = currentYear.toString();
+
+    // İzin türü gösterimi
+    const typeLabels: Record<string, string> = {
+      'yillik': '🏖️ Yıllık İzin',
+      'mazeret': '📋 Mazeret İzni',
+      'hastalik': '🏥 Hastalık İzni',
+      'ucretsiz': '💼 Ücretsiz İzin'
+    };
+    document.getElementById('izinTuruDisplay')!.textContent = typeLabels[selectedType!] || selectedType!;
+
+    // Bugünün tarihi
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    (document.getElementById('istemTarihi') as HTMLInputElement).value = dateStr;
+    document.getElementById('signatureName')!.textContent = personelData.ad_soyad;
+
+    // Tarih alanlarını ayarla
+    const todayISO = today.toISOString().split('T')[0];
+    (document.getElementById('baslangicTarihi') as HTMLInputElement).value = todayISO;
+    (document.getElementById('bitisTarihi') as HTMLInputElement).min = todayISO;
+
+    izinModal!.style.display = 'flex';
+  }
+
+  // Tarih değişikliğinde gün sayısını hesapla
+  const baslangicInput = document.getElementById('baslangicTarihi') as HTMLInputElement;
+  const bitisInput = document.getElementById('bitisTarihi') as HTMLInputElement;
+  const gunSayisiInput = document.getElementById('izinGunSayisi') as HTMLInputElement;
+  const isBasiInput = document.getElementById('isBasiTarihi') as HTMLInputElement;
+
+  function formatInputDate(date: Date) {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  function updateIsBasiTarihi() {
+    if (!bitisInput?.value) return;
+    const bitisDate = new Date(bitisInput.value + 'T00:00:00');
+    if (Number.isNaN(bitisDate.getTime())) return;
+
+    bitisDate.setDate(bitisDate.getDate() + 1);
+    isBasiInput.value = formatInputDate(bitisDate);
+  }
+
+  function calculateDays() {
+    if (!baslangicInput?.value || !bitisInput?.value) return;
+    const start = new Date(baslangicInput.value);
+    const end = new Date(bitisInput.value);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end >= start) {
+      const diffTime = end.getTime() - start.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+      gunSayisiInput.value = diffDays.toString();
+    }
+  }
+
+  baslangicInput?.addEventListener('change', () => {
+    bitisInput.min = baslangicInput.value;
+    calculateDays();
+  });
+
+  bitisInput?.addEventListener('change', () => {
+    calculateDays();
+    updateIsBasiTarihi();
+  });
+
+  // PDF Preview
+  previewPdfBtn?.addEventListener('click', async () => {
+    const form = document.getElementById('izinForm') as HTMLFormElement;
+    const formData = new FormData(form);
+    const data: any = {};
+    formData.forEach((value, key) => data[key] = value);
+
+    if (!data.baslangic_tarihi || !data.bitis_tarihi || !data.izin_gun_sayisi) {
+      alert('Lütfen tüm zorunlu alanları doldurun');
+      return;
+    }
+
+    // İzin isteğini veritabanına kaydet
+    try {
+      const saveRes = await fetch('/api/izin-istegi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          personel_id: data.personel_id || null,
+          ad_soyad: data.ad_soyad,
+          sicil_no: data.sicil_no,
+          kky_no: data.kky_no || null,
+          birim: data.birim,
+          gorevi: data.gorevi || null,
+          izin_turu: data.izin_turu,
+          baslangic_tarihi: data.baslangic_tarihi,
+          bitis_tarihi: data.bitis_tarihi,
+          izin_gun_sayisi: Number(data.izin_gun_sayisi),
+          yol_izni: Number(data.yol_izni || 0),
+          kalan_izin: data.kalan_izin ? Number(data.kalan_izin) : null,
+          is_basi_tarihi: data.is_basi_tarihi || null,
+          aciklama: data.aciklama || null,
+          izindeki_adres: data.izindeki_adres || null
+        })
+      });
+      const saveJson = await saveRes.json();
+      if (!saveRes.ok || !saveJson?.success) {
+        throw new Error(saveJson?.error || 'İzin isteği kaydedilemedi');
+      }
+    } catch (err: any) {
+      alert(err?.message || 'İzin isteği oluşturulamadı');
+      return;
+    }
+
+    generatePdfPreview(data);
+
+    izinModal!.style.display = 'none';
+    pdfModal!.style.display = 'flex';
+  });
+
+  function generatePdfPreview(data: any) {
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const baslangic = new Date(data.baslangic_tarihi).toLocaleDateString('tr-TR');
+    const bitis = new Date(data.bitis_tarihi).toLocaleDateString('tr-TR');
+    const isBasiTarihi = data.is_basi_tarihi ? new Date(data.is_basi_tarihi).toLocaleDateString('tr-TR') : '';
+    const yillikChecked = data.izin_turu === 'yillik' ? '☑' : '☐';
+    const mazeretChecked = data.izin_turu === 'mazeret' ? '☑' : '☐';
+    const hastalikChecked = data.izin_turu === 'hastalik' ? '☑' : '☐';
+    const ucretsizChecked = data.izin_turu === 'ucretsiz' ? '☑' : '☐';
+
+    const html = '<div style="font-family: Arial, sans-serif; max-width: 750px; margin: 0 auto; padding: 20px; color: #000; font-size: 11px;">' +
+      '<!-- Header with Model Number -->' +
+      '<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">' +
+        '<div style="flex: 1;"></div>' +
+        '<div style="text-align: right;">' +
+          '<span style="color: #0066cc; font-weight: bold;">(8005)</span>' +
+        '</div>' +
+      '</div>' +
+      
+      '<!-- Title and Notes -->' +
+      '<div style="display: flex; gap: 30px; margin-bottom: 15px;">' +
+        '<div style="flex: 1;">' +
+          '<h2 style="margin: 0; font-size: 14px; font-weight: bold;">İZİN İSTEĞİ VE ONAYI</h2>' +
+        '</div>' +
+        '<div style="flex: 1.5; font-size: 10px; color: #0066cc;">' +
+          '<p style="margin: 0;"><strong>DİKKAT:</strong> 1. Bu form Kamu kuruluşlarında görevli izinlerinin istem ve onayında kullanılır</p>' +
+          '<p style="margin: 5px 0 0;">2. Form memurun izin dönüşünde 711.002 "İşe başlama ve Ayrılma Bildiriminin" ekinde ilgili birime gönderilir.</p>' +
+        '</div>' +
+      '</div>' +
+      
+      '<!-- İzin Türü Seçimi -->' +
+      '<div style="display: flex; justify-content: center; gap: 40px; margin: 25px 0; font-size: 12px;">' +
+        '<span><span style="font-size: 14px;">' + yillikChecked + '</span> YILLIK İZİN</span>' +
+        '<span><span style="font-size: 14px;">' + mazeretChecked + '</span> MAZERET</span>' +
+        '<span><span style="font-size: 14px;">' + hastalikChecked + '</span> HASTALIK</span>' +
+        '<span><span style="font-size: 14px;">' + ucretsizChecked + '</span> ÜCRETSİZ</span>' +
+      '</div>' +
+      
+      '<!-- Ana Tablo -->' +
+      '<table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">' +
+        '<!-- Satır 1: Birimi, Sicil No, Ait Olduğu Yıl -->' +
+        '<tr>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Birimi:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 25%;">' + (data.birim || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Sicil No:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.sicil_no || '') + ' / ' + (data.kky_no || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 12%;"><strong>Ait Olduğu Yıl:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
+        '</tr>' +
+        '<!-- Satır 2: Adı Soyadı, Başlangıç, Bitiş -->' +
+        '<tr>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Adı Soyadı:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + (data.ad_soyad || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Başlangıç Tarihi:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + baslangic + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Bitiş Tarihi:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + bitis + '</td>' +
+        '</tr>' +
+        '<!-- Satır 3: Görevi, Yol İzni, Kullanacağı İzin -->' +
+        '<tr>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Görevi:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + (data.gorevi || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Yol izni:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + (data.yol_izni || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Kullanacağı İzin Toplamı:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + (data.izin_gun_sayisi || '') + '</td>' +
+        '</tr>' +
+        '<!-- Satır 4: Boş, Kalan İzin, İş Başı Tarihi -->' +
+        '<tr>' +
+          '<td style="border: 1px solid #000; padding: 6px;"></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Kalan izin:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + (data.kalan_izin || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>İş başı tarihi:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + isBasiTarihi + '</td>' +
+        '</tr>' +
+        '<!-- Satır 5: Açıklama -->' +
+        '<tr>' +
+          '<td style="border: 1px solid #000; padding: 6px;"><strong>Açıklama:</strong></td>' +
+          '<td colspan="5" style="border: 1px solid #000; padding: 6px;">' + (data.aciklama || '') + '</td>' +
+        '</tr>' +
+        '<!-- Satır 6: İzindeki Adres Başlık -->' +
+        '<tr>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px;"><strong>İzindeki Adresi:</strong></td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px;"><strong>İstemde bulunanın tarihi, imzası:</strong></td>' +
+        '</tr>' +
+        '<!-- Satır 7: İzindeki Adres Değer -->' +
+        '<tr>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + (data.izindeki_adres || '') + '</td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + dateStr + '</td>' +
+        '</tr>' +
+        '<!-- Satır 8: İmza Bölümleri Başlık -->' +
+        '<tr>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px;"><strong>İzin Veren yetkilinin adı soyadı, ünvanı, imzası:</strong></td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px;"><strong>Onaylayanın adı soyadı, ünvanı, imzası:</strong></td>' +
+        '</tr>' +
+        '<!-- Satır 9-10: İmza Alanları -->' +
+        '<tr>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 80px; vertical-align: top;"></td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 80px; vertical-align: top;"></td>' +
+        '</tr>' +
+      '</table>' +
+    '</div>';
+
+    document.getElementById('pdfPreview')!.innerHTML = html;
+  }
+
+  // Print PDF
+  printPdfBtn?.addEventListener('click', () => {
+    const content = document.getElementById('pdfPreview')!.innerHTML;
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(
+        '<!DOCTYPE html><html><head><title>İzin İsteği Formu - 8005</title>' +
+        '<style>body { margin: 0; padding: 20px; } @media print { body { padding: 0; } }</style>' +
+        '</head><body>' + content + 
+        '<scr' + 'ipt>window.onload = function() { window.print(); }</scr' + 'ipt>' +
+        '</body></html>'
+      );
+      printWindow.document.close();
+    }
+  });
+
+  // Download PDF
+  downloadPdfBtn?.addEventListener('click', async () => {
+    const content = document.getElementById('pdfPreview')!.innerHTML;
+    
+    // Create a blob with the HTML content
+    const htmlContent = '<!DOCTYPE html><html><head><meta charset="UTF-8">' +
+      '<title>İzin İsteği Formu - 8005</title></head><body>' + content + '</body></html>';
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'izin-istegi-' + new Date().toISOString().split('T')[0] + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+
+  // Load existing requests
+  async function loadRequests() {
+    try {
+      const res = await fetch('/api/izin-istegi');
+      const data = await res.json();
+      
+      if (data.istekler && data.istekler.length > 0) {
+        document.getElementById('requestsList')!.style.display = 'block';
+        // Render requests...
+      }
+    } catch (err) {
+      console.error('İstekler yüklenemedi:', err);
+    }
+  }
+
+  // Initial load
+  loadRequests();
+
+  // Modal açıkken body scroll-lock (mobilde yanlış dokunma/scroll sapmasını azaltır)
+  const allModals = Array.from(document.querySelectorAll('.modal')) as HTMLElement[];
+  allModals.forEach((modal) => {
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+  });
+
+  const syncModalLock = () => {
+    const hasOpenModal = allModals.some((modal) => getComputedStyle(modal).display !== 'none');
+    document.body.classList.toggle('modal-open', hasOpenModal);
+  };
+
+  const modalObserver = new MutationObserver(syncModalLock);
+  allModals.forEach((modal) => {
+    modalObserver.observe(modal, { attributes: true, attributeFilter: ['style', 'class'] });
+  });
+  syncModalLock();
+</script>

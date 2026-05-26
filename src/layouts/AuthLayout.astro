@@ -1,0 +1,114 @@
+---
+import Footer from '../components/Footer.astro';
+const { title } = Astro.props;
+const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
+---
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} - TCDD Yönetim Sistemi</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <meta name="msapplication-TileImage" content="/icons/icon-192.png" />
+  <meta name="msapplication-TileColor" content="#1b2845" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1b2845" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
+  <script is:inline src={`/js/app-shell.js?v=${assetVersion}`}></script>
+  <script is:inline define:vars={{ assetVersion }}>
+    window.RailctrlShell?.init({ assetVersion });
+  </script>
+  <link rel="stylesheet" href={`/css/app.css?v=${assetVersion}`} />
+  <style>
+    :root {
+      --primary-color: #007acc;
+      --text-color: #333;
+      --card-bg: white;
+      --shadow-color: rgba(0,0,0,0.1);
+    }
+
+    /* Dark mode variables */
+    [data-theme="dark"] {
+      --primary-color: #4da6ff;
+      --text-color: #ffffff;
+      --card-bg: #1e1e1e;
+      --shadow-color: rgba(0,0,0,0.6);
+    }
+
+    /* Make page background dark with overlay in dark mode */
+    html[data-theme="dark"] body {
+      background: rgba(0, 0, 0, 0.8), url('/files/Marmaray.webp') no-repeat center center fixed;
+      background-size: cover;
+      color: var(--text-color);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: var(--text-color);
+      min-height: 100vh;
+      overflow-x: hidden;
+      animation: fadeIn 0.5s ease-in;
+      will-change: opacity;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    html, body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    /* Respect user's motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="auth-layout">
+  <main>
+    <slot />
+  </main>
+  <Footer />
+  <script>
+    window.RailctrlShell?.finalize();
+  </script>
+</body>
+</html>

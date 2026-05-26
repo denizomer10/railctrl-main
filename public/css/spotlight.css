@@ -1,0 +1,325 @@
+.spotlight-fab {
+  position: fixed;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 2200;
+  min-height: 46px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #1d4ed8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.22);
+}
+
+.spotlight-fab-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.12);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+html[data-theme="dark"] .spotlight-fab {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.45), rgba(59, 130, 246, 0.25));
+  border-color: rgba(96, 165, 250, 0.45);
+  color: #bfdbfe;
+  box-shadow: 0 16px 32px rgba(2, 6, 23, 0.45);
+}
+
+.spotlight-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(2, 6, 23, 0.45);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.spotlight-panel {
+  width: min(760px, 100%);
+  max-height: min(76vh, 700px);
+  overflow: hidden;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 28px 70px rgba(2, 6, 23, 0.38);
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-theme="dark"] .spotlight-panel {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.spotlight-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+html[data-theme="dark"] .spotlight-head {
+  border-bottom-color: #334155;
+}
+
+.spotlight-head-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+html[data-theme="dark"] .spotlight-head-title {
+  color: #e2e8f0;
+}
+
+.spotlight-shortcut {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  background: #e2e8f0;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  padding: 0.14rem 0.45rem;
+}
+
+html[data-theme="dark"] .spotlight-shortcut {
+  color: #cbd5e1;
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.spotlight-close {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+html[data-theme="dark"] .spotlight-close {
+  background: #1f2937;
+  border-color: #374151;
+  color: #cbd5e1;
+}
+
+.spotlight-input-wrap {
+  position: relative;
+  padding: 0.9rem 1rem 0.6rem;
+}
+
+.spotlight-input-icon {
+  position: absolute;
+  left: 1.8rem;
+  top: 1.58rem;
+  color: #64748b;
+  pointer-events: none;
+}
+
+.spotlight-input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #0f172a;
+  padding: 0.75rem 0.9rem 0.75rem 2.35rem;
+  font-size: 0.94rem;
+}
+
+.spotlight-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+html[data-theme="dark"] .spotlight-input {
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .spotlight-input::placeholder {
+  color: #94a3b8;
+}
+
+.spotlight-hint {
+  padding: 0 1rem 0.6rem;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+html[data-theme="dark"] .spotlight-hint {
+  color: #94a3b8;
+}
+
+.spotlight-results {
+  overflow: auto;
+  padding: 0 0.8rem 0.8rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.spotlight-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  text-decoration: none !important;
+  background: #f8fbff;
+  color: #0f172a;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+
+.spotlight-result:visited,
+.spotlight-result:hover,
+.spotlight-result:active,
+.spotlight-result:focus {
+  color: #0f172a;
+  text-decoration: none !important;
+}
+
+.spotlight-result:hover {
+  transform: translateY(-1px);
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+html[data-theme="dark"] .spotlight-result {
+  background: #111827;
+  border-color: #334155;
+  color: #e5e7eb;
+}
+
+html[data-theme="dark"] .spotlight-result:visited,
+html[data-theme="dark"] .spotlight-result:hover,
+html[data-theme="dark"] .spotlight-result:active,
+html[data-theme="dark"] .spotlight-result:focus {
+  color: #e5e7eb;
+  text-decoration: none !important;
+}
+
+html[data-theme="dark"] .spotlight-result:hover {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.spotlight-result-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.spotlight-result-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spotlight-result-sub {
+  font-size: 0.8rem;
+  color: #64748b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-theme="dark"] .spotlight-result-sub {
+  color: #94a3b8;
+}
+
+.spotlight-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 0.22rem 0.58rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+html[data-theme="dark"] .spotlight-badge {
+  background: #1e3a8a;
+  color: #bfdbfe;
+}
+
+.spotlight-empty {
+  padding: 1rem;
+  text-align: center;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  color: #64748b;
+  font-size: 0.86rem;
+}
+
+html[data-theme="dark"] .spotlight-empty {
+  border-color: #475569;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .spotlight-fab {
+    left: 0.7rem;
+    bottom: 0.7rem;
+    min-height: 42px;
+    padding: 0.52rem 0.72rem;
+  }
+
+  .spotlight-panel {
+    width: 100%;
+    max-height: 88vh;
+  }
+
+  .spotlight-results {
+    gap: 0.42rem;
+    padding: 0 0.6rem 0.65rem;
+  }
+
+  .spotlight-result {
+    padding: 0.58rem 0.62rem;
+    gap: 0.52rem;
+    border-radius: 10px;
+  }
+
+  .spotlight-result-title {
+    font-size: 0.82rem;
+  }
+
+  .spotlight-result-sub {
+    font-size: 0.74rem;
+  }
+
+  .spotlight-badge {
+    font-size: 0.64rem;
+    padding: 0.16rem 0.45rem;
+  }
+}

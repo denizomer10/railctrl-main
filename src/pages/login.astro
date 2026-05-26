@@ -1,0 +1,521 @@
+---
+import AuthLayout from '../layouts/AuthLayout.astro';
+
+// URL'den hata parametresini al
+const url = Astro.url;
+const errorParam = url.searchParams.get('error');
+
+// Hata mesajlarını eşleştir
+const errorMessages: Record<string, string> = {
+	'rate_limit': 'Çok fazla başarısız deneme. 15 dakika sonra tekrar deneyin.',
+	'missing_fields': 'Kullanıcı adı ve şifre gerekli.',
+	'invalid_email': 'Sadece @tcdd.gov.tr e-posta adresleri kullanılabilir.',
+	'invalid_credentials': 'Kullanıcı adı veya şifre hatalı.',
+	'unknown': 'Giriş yapılırken bir hata oluştu.'
+};
+
+const serverError = errorParam ? errorMessages[errorParam] || null : null;
+---
+
+<AuthLayout title="Giriş Yap - TCDD Yönetim Sistemi">
+	<div class="login-container">
+		<div class="login-content">
+			<div class="login-card">
+				<div class="login-header">
+					<div class="logo-container">
+						<div class="logo animated-logo">🚆</div>
+					</div>
+					<h1>TCDD Yönetim Sistemi</h1>
+					<p>Kurumsal hesabınızla giriş yapın</p>
+				</div>
+
+				<form id="loginForm" class="login-form" action="/api/auth/login" method="POST">
+					{serverError && (
+						<div class="error-message show" id="serverError">{serverError}</div>
+					)}
+					<div class="form-group">
+						<label for="username">Kullanıcı Adı</label>
+						<div class="input-container">
+							<svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+								<circle cx="12" cy="7" r="4"></circle>
+							</svg>
+							<input
+								type="text"
+								id="username"
+								name="username"
+								placeholder="kullanici_adi"
+								required
+								autocomplete="username"
+							/>
+							<span class="email-suffix">@tcdd.gov.tr</span>
+						</div>
+						<small class="form-hint">Sadece kullanıcı adınızı girin (örn: yasin)</small>
+					</div>
+
+					<div class="form-group">
+						<label for="password">Şifre</label>
+						<div class="input-container">
+							<svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+							</svg>
+							<input
+								type="password"
+								id="password"
+								name="password"
+								placeholder="••••••••"
+								required
+								autocomplete="current-password"
+							/>
+							<button type="button" id="password-toggle" class="password-toggle">
+								<svg class="eye-icon eye-open" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+									<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+								</svg>
+								<svg class="eye-icon eye-closed" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+									<path d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/>
+								</svg>
+							</button>
+						</div>
+					</div>
+
+					<div id="errorMessage" class="error-message"></div>
+
+					<button type="submit" class="login-button">
+						<span class="button-text">Giriş Yap</span>
+						<span class="button-loading" style="display: none;">
+							<span class="spinner"></span> Giriş yapılıyor...
+						</span>
+					</button>
+				</form>
+			</div>
+		</div>
+
+		<div class="bg-shape shape-1"></div>
+		<div class="bg-shape shape-2"></div>
+	</div>
+</AuthLayout>
+
+<style>
+	:root {
+		--primary: #1d4ed8;
+		--primary-dark: #1e40af;
+		--ok: #16a34a;
+		--err: #dc2626;
+		--text: #0f172a;
+		--muted: #334155;
+		--field: rgba(248, 250, 252, 0.72);
+		--field-border: rgba(148, 163, 184, 0.42);
+		--glass-card: rgba(255, 255, 255, 0.58);
+		--glass-border: rgba(255, 255, 255, 0.55);
+		--glass-shadow: 0 20px 46px rgba(2, 6, 23, 0.28);
+	}
+
+	[data-theme="dark"] {
+		--text: #e5e7eb;
+		--muted: #cbd5e1;
+		--field: rgba(15, 23, 42, 0.65);
+		--field-border: rgba(148, 163, 184, 0.34);
+		--glass-card: rgba(15, 23, 42, 0.58);
+		--glass-border: rgba(148, 163, 184, 0.34);
+		--glass-shadow: 0 22px 48px rgba(2, 6, 23, 0.56);
+	}
+
+	.login-container {
+		position: relative;
+		width: 100%;
+		min-height: 100vh;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 1.25rem;
+		overflow: hidden;
+		background:
+			linear-gradient(160deg, rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.48)),
+			url('/files/Marmaray.webp') center/cover no-repeat;
+	}
+
+	.login-container::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(36% 28% at 14% 16%, rgba(96, 165, 250, 0.24), transparent 72%),
+			radial-gradient(32% 26% at 86% 18%, rgba(16, 185, 129, 0.2), transparent 72%),
+			radial-gradient(38% 36% at 76% 90%, rgba(251, 191, 36, 0.14), transparent 76%);
+		pointer-events: none;
+	}
+
+	.login-content {
+		position: relative;
+		z-index: 2;
+		width: 100%;
+		max-width: 460px;
+	}
+
+	.login-card {
+		background: var(--glass-card);
+		border: 1px solid var(--glass-border);
+		border-radius: 18px;
+		padding: 1.4rem;
+		box-shadow: var(--glass-shadow);
+	}
+
+	@supports ((-webkit-backdrop-filter: blur(12px)) or (backdrop-filter: blur(12px))) {
+		.login-card {
+			-webkit-backdrop-filter: blur(12px) saturate(140%);
+			backdrop-filter: blur(12px) saturate(140%);
+		}
+	}
+
+	.login-header {
+		text-align: center;
+		margin-bottom: 1.1rem;
+	}
+
+	.logo.animated-logo {
+		font-size: 2rem;
+		filter: drop-shadow(0 4px 10px rgba(29, 78, 216, 0.28));
+	}
+
+	.login-header h1 {
+		margin: 0.4rem 0 0.35rem;
+		font-size: clamp(1.42rem, 1.8vw, 1.7rem);
+		font-weight: 800;
+		color: var(--text);
+	}
+
+	.login-header p {
+		margin: 0;
+		font-size: 0.9rem;
+		color: var(--muted);
+	}
+
+	.login-form {
+		display: grid;
+		gap: 0.9rem;
+	}
+
+	.form-group {
+		display: grid;
+		gap: 0.42rem;
+	}
+
+	.form-group label {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: var(--text);
+	}
+
+	.input-container {
+		position: relative;
+		display: flex;
+		align-items: center;
+	}
+
+	.input-icon {
+		position: absolute;
+		left: 0.78rem;
+		width: 18px;
+		height: 18px;
+		color: #64748b;
+		z-index: 2;
+	}
+
+	.form-group input {
+		width: 100%;
+		min-height: 46px;
+		padding: 0.72rem 7.5rem 0.72rem 2.35rem;
+		border-radius: 11px;
+		border: 1px solid var(--field-border);
+		background: var(--field);
+		color: var(--text);
+		font-size: 0.95rem;
+	}
+
+	.form-group input[type="password"] {
+		padding-right: 2.6rem;
+	}
+
+	.form-group input:focus {
+		outline: none;
+		border-color: rgba(59, 130, 246, 0.68);
+		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+	}
+
+	.email-suffix {
+		position: absolute;
+		right: 0.55rem;
+		padding: 0.22rem 0.48rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		border-radius: 999px;
+		background: rgba(148, 163, 184, 0.22);
+		color: #475569;
+		pointer-events: none;
+	}
+
+	.form-hint {
+		font-size: 0.74rem;
+		color: #64748b;
+	}
+
+	.password-toggle {
+		position: absolute;
+		right: 0.55rem;
+		width: 30px;
+		height: 30px;
+		border: 1px solid transparent;
+		border-radius: 8px;
+		background: transparent;
+		color: #64748b;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.password-toggle:hover {
+		background: rgba(148, 163, 184, 0.14);
+	}
+
+	.eye-icon {
+		width: 18px;
+		height: 18px;
+	}
+
+	.eye-open { display: block; }
+	.eye-closed { display: none; }
+	.password-toggle.active .eye-open { display: none; }
+	.password-toggle.active .eye-closed { display: block; }
+
+	.error-message {
+		display: none;
+		padding: 0.72rem 0.8rem;
+		border-radius: 11px;
+		font-size: 0.84rem;
+		font-weight: 600;
+		color: #991b1b;
+		background: rgba(254, 226, 226, 0.88);
+		border: 1px solid rgba(248, 113, 113, 0.42);
+	}
+
+	.error-message.show {
+		display: block;
+	}
+
+	.login-button {
+		min-height: 48px;
+		border: none;
+		border-radius: 11px;
+		background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+		color: #fff;
+		font-size: 1rem;
+		font-weight: 800;
+		cursor: pointer;
+		margin-top: 0.1rem;
+		box-shadow: 0 12px 26px rgba(29, 78, 216, 0.35);
+	}
+
+	.login-button:hover {
+		transform: translateY(-1px);
+	}
+
+	.login-button:disabled {
+		opacity: 0.82;
+		cursor: not-allowed;
+		transform: none;
+	}
+
+	.login-button.success {
+		background: linear-gradient(135deg, #16a34a, #15803d);
+		box-shadow: 0 12px 26px rgba(22, 163, 74, 0.34);
+	}
+
+	.login-button.error {
+		background: linear-gradient(135deg, #dc2626, #b91c1c);
+	}
+
+	.button-text,
+	.button-loading {
+		font-weight: 800;
+	}
+
+	.spinner {
+		display: inline-block;
+		width: 14px;
+		height: 14px;
+		border: 2px solid rgba(255, 255, 255, 0.38);
+		border-top-color: #fff;
+		border-radius: 50%;
+		animation: spin 0.8s linear infinite;
+		margin-right: 0.45rem;
+	}
+
+	@keyframes spin {
+		to { transform: rotate(360deg); }
+	}
+
+	.bg-shape {
+		position: absolute;
+		border-radius: 999px;
+		pointer-events: none;
+		opacity: 0.28;
+		background: rgba(191, 219, 254, 0.25);
+	}
+
+	.shape-1 {
+		width: 190px;
+		height: 190px;
+		top: 9%;
+		left: 10%;
+	}
+
+	.shape-2 {
+		width: 130px;
+		height: 130px;
+		bottom: 11%;
+		right: 12%;
+	}
+
+	@media (max-width: 768px) {
+		.login-container {
+			padding: 0.85rem;
+			background-position: 52% center;
+		}
+
+		.login-card {
+			padding: 1rem;
+			border-radius: 14px;
+		}
+
+		.form-group input {
+			font-size: 16px;
+		}
+
+		.shape-1,
+		.shape-2 {
+			display: none;
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		* {
+			animation: none !important;
+			transition: none !important;
+		}
+		.login-button:hover {
+			transform: none;
+		}
+	}
+</style>
+
+<script>
+	function initLoginForm() {
+		const form = document.getElementById('loginForm') as HTMLFormElement | null;
+		const errorDiv = document.getElementById('errorMessage') as HTMLDivElement | null;
+		const usernameInput = document.getElementById('username') as HTMLInputElement | null;
+		const passwordInput = document.getElementById('password') as HTMLInputElement | null;
+		const toggleBtn = document.getElementById('password-toggle') as HTMLButtonElement | null;
+
+		if (!form || !errorDiv || !usernameInput || !passwordInput) {
+			return;
+		}
+		if (form.dataset.bound === '1') {
+			return;
+		}
+		form.dataset.bound = '1';
+
+		const loginButton = form.querySelector('.login-button') as HTMLButtonElement;
+		const buttonText = form.querySelector('.button-text') as HTMLSpanElement;
+		const buttonLoading = form.querySelector('.button-loading') as HTMLSpanElement;
+
+		if (!loginButton || !buttonText || !buttonLoading) {
+			return;
+		}
+
+		function setButtonIdle() {
+			loginButton.disabled = false;
+			loginButton.classList.remove('success');
+			buttonText.style.display = 'inline';
+			buttonText.textContent = 'Giriş Yap';
+			buttonLoading.style.display = 'none';
+		}
+
+		form.addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const username = usernameInput.value.trim();
+			const password = passwordInput.value;
+
+			if (!username || !password) {
+				errorDiv.textContent = 'Lütfen tüm alanları doldurun';
+				errorDiv.classList.add('show');
+				loginButton.classList.remove('success');
+				loginButton.classList.add('error');
+				return;
+			}
+
+			errorDiv.classList.remove('show');
+			loginButton.classList.remove('error', 'success');
+			loginButton.disabled = true;
+			buttonText.style.display = 'none';
+			buttonLoading.style.display = 'inline-flex';
+
+			try {
+				const response = await fetch('/api/auth/login', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({ username, password }),
+				});
+
+				const data = await response.json().catch(() => ({}));
+
+				if (!response.ok) {
+					const errorMessage = typeof data?.error === 'string'
+						? data.error
+						: 'Şifre hatalı veya giriş başarısız.';
+					errorDiv.textContent = errorMessage;
+					errorDiv.classList.add('show');
+					loginButton.classList.add('error');
+					setButtonIdle();
+					return;
+				}
+
+				const fullName = typeof data?.user?.fullName === 'string' && data.user.fullName.trim()
+					? data.user.fullName.trim()
+					: username;
+
+				buttonLoading.style.display = 'none';
+				buttonText.style.display = 'inline';
+				buttonText.textContent = `Hoş geldiniz, ${fullName}`;
+				loginButton.classList.add('success');
+
+				setTimeout(() => {
+					window.location.href = '/';
+				}, 1800);
+			} catch {
+				errorDiv.textContent = 'Giriş sırasında ağ hatası oluştu. Tekrar deneyin.';
+				errorDiv.classList.add('show');
+				loginButton.classList.add('error');
+				setButtonIdle();
+			}
+		});
+
+		if (toggleBtn) {
+			toggleBtn.addEventListener('click', () => {
+				const isText = passwordInput.type === 'text';
+				passwordInput.type = isText ? 'password' : 'text';
+				toggleBtn.classList.toggle('active');
+			});
+		}
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initLoginForm, { once: true });
+	} else {
+		initLoginForm();
+	}
+</script>
