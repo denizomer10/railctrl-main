@@ -808,6 +808,15 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
             if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
           },
           methods: {
+            roleLabel(role) {
+              const labels = {
+                user: 'Personel',
+                sef: 'Şef',
+                gar_mudur: 'Gar Müdürü',
+                admin: 'Admin',
+              };
+              return labels[role] || role || '-';
+            },
             async api(path, options = {}) {
               const res = await fetch(path, {
                 credentials: 'include',
@@ -1240,7 +1249,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                           <tr v-for="u in users" :key="u.id">
                             <td>{{ u.name }}</td>
                             <td>{{ u.email }}</td>
-                            <td><span class="tag role">{{ u.role }}</span></td>
+                            <td><span class="tag role">{{ roleLabel(u.role) }}</span></td>
                             <td>{{ u.gorevi || '-' }}</td>
                             <td>{{ u.istasyon || '-' }}</td>
                             <td><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></td>
@@ -1260,7 +1269,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                       <div class="user-mobile-card" v-for="u in users" :key="'m-' + u.id">
                         <div class="user-mobile-row"><div class="user-mobile-k">Ad Soyad</div><div class="user-mobile-v">{{ u.name }}</div></div>
                         <div class="user-mobile-row"><div class="user-mobile-k">E-posta</div><div class="user-mobile-v">{{ u.email }}</div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">{{ u.role }}</span></div></div>
+                        <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">{{ roleLabel(u.role) }}</span></div></div>
                         <div class="user-mobile-row"><div class="user-mobile-k">Görevi</div><div class="user-mobile-v">{{ u.gorevi || '-' }}</div></div>
                         <div class="user-mobile-row"><div class="user-mobile-k">İstasyon</div><div class="user-mobile-v">{{ u.istasyon || '-' }}</div></div>
                         <div class="user-mobile-row"><div class="user-mobile-k">Durum</div><div class="user-mobile-v"><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></div></div>
