@@ -1098,6 +1098,8 @@ import PageLayout from '../layouts/PageLayout.astro';
 
 <script>
   // State
+  const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
+  const SABIT_GOREV = 'İstasyon Operasyon İşçisi';
   let selectedType: string | null = null;
   let personelData: any = null;
 
@@ -1113,13 +1115,6 @@ import PageLayout from '../layouts/PageLayout.astro';
   const downloadPdfBtn = document.getElementById('downloadPdfBtn');
   const printPdfBtn = document.getElementById('printPdfBtn');
 
-  function gorevFromRole(role: string | null | undefined) {
-    if (role === 'admin') return 'Admin';
-    if (role === 'gar_mudur') return 'Gar Müdürü';
-    if (role === 'sef') return 'Şef';
-    return 'Personel';
-  }
-
   // Sayfa yüklendiğinde kullanıcı bilgilerini getir
   async function loadPersonelData() {
     try {
@@ -1133,8 +1128,8 @@ import PageLayout from '../layouts/PageLayout.astro';
         id: null,
         user_id: user.id,
         ad_soyad: user.full_name || '',
-        birim: user.istasyon || '',
-        gorevi: user.gorevi || gorevFromRole(user.role),
+        birim: SABIT_BIRIM,
+        gorevi: SABIT_GOREV,
         izindeki_adres: null,
       };
       showPersonelInfo();
@@ -1311,8 +1306,8 @@ import PageLayout from '../layouts/PageLayout.astro';
         body: JSON.stringify({
           personel_id: data.personel_id || null,
           ad_soyad: data.ad_soyad,
-          birim: data.birim,
-          gorevi: data.gorevi || null,
+          birim: SABIT_BIRIM,
+          gorevi: SABIT_GOREV,
           izin_turu: data.izin_turu,
           baslangic_tarihi: data.baslangic_tarihi,
           bitis_tarihi: data.bitis_tarihi,

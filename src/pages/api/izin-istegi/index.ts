@@ -11,6 +11,9 @@ import { ensureAppSchema } from '../../../lib/schema';
 
 export const prerender = false;
 
+const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
+const SABIT_GOREV = 'İstasyon Operasyon İşçisi';
+
 async function ensureIzinIstekleriTableShape(): Promise<void> {
   const info = await query<any>('PRAGMA table_info(izin_istekleri)');
   if (!info.rows.length) return;
@@ -218,8 +221,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
         personel_id || null,
         user.id,
         ad_soyad,
-        birim,
-        gorevi || null,
+        SABIT_BIRIM,
+        SABIT_GOREV,
         aitOlduguYil,
         izin_turu,
         baslangic_tarihi,
@@ -242,7 +245,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         izin_turu,
         baslangic_tarihi,
         bitis_tarihi,
-        birim,
+        birim: SABIT_BIRIM,
       },
       ipAddress: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
