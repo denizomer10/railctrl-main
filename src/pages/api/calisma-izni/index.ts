@@ -111,14 +111,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'Çalışma kodu, yapılacak iş ve istasyon zorunludur' }, 400);
     }
 
-    const userInfo = await query<any>(`
-      SELECT u.full_name, p.ad_soyad
-      FROM users u
-      LEFT JOIN personel_kayitlari p ON p.user_id = u.id
-      WHERE u.id = $1
-    `, [locals.user.id]);
+    const userInfo = await query<any>(
+      'SELECT full_name FROM users WHERE id = $1',
+      [locals.user.id]
+    );
     const bildirenAdSoyad =
-      userInfo.rows[0]?.ad_soyad ||
       userInfo.rows[0]?.full_name ||
       locals.user.displayName ||
       null;
