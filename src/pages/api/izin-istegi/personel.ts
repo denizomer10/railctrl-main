@@ -33,42 +33,38 @@ async function ensurePersonelTableShape(): Promise<void> {
   await query('BEGIN');
   try {
     await query('DROP TABLE IF EXISTS personel_kayitlari__new');
-    await query(`
-      CREATE TABLE personel_kayitlari__new (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL UNIQUE,
-        ad_soyad TEXT NOT NULL,
-        sicil_no TEXT NOT NULL,
-        kky_no TEXT,
-        birim TEXT NOT NULL,
-        gorevi TEXT,
-        unvan TEXT,
-        telefon TEXT,
-        izindeki_adres TEXT,
-        created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+      await query(`
+        CREATE TABLE personel_kayitlari__new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL UNIQUE,
+          ad_soyad TEXT NOT NULL,
+          birim TEXT NOT NULL,
+          gorevi TEXT,
+          unvan TEXT,
+          telefon TEXT,
+          izindeki_adres TEXT,
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-    await query(`
-      INSERT INTO personel_kayitlari__new (
-        id, user_id, ad_soyad, sicil_no, kky_no, birim, gorevi, unvan, telefon, izindeki_adres, created_at, updated_at
-      )
-      SELECT
-        ${idExpr},
-        ${col('user_id')},
-        ${col('ad_soyad', "''")},
-        ${col('sicil_no', "''")},
-        ${col('kky_no')},
-        ${col('birim', "''")},
-        ${col('gorevi')},
-        ${col('unvan')},
-        ${col('telefon')},
-        ${col('izindeki_adres')},
-        COALESCE(${col('created_at')}, CURRENT_TIMESTAMP),
-        COALESCE(${col('updated_at')}, CURRENT_TIMESTAMP)
-      FROM personel_kayitlari
-    `);
+      await query(`
+        INSERT INTO personel_kayitlari__new (
+          id, user_id, ad_soyad, birim, gorevi, unvan, telefon, izindeki_adres, created_at, updated_at
+        )
+        SELECT
+          ${idExpr},
+          ${col('user_id')},
+          ${col('ad_soyad', "''")},
+          ${col('birim', "''")},
+          ${col('gorevi')},
+          ${col('unvan')},
+          ${col('telefon')},
+          ${col('izindeki_adres')},
+          COALESCE(${col('created_at')}, CURRENT_TIMESTAMP),
+          COALESCE(${col('updated_at')}, CURRENT_TIMESTAMP)
+        FROM personel_kayitlari
+      `);
 
     await query('DROP TABLE personel_kayitlari');
     await query('ALTER TABLE personel_kayitlari__new RENAME TO personel_kayitlari');
@@ -100,21 +96,19 @@ export const GET: APIRoute = async ({ locals }) => {
 
     if (result.rows.length === 0) {
       const fromUser = await query<any>(
-        `SELECT full_name, istasyon, sicil_no, kky_no, bagli_birim FROM users WHERE id = $1`,
+        `SELECT full_name, istasyon FROM users WHERE id = $1`,
         [user.id]
       );
       if (fromUser.rows.length > 0) {
         const u = fromUser.rows[0];
-        const hasMasterData = Boolean(u.sicil_no || u.kky_no || u.bagli_birim);
+        const hasMasterData = Boolean(u.istasyon);
         if (hasMasterData) {
           return new Response(JSON.stringify({
             personel: {
               id: null,
               user_id: user.id,
               ad_soyad: u.full_name || user.displayName,
-              sicil_no: u.sicil_no || '',
-              kky_no: u.kky_no || '',
-              birim: u.bagli_birim || u.istasyon || '',
+              birim: u.istasyon || '',
               gorevi: '',
               unvan: null,
               telefon: null,
@@ -159,11 +153,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { ad_soyad, sicil_no, kky_no, birim, gorevi, unvan, telefon, izindeki_adres } = body;
+    const { ad_soyad, birim, gorevi, unvan, telefon, izindeki_adres } = body;
 
     // Validasyon
-    if (!ad_soyad || !sicil_no || !kky_no || !birim || !gorevi) {
-      return new Response(JSON.stringify({ error: 'Ad soyad, sicil no, KKY no, birim ve görevi zorunludur' }), {
+    if (!ad_soyad || !birim || !gorevi) {
+      return new Response(JSON.stringify({ error: 'Ad soyad, birim ve görevi zorunludur' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -180,27 +174,20 @@ export const POST: APIRoute = async ({ request, locals }) => {
       // Güncelle
       result = await query<any>(
         `UPDATE personel_kayitlari 
-         SET ad_soyad = $1, sicil_no = $2, kky_no = $3, birim = $4, gorevi = $5, unvan = $6, telefon = $7, izindeki_adres = $8, updated_at = NOW()
-         WHERE user_id = $9
+         SET ad_soyad = $1, birim = $2, gorevi = $3, unvan = $4, telefon = $5, izindeki_adres = $6, updated_at = NOW()
+         WHERE user_id = $7
          RETURNING *`,
-        [ad_soyad, sicil_no, kky_no, birim, gorevi, unvan || null, telefon || null, izindeki_adres || null, user.id]
+        [ad_soyad, birim, gorevi, unvan || null, telefon || null, izindeki_adres || null, user.id]
       );
     } else {
       // Yeni kayıt
       result = await query<any>(
-        `INSERT INTO personel_kayitlari (user_id, ad_soyad, sicil_no, kky_no, birim, gorevi, unvan, telefon, izindeki_adres)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        `INSERT INTO personel_kayitlari (user_id, ad_soyad, birim, gorevi, unvan, telefon, izindeki_adres)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          RETURNING *`,
-        [user.id, ad_soyad, sicil_no, kky_no, birim, gorevi, unvan || null, telefon || null, izindeki_adres || null]
+        [user.id, ad_soyad, birim, gorevi, unvan || null, telefon || null, izindeki_adres || null]
       );
     }
-
-    await query(
-      `UPDATE users
-       SET sicil_no = $1, kky_no = $2, bagli_birim = $3
-       WHERE id = $4`,
-      [sicil_no, kky_no || null, birim, user.id]
-    );
 
     await logAudit({
       userId: user.id,
@@ -209,7 +196,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       resourceId: result.rows[0]?.id || null,
       details: {
         ad_soyad,
-        sicil_no,
         birim,
         gorevi,
       },
@@ -248,7 +234,7 @@ export const DELETE: APIRoute = async ({ locals, request }) => {
     }
 
     const existing = await query<any>(
-      `SELECT id, ad_soyad, sicil_no, birim, gorevi FROM personel_kayitlari WHERE user_id = $1`,
+      `SELECT id, ad_soyad, birim, gorevi FROM personel_kayitlari WHERE user_id = $1`,
       [user.id]
     );
 
@@ -265,7 +251,6 @@ export const DELETE: APIRoute = async ({ locals, request }) => {
         resourceId: existing.rows[0]?.id || null,
         details: {
           ad_soyad: existing.rows[0]?.ad_soyad || null,
-          sicil_no: existing.rows[0]?.sicil_no || null,
           birim: existing.rows[0]?.birim || null,
           gorevi: existing.rows[0]?.gorevi || null,
         },

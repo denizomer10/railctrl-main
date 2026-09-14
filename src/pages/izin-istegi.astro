@@ -32,10 +32,6 @@ import PageLayout from '../layouts/PageLayout.astro';
                 <span id="infoAdSoyad" class="info-value"></span>
               </div>
               <div class="info-row">
-                <span class="info-label">Sicil / KKY:</span>
-                <span id="infoSicilKky" class="info-value"></span>
-              </div>
-              <div class="info-row">
                 <span class="info-label">Birim:</span>
                 <span id="infoBirim" class="info-value"></span>
               </div>
@@ -104,30 +100,15 @@ import PageLayout from '../layouts/PageLayout.astro';
                 <input type="text" id="adSoyad" name="ad_soyad" required placeholder="Adınız Soyadınız">
               </div>
               <div class="form-group">
-                <label for="sicilNo">Sicil No *</label>
-                <input type="text" id="sicilNo" name="sicil_no" required placeholder="Örn: 10004321">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label for="kkyNo">KKY No *</label>
-                <input type="text" id="kkyNo" name="kky_no" required placeholder="Örn: 89823">
-              </div>
-              <div class="form-group">
-                <!-- Boş alan -->
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
                 <label for="birim">Birim *</label>
                 <input type="text" id="birim" name="birim" required placeholder="Çalıştığınız birim">
               </div>
+            </div>
+            <div class="form-row">
               <div class="form-group">
                 <label for="gorevi">Görevi *</label>
                 <input type="text" id="gorevi" name="gorevi" required placeholder="Göreviniz (örn: İstasyon Operasyon İşçisi)">
               </div>
-            </div>
-            <div class="form-row">
               <div class="form-group">
                 <label for="izindekiAdresKayit">İzindeki Adres</label>
                 <input type="text" id="izindekiAdresKayit" name="izindeki_adres" placeholder="İzin sırasında kalacağınız adres">
@@ -162,20 +143,18 @@ import PageLayout from '../layouts/PageLayout.astro';
                   <input type="text" id="izinAdSoyad" name="ad_soyad" readonly>
                 </div>
                 <div class="form-group">
-                  <label>Sicil No / KKY</label>
-                  <input type="text" id="izinSicilNoDisplay" readonly>
-                  <input type="hidden" id="izinSicilNo" name="sicil_no">
-                  <input type="hidden" id="izinKkyNo" name="kky_no">
+                  <label>Birim</label>
+                  <input type="text" id="izinBirim" name="birim" readonly>
                 </div>
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Birim</label>
-                  <input type="text" id="izinBirim" name="birim" readonly>
-                </div>
-                <div class="form-group">
                   <label>Görevi</label>
                   <input type="text" id="izinGorevi" name="gorevi" readonly>
+                </div>
+                <div class="form-group">
+                  <label>İzindeki Adres</label>
+                  <input type="text" id="izindekiAdres" name="izindeki_adres" readonly>
                 </div>
               </div>
               <div class="form-row">
@@ -1150,9 +1129,7 @@ import PageLayout from '../layouts/PageLayout.astro';
         id: null,
         user_id: user.id,
         ad_soyad: user.full_name || '',
-        sicil_no: user.sicil_no || '',
-        kky_no: user.kky_no || '',
-        birim: user.bagli_birim || user.istasyon || '',
+        birim: user.istasyon || '',
         gorevi: user.gorevi || gorevFromRole(user.role),
         izindeki_adres: null,
       };
@@ -1166,7 +1143,6 @@ import PageLayout from '../layouts/PageLayout.astro';
     if (!personelData) return;
     
     document.getElementById('infoAdSoyad')!.textContent = personelData.ad_soyad;
-    document.getElementById('infoSicilKky')!.textContent = personelData.sicil_no + ' / ' + (personelData.kky_no || '');
     document.getElementById('infoBirim')!.textContent = personelData.birim;
     document.getElementById('infoGorevi')!.textContent = personelData.gorevi || '-';
     personelInfo!.style.display = 'block';
@@ -1222,8 +1198,8 @@ import PageLayout from '../layouts/PageLayout.astro';
     if (!personelData) {
       await loadPersonelData();
     }
-    if (!personelData?.ad_soyad || !personelData?.sicil_no || !personelData?.kky_no || !personelData?.birim || !personelData?.gorevi) {
-      alert('İzin oluşturmak için kullanıcı kartında Sicil No, KKY No, Bağlı Birim ve Görevi bilgileri dolu olmalı.');
+    if (!personelData?.ad_soyad || !personelData?.birim || !personelData?.gorevi) {
+      alert('İzin oluşturmak için ad soyad, birim ve görev bilgileri dolu olmalı.');
       return;
     }
 
@@ -1235,12 +1211,6 @@ import PageLayout from '../layouts/PageLayout.astro';
 
     // Personel bilgilerini doldur
     (document.getElementById('izinAdSoyad') as HTMLInputElement).value = personelData.ad_soyad;
-    // Sicil No / KKY formatında göster (sadece görüntü için)
-    const sicilKky = personelData.sicil_no + ' / ' + (personelData.kky_no || '');
-    (document.getElementById('izinSicilNoDisplay') as HTMLInputElement).value = sicilKky;
-    // Gerçek değerleri hidden input'lara yaz
-    (document.getElementById('izinSicilNo') as HTMLInputElement).value = personelData.sicil_no;
-    (document.getElementById('izinKkyNo') as HTMLInputElement).value = personelData.kky_no || '';
     (document.getElementById('izinBirim') as HTMLInputElement).value = personelData.birim;
     (document.getElementById('izinGorevi') as HTMLInputElement).value = personelData.gorevi || '';
     (document.getElementById('personelId') as HTMLInputElement).value = personelData.id || '';
@@ -1337,8 +1307,6 @@ import PageLayout from '../layouts/PageLayout.astro';
         body: JSON.stringify({
           personel_id: data.personel_id || null,
           ad_soyad: data.ad_soyad,
-          sicil_no: data.sicil_no,
-          kky_no: data.kky_no || null,
           birim: data.birim,
           gorevi: data.gorevi || null,
           izin_turu: data.izin_turu,
@@ -1412,10 +1380,10 @@ import PageLayout from '../layouts/PageLayout.astro';
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Birimi:</strong></td>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 25%;">' + (data.birim || '') + '</td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Sicil No:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.sicil_no || '') + ' / ' + (data.kky_no || '') + '</td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 12%;"><strong>Ait Olduğu Yıl:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Ait Olduğu Yıl:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 12%;"></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 13%;"></td>' +
         '</tr>' +
         '<!-- Satır 2: Adı Soyadı, Başlangıç, Bitiş -->' +
         '<tr>' +

@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     await ensureAppSchema();
     const result = await query(
-      `SELECT id, username, email, full_name, role, gorevi, department, phone, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, created_at 
+      `SELECT id, username, email, full_name, role, gorevi, department, phone, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, created_at 
        FROM users WHERE id = $1`,
       [locals.user.id]
     );
@@ -208,7 +208,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     values.push(locals.user.id);
     const result = await query(
       `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} 
-       RETURNING id, username, email, full_name, role, gorevi, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya`,
+       RETURNING id, username, email, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya`,
       values
     );
 

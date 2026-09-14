@@ -12,13 +12,45 @@ async function addColumnIfMissing(table: string, column: string, definition: str
   await query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
+async function pruneDeprecatedUserColumns(): Promise<void> {
+  const tables = ['users', 'personel_kayitlari', 'izin_istekleri'];
+
+  for (const table of tables) {
+    const info = await query<{ name: string; type: string | null; notnull: number; dflt_value: string | null; pk: number }>(`PRAGMA table_info(${table})`);
+    if (!info.rows.length) continue;
+
+    const deprecatedColumns = ['sicil_no', 'kky_no', 'bagli_birim'];
+    const columnsToDrop = deprecatedColumns.filter((name) => info.rows.some((row) => row.name === name));
+    if (columnsToDrop.length === 0) continue;
+
+    const keepColumns = info.rows.filter((row) => !columnsToDrop.includes(row.name));
+    if (keepColumns.length === 0) continue;
+
+    const tempName = `${table}__clean`;
+    await query(`ALTER TABLE ${table} RENAME TO ${table}__legacy`);
+    await query(`
+      CREATE TABLE ${tempName} (
+        ${keepColumns.map((column) => {
+          let sql = `${column.name} ${column.type || 'TEXT'}`;
+          if (column.notnull) sql += ' NOT NULL';
+          if (column.dflt_value !== null && column.dflt_value !== undefined) sql += ` DEFAULT ${column.dflt_value}`;
+          if (column.pk) sql += ' PRIMARY KEY';
+          return sql;
+        }).join(', ')}
+      )
+    `);
+    await query(`INSERT INTO ${tempName} (${keepColumns.map((column) => column.name).join(', ')}) SELECT ${keepColumns.map((column) => column.name).join(', ')} FROM ${table}__legacy`);
+    await query(`DROP TABLE ${table}__legacy`);
+    await query(`ALTER TABLE ${tempName} RENAME TO ${table}`);
+  }
+}
+
 export async function ensureAppSchema(): Promise<void> {
   if (bootstrapped) return;
 
+  await pruneDeprecatedUserColumns();
+
   await addColumnIfMissing('users', 'istasyon', 'TEXT');
-  await addColumnIfMissing('users', 'sicil_no', 'TEXT');
-  await addColumnIfMissing('users', 'kky_no', 'TEXT');
-  await addColumnIfMissing('users', 'bagli_birim', 'TEXT');
   await addColumnIfMissing('users', 'gorevi', 'TEXT');
   await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
@@ -57,8 +89,6 @@ export async function ensureAppSchema(): Promise<void> {
       id INTEGER PRIMARY KEY,
       user_id TEXT NOT NULL UNIQUE,
       ad_soyad TEXT NOT NULL,
-      sicil_no TEXT NOT NULL,
-      kky_no TEXT,
       birim TEXT NOT NULL,
       gorevi TEXT,
       unvan TEXT,
@@ -76,8 +106,6 @@ export async function ensureAppSchema(): Promise<void> {
       personel_id INTEGER,
       user_id TEXT NOT NULL,
       ad_soyad TEXT NOT NULL,
-      sicil_no TEXT NOT NULL,
-      kky_no TEXT,
       birim TEXT NOT NULL,
       gorevi TEXT,
       ait_oldugu_yil INTEGER,

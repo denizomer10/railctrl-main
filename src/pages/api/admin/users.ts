@@ -18,7 +18,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     await ensureAppSchema();
     const result = await query(
-      `SELECT id, email, full_name as name, role, gorevi, is_active, created_at, last_login, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma
+      `SELECT id, email, full_name as name, role, gorevi, is_active, created_at, last_login, istasyon, notify_mms, notify_calisma
        FROM users 
        ORDER BY created_at DESC`
     );
@@ -47,7 +47,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { email, name, password, role, gorevi, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma } = await request.json();
+    const { email, name, password, role, gorevi, istasyon, notify_mms, notify_calisma } = await request.json();
 
     // Validate input
     if (!email || !name || !password || !role) {
@@ -85,10 +85,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Create user
     const result = await query(
-      `INSERT INTO users (id, username, email, password_hash, full_name, role, gorevi, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
-       RETURNING id, email, full_name as name, role, gorevi, is_active, created_at, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma`,
-      [crypto.randomUUID(), username, email, passwordHash, name, role, gorevi || null, istasyon || null, sicil_no || null, kky_no || null, bagli_birim || null, notify_mms ?? true, notify_calisma ?? true]
+      `INSERT INTO users (id, username, email, password_hash, full_name, role, gorevi, istasyon, notify_mms, notify_calisma) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+       RETURNING id, email, full_name as name, role, gorevi, is_active, created_at, istasyon, notify_mms, notify_calisma`,
+      [crypto.randomUUID(), username, email, passwordHash, name, role, gorevi || null, istasyon || null, notify_mms ?? true, notify_calisma ?? true]
     );
 
     await logAudit({
@@ -101,9 +101,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
         role,
         gorevi: gorevi || null,
         istasyon: istasyon || null,
-        sicil_no: sicil_no || null,
-        kky_no: kky_no || null,
-        bagli_birim: bagli_birim || null,
       },
       ipAddress: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),

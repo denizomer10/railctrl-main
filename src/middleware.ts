@@ -180,9 +180,6 @@ const authMiddleware = defineMiddleware(async (context, next) => {
           displayName: user.fullName,
           role: user.role,
           station: user.station || null,
-          sicilNo: user.sicilNo || null,
-          kkyNo: user.kkyNo || null,
-          bagliBirim: user.bagliBirim || null,
         };
       } else {
         cookies.delete('access-token', { path: '/' });
