@@ -35,6 +35,7 @@ export async function ensureAppSchema(): Promise<void> {
 
   await addColumnIfMissing('users', 'istasyon', 'TEXT');
   await addColumnIfMissing('users', 'gorevi', 'TEXT');
+  await query(`UPDATE users SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_vardiya', 'INTEGER NOT NULL DEFAULT 1');
@@ -81,6 +82,7 @@ export async function ensureAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`UPDATE personel_kayitlari SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await query(`CREATE INDEX IF NOT EXISTS idx_personel_kayitlari_user_id ON personel_kayitlari(user_id)`);
 
   await query(`
@@ -107,6 +109,7 @@ export async function ensureAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`UPDATE izin_istekleri SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await query(`CREATE INDEX IF NOT EXISTS idx_izin_istekleri_user_created ON izin_istekleri(user_id, created_at DESC)`);
 
   await query(`
