@@ -1459,26 +1459,44 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                     <strong>Yeni Personel Ekle</strong>
                     <button class="btn soft" @click="closeCreateUser">Kapat</button>
                   </div>
-                  <div class="modal-grid">
-                    <input v-model="newUser.name" placeholder="Ad Soyad" />
-                    <input v-model="newUser.email" placeholder="E-posta" />
-                    <input v-model="newUser.password" type="password" placeholder="Şifre" />
-                    <select v-model="newUser.gorevi">
-                      <option value="Şef">Şef</option>
-                      <option value="İstasyon Operasyon İşçisi">İstasyon Operasyon İşçisi</option>
-                      <option value="Gar Müdürü">Gar Müdürü</option>
-                      <option value="Personel">Personel</option>
-                    </select>
-                    <select v-model="newUser.role">
-                      <option value="user">Personel Yetkisi</option>
-                      <option value="sef">Şef Yetkisi</option>
-                      <option value="gar_mudur">Gar Müdürü Yetkisi</option>
-                      <option value="admin">Admin Yetkisi</option>
-                    </select>
-                    <select v-model="newUser.istasyon">
-                      <option value="">İstasyon</option>
-                      <option v-for="s in stations" :key="'new-' + s" :value="s">{{ s }}</option>
-                    </select>
+                  <div class="modal-grid edit-user-grid">
+                    <div class="edit-user-field">
+                      <label for="new-user-name">Ad Soyad</label>
+                      <input id="new-user-name" v-model="newUser.name" placeholder="Ad Soyad" />
+                    </div>
+                    <div class="edit-user-field">
+                      <label for="new-user-email">E-posta</label>
+                      <input id="new-user-email" v-model="newUser.email" type="email" placeholder="E-posta" />
+                    </div>
+                    <div class="edit-user-field">
+                      <label for="new-user-password">Şifre</label>
+                      <input id="new-user-password" v-model="newUser.password" type="password" placeholder="Şifre" />
+                    </div>
+                    <div class="edit-user-field">
+                      <label for="new-user-role">Rol</label>
+                      <select id="new-user-role" v-model="newUser.role">
+                        <option value="user">Personel</option>
+                        <option value="sef">Şef</option>
+                        <option value="gar_mudur">Gar Müdürü</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                    </div>
+                    <div class="edit-user-field">
+                      <label for="new-user-job">Görevi</label>
+                      <select id="new-user-job" v-model="newUser.gorevi">
+                        <option value="Şef">Şef</option>
+                        <option value="İstasyon Operasyon İşçisi">İstasyon Operasyon İşçisi</option>
+                        <option value="Gar Müdürü">Gar Müdürü</option>
+                        <option value="Personel">Personel</option>
+                      </select>
+                    </div>
+                    <div class="edit-user-field">
+                      <label for="new-user-station">İstasyon</label>
+                      <select id="new-user-station" v-model="newUser.istasyon">
+                        <option value="">İstasyon</option>
+                        <option v-for="s in stations" :key="'new-' + s" :value="s">{{ s }}</option>
+                      </select>
+                    </div>
                   </div>
                   <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
                     <button class="btn soft" @click="closeCreateUser">İptal</button>
