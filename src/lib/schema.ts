@@ -20,28 +20,11 @@ async function pruneDeprecatedUserColumns(): Promise<void> {
     if (!info.rows.length) continue;
 
     const deprecatedColumns = ['sicil_no', 'kky_no', 'bagli_birim'];
-    const columnsToDrop = deprecatedColumns.filter((name) => info.rows.some((row) => row.name === name));
-    if (columnsToDrop.length === 0) continue;
-
-    const keepColumns = info.rows.filter((row) => !columnsToDrop.includes(row.name));
-    if (keepColumns.length === 0) continue;
-
-    const tempName = `${table}__clean`;
-    await query(`ALTER TABLE ${table} RENAME TO ${table}__legacy`);
-    await query(`
-      CREATE TABLE ${tempName} (
-        ${keepColumns.map((column) => {
-          let sql = `${column.name} ${column.type || 'TEXT'}`;
-          if (column.notnull) sql += ' NOT NULL';
-          if (column.dflt_value !== null && column.dflt_value !== undefined) sql += ` DEFAULT ${column.dflt_value}`;
-          if (column.pk) sql += ' PRIMARY KEY';
-          return sql;
-        }).join(', ')}
-      )
-    `);
-    await query(`INSERT INTO ${tempName} (${keepColumns.map((column) => column.name).join(', ')}) SELECT ${keepColumns.map((column) => column.name).join(', ')} FROM ${table}__legacy`);
-    await query(`DROP TABLE ${table}__legacy`);
-    await query(`ALTER TABLE ${tempName} RENAME TO ${table}`);
+    for (const column of deprecatedColumns) {
+      if (info.rows.some((row) => row.name === column)) {
+        await query(`ALTER TABLE ${table} DROP COLUMN ${column}`);
+      }
+    }
   }
 }
 
