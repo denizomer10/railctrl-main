@@ -159,12 +159,12 @@ import PageLayout from '../layouts/PageLayout.astro';
               </div>
               <div class="form-row">
                 <div class="form-group">
-                  <label>Ait Olduğu Yıl</label>
-                  <input type="number" id="aitOlduguYil" name="ait_oldugu_yil" readonly>
-                </div>
-                <div class="form-group">
                   <label for="izinSicilNo">Sicil No</label>
                   <input type="text" id="izinSicilNo" name="sicil_no" placeholder="Sicil numaranız">
+                </div>
+                <div class="form-group">
+                  <label>Ait Olduğu Yıl</label>
+                  <input type="number" id="aitOlduguYil" name="ait_oldugu_yil" readonly>
                 </div>
               </div>
             </div>
@@ -1380,14 +1380,14 @@ import PageLayout from '../layouts/PageLayout.astro';
       
       '<!-- Ana Tablo -->' +
       '<table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">' +
-        '<!-- Satır 1: Birimi, Ait Olduğu Yıl, Sicil No -->' +
+        '<!-- Satır 1: Birimi, Sicil No, Ait Olduğu Yıl -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Birimi:</strong></td>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 25%;">' + (data.birim || '') + '</td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Ait Olduğu Yıl:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 12%;"><strong>Sicil No:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + (data.sicil_no || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.sicil_no || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Ait Olduğu Yıl:</strong></td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
         '</tr>' +
         '<!-- Satır 2: Adı Soyadı, Başlangıç, Bitiş -->' +
         '<tr>' +
