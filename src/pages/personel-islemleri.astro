@@ -1,82 +1,6 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 
-// PDF formları tanımları - relative URL'ler (localhost / tunnel / prod uyumlu)
-const formlar = [
-  {
-    id: 'izin-istegi',
-    title: 'İzin İsteği (8005)',
-    description: 'Yıllık, mazeret, hastalık veya ücretsiz izin formu',
-    icon: '📅',
-    color: '#0ea5e9',
-    href: '/izin-istegi'
-  },
-  {
-    id: 'dogum-yardim',
-    title: 'Doğum Yardımı Formu',
-    description: 'Doğum yardımı başvuru formu',
-    icon: '👶',
-    color: '#ec4899',
-    pdf: '/files/dogum-yardim.pdf'
-  },
-  {
-    id: 'kimlik-calisan',
-    title: 'Kimlik Talep - Çalışan (EK-2)',
-    description: 'Çalışanlar için kimlik talep formu',
-    icon: '🪪',
-    color: '#3b82f6',
-    pdf: '/files/kimlik-talep-ek-2-calisan.pdf'
-  },
-  {
-    id: 'kimlik-emekli',
-    title: 'Kimlik Talep - Emekli (EK-3)',
-    description: 'Emekliler için kimlik talep formu',
-    icon: '🎫',
-    color: '#8b5cf6',
-    pdf: '/files/kimlik-talep-ek-3-emekli.pdf'
-  },
-  {
-    id: 'kimlik-aile',
-    title: 'Kimlik Talep - Aile (EK-4)',
-    description: 'Aile tanıtım kartı talep formu',
-    icon: '👨‍👩‍👧',
-    color: '#06b6d4',
-    pdf: '/files/kimlik-talep-ek-4-aile-tanitim.pdf'
-  },
-  {
-    id: 'periyodik-muayene',
-    title: 'Periyodik Muayene Formu',
-    description: 'Sağlık periyodik muayene formu',
-    icon: '🏥',
-    color: '#10b981',
-    pdf: '/files/Periyodik Muayene.pdf'
-  },
-  {
-    id: 'lojman-basvuru',
-    title: 'Lojman Başvuru Formu',
-    description: 'Lojman tahsis başvuru formu',
-    icon: '🏠',
-    color: '#f59e0b',
-    pdf: '/files/lojman-basvuru.pdf'
-  },
-  {
-    id: 'calisma-izni',
-    title: 'Çalışma İzin Formu',
-    description: 'Çalışma izni talep formu',
-    icon: '📝',
-    color: '#6366f1',
-    pdf: '/files/calisma-izin-formu.pdf'
-  },
-  {
-    id: 'aile-beyannamesi',
-    title: 'Aile Beyannamesi',
-    description: 'Aile beyannamesi formu',
-    icon: '👪',
-    color: '#14b8a6',
-    pdf: '/files/aile-beyannamesi.pdf'
-  }
-];
-
 // Kurumsal sistem linkleri
 const sayfaLinkleri = [
   {
@@ -160,45 +84,18 @@ const sayfaLinkleri = [
 
     <!-- Form Cards Grid -->
     <div class="forms-grid">
-      {formlar.map(form => (
-        form.href ? (
-          <a 
-            class="form-card page-link" 
-            href={form.href}
-            style={`--card-color: ${form.color}`}
-          >
-            <div class="card-icon">{form.icon}</div>
-            <div class="card-content">
-              <h3>{form.title}</h3>
-              <p>{form.description}</p>
-            </div>
-            <div class="card-arrow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </div>
-          </a>
-        ) : (
-          <a
-            class="form-card js-pdf-card"
-            href={form.pdf ?? '#'}
-            data-pdf={form.pdf ?? ''}
-            data-title={form.title}
-            style={`--card-color: ${form.color}`}
-          >
-            <div class="card-icon">{form.icon}</div>
-            <div class="card-content">
-              <h3>{form.title}</h3>
-              <p>{form.description}</p>
-            </div>
-            <div class="card-arrow">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18l6-6-6-6"/>
-              </svg>
-            </div>
-          </a>
-        )
-      ))}
+      <a class="form-card page-link" href="/formlar" style="--card-color: #0ea5e9">
+        <div class="card-icon">📝</div>
+        <div class="card-content">
+          <h3>Formlar</h3>
+          <p>İzin, kimlik, yardım ve diğer personel formlarına erişin</p>
+        </div>
+        <div class="card-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </div>
+      </a>
       
       {/* Sayfa Linkleri */}
       {sayfaLinkleri.map(link => (
