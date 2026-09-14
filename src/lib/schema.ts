@@ -12,6 +12,21 @@ async function addColumnIfMissing(table: string, column: string, definition: str
   await query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
+async function removeUnusedEmptyTables(): Promise<void> {
+  for (const table of ['hakedis', 'izin_takip', 'kimlik_talep', 'periyodik_muayene']) {
+    const tableExists = await query<{ name: string }>(
+      `SELECT name FROM sqlite_master WHERE type = 'table' AND name = $1`,
+      [table]
+    );
+    if (!tableExists.rows.length) continue;
+
+    const count = await query<{ count: number }>(`SELECT COUNT(*) AS count FROM ${table}`);
+    if (Number(count.rows[0]?.count || 0) === 0) {
+      await query(`DROP TABLE ${table}`);
+    }
+  }
+}
+
 async function pruneDeprecatedUserColumns(): Promise<void> {
   const tables = ['users', 'personel_kayitlari', 'izin_istekleri'];
 
@@ -31,6 +46,7 @@ async function pruneDeprecatedUserColumns(): Promise<void> {
 export async function ensureAppSchema(): Promise<void> {
   if (bootstrapped) return;
 
+  await removeUnusedEmptyTables();
   await pruneDeprecatedUserColumns();
 
   await addColumnIfMissing('users', 'istasyon', 'TEXT');
