@@ -26,7 +26,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { name, email, role, gorevi, password, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma } = await request.json();
+    const { name, email, role, gorevi, password, istasyon, notify_mms, notify_calisma } = await request.json();
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -78,24 +78,6 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       paramIndex++;
     }
 
-    if (sicil_no !== undefined) {
-      updates.push(`sicil_no = $${paramIndex}`);
-      values.push(sicil_no || null);
-      paramIndex++;
-    }
-
-    if (kky_no !== undefined) {
-      updates.push(`kky_no = $${paramIndex}`);
-      values.push(kky_no || null);
-      paramIndex++;
-    }
-
-    if (bagli_birim !== undefined) {
-      updates.push(`bagli_birim = $${paramIndex}`);
-      values.push(bagli_birim || null);
-      paramIndex++;
-    }
-
     if (notify_mms !== undefined) {
       updates.push(`notify_mms = $${paramIndex}`);
       values.push(Boolean(notify_mms));
@@ -117,7 +99,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
     values.push(id);
     const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, full_name as name, role, gorevi, is_active, istasyon, sicil_no, kky_no, bagli_birim, notify_mms, notify_calisma`,
+      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, full_name as name, role, gorevi, is_active, istasyon, notify_mms, notify_calisma`,
       values
     );
 
@@ -139,9 +121,6 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
         role,
         gorevi,
         istasyon,
-        sicil_no,
-        kky_no,
-        bagli_birim,
         notify_mms,
         notify_calisma,
       },

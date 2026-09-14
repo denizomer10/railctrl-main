@@ -38,9 +38,6 @@ declare namespace App {
 			displayName: string;
 			role: 'admin' | 'sef' | 'gar_mudur' | 'user';
 			station?: string | null;
-			sicilNo?: string | null;
-			kkyNo?: string | null;
-			bagliBirim?: string | null;
 		};
 	}
 }

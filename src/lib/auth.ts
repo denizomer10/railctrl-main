@@ -19,9 +19,6 @@ export interface User {
   fullName: string;
   role: UserRole;
   station?: string | null;
-  sicilNo?: string | null;
-  kkyNo?: string | null;
-  bagliBirim?: string | null;
   department?: string;
   phone?: string;
   isActive: boolean;
@@ -166,9 +163,6 @@ export async function login(
     fullName: userRow.full_name,
     role: userRow.role,
     station: userRow.istasyon,
-    sicilNo: userRow.sicil_no,
-    kkyNo: userRow.kky_no,
-    bagliBirim: userRow.bagli_birim,
     department: userRow.department,
     isActive: userRow.is_active,
     lastLogin: userRow.last_login,
@@ -247,9 +241,6 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens | 
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    sicilNo: row.sicil_no,
-    kkyNo: row.kky_no,
-    bagliBirim: row.bagli_birim,
     department: row.department,
     isActive: row.is_active,
     lastLogin: row.last_login,
@@ -338,9 +329,6 @@ export async function createUser(
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    sicilNo: row.sicil_no,
-    kkyNo: row.kky_no,
-    bagliBirim: row.bagli_birim,
     department: row.department,
     isActive: row.is_active,
     lastLogin: row.last_login,
@@ -371,9 +359,6 @@ export async function getUserById(userId: string): Promise<User | null> {
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    sicilNo: row.sicil_no,
-    kkyNo: row.kky_no,
-    bagliBirim: row.bagli_birim,
     department: row.department,
     isActive: row.is_active,
     lastLogin: row.last_login,
@@ -404,9 +389,6 @@ export async function getUserByEmail(email: string): Promise<User | null> {
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    sicilNo: row.sicil_no,
-    kkyNo: row.kky_no,
-    bagliBirim: row.bagli_birim,
     department: row.department,
     isActive: row.is_active,
     lastLogin: row.last_login,
@@ -437,9 +419,6 @@ export async function getUserByUsername(username: string): Promise<User | null> 
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    sicilNo: row.sicil_no,
-    kkyNo: row.kky_no,
-    bagliBirim: row.bagli_birim,
     department: row.department,
     isActive: row.is_active,
     lastLogin: row.last_login,

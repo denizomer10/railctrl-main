@@ -715,7 +715,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
               recordsSearch: '',
               report: null,
               showCreateUserModal: false,
-              newUser: { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' },
+              newUser: { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' },
               editUser: null,
               theme: document.documentElement.getAttribute('data-theme') || 'light',
               toast: '',
@@ -993,7 +993,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                   method: 'POST',
                   body: JSON.stringify(this.newUser),
                 });
-                this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' };
+                this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' };
                 this.showCreateUserModal = false;
                 this.notify('Personel eklendi');
                 await this.refreshAll();
@@ -1002,7 +1002,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
               }
             },
             openCreateUser() {
-              this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '', sicil_no: '', kky_no: '', bagli_birim: '' };
+              this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' };
               this.showCreateUserModal = true;
             },
             closeCreateUser() {
@@ -1016,9 +1016,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                 role: user.role || 'user',
                 gorevi: user.gorevi || 'Personel',
                 istasyon: user.istasyon || '',
-                sicil_no: user.sicil_no || '',
-                kky_no: user.kky_no || '',
-                bagli_birim: user.bagli_birim || '',
                 password: '',
               };
             },
@@ -1034,9 +1031,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                   role: this.editUser.role,
                   gorevi: this.editUser.gorevi,
                   istasyon: this.editUser.istasyon,
-                  sicil_no: this.editUser.sicil_no,
-                  kky_no: this.editUser.kky_no,
-                  bagli_birim: this.editUser.bagli_birim,
                   password: this.editUser.password || undefined,
                 };
                 await this.api('/api/admin/users/' + this.editUser.id, {
@@ -1220,8 +1214,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                             <th>Rol</th>
                             <th>Görevi</th>
                             <th>İstasyon</th>
-                            <th>Sicil / KKY</th>
-                            <th>Bağlı Birim</th>
                             <th>Durum</th>
                             <th>Son Giriş</th>
                             <th>İşlem</th>
@@ -1234,8 +1226,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                             <td><span class="tag role">{{ u.role }}</span></td>
                             <td>{{ u.gorevi || '-' }}</td>
                             <td>{{ u.istasyon || '-' }}</td>
-                            <td>{{ (u.sicil_no || '-') + ' / ' + (u.kky_no || '-') }}</td>
-                            <td>{{ u.bagli_birim || '-' }}</td>
                             <td><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></td>
                             <td>{{ fmtDate(u.last_login) }}</td>
                             <td>
@@ -1463,9 +1453,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                       <option value="">İstasyon</option>
                       <option v-for="s in stations" :key="'new-' + s" :value="s">{{ s }}</option>
                     </select>
-                    <input v-model="newUser.sicil_no" placeholder="Sicil No" />
-                    <input v-model="newUser.kky_no" placeholder="KKY No" />
-                    <input v-model="newUser.bagli_birim" placeholder="Bağlı Birim" />
                   </div>
                   <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
                     <button class="btn soft" @click="closeCreateUser">İptal</button>
@@ -1499,9 +1486,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                       <option value="">İstasyon</option>
                       <option v-for="s in stations" :key="s" :value="s">{{ s }}</option>
                     </select>
-                    <input v-model="editUser.sicil_no" placeholder="Sicil No" />
-                    <input v-model="editUser.kky_no" placeholder="KKY No" />
-                    <input v-model="editUser.bagli_birim" placeholder="Bağlı Birim" />
                     <input class="full-span" v-model="editUser.password" type="password" placeholder="Yeni şifre (opsiyonel)" />
                   </div>
                   <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">

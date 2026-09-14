@@ -38,8 +38,6 @@ async function ensureIzinIstekleriTableShape(): Promise<void> {
         personel_id INTEGER,
         user_id TEXT NOT NULL,
         ad_soyad TEXT NOT NULL,
-        sicil_no TEXT NOT NULL,
-        kky_no TEXT,
         birim TEXT NOT NULL,
         gorevi TEXT,
         ait_oldugu_yil INTEGER,
@@ -61,7 +59,7 @@ async function ensureIzinIstekleriTableShape(): Promise<void> {
 
     await query(`
       INSERT INTO izin_istekleri__new (
-        id, personel_id, user_id, ad_soyad, sicil_no, kky_no, birim, gorevi, ait_oldugu_yil,
+        id, personel_id, user_id, ad_soyad, birim, gorevi, ait_oldugu_yil,
         izin_turu, baslangic_tarihi, bitis_tarihi, izin_gun_sayisi, yol_izni, kalan_izin,
         is_basi_tarihi, aciklama, istem_tarihi, izindeki_adres, durum, created_at, updated_at
       )
@@ -70,8 +68,6 @@ async function ensureIzinIstekleriTableShape(): Promise<void> {
         ${col('personel_id')},
         ${col('user_id', "''")},
         ${col('ad_soyad', "''")},
-        ${col('sicil_no', "''")},
-        ${col('kky_no')},
         ${col('birim', "''")},
         ${col('gorevi')},
         ${col('ait_oldugu_yil')},
@@ -176,9 +172,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = await request.json();
     const { 
       personel_id,
-      ad_soyad, 
-      sicil_no,
-      kky_no,
+      ad_soyad,
       birim,
       gorevi,
       izin_turu,
@@ -193,7 +187,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     } = body;
 
     // Validasyon
-    if (!ad_soyad || !sicil_no || !birim || !izin_turu || !baslangic_tarihi || !bitis_tarihi || !izin_gun_sayisi) {
+    if (!ad_soyad || !birim || !izin_turu || !baslangic_tarihi || !bitis_tarihi || !izin_gun_sayisi) {
       return new Response(JSON.stringify({ error: 'Tüm zorunlu alanları doldurun' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
@@ -214,18 +208,16 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const result = await query<any>(
       `INSERT INTO izin_istekleri (
-        personel_id, user_id, ad_soyad, sicil_no, kky_no, birim, gorevi,
+        personel_id, user_id, ad_soyad, birim, gorevi,
         ait_oldugu_yil, izin_turu, baslangic_tarihi, bitis_tarihi, 
         izin_gun_sayisi, yol_izni, kalan_izin, is_basi_tarihi, aciklama,
         istem_tarihi, izindeki_adres, durum
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_DATE, $17, 'beklemede')
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_DATE, $15, 'beklemede')
       RETURNING *`,
       [
         personel_id || null,
         user.id,
         ad_soyad,
-        sicil_no,
-        kky_no || null,
         birim,
         gorevi || null,
         aitOlduguYil,
