@@ -35,6 +35,17 @@ export async function ensureAppSchema(): Promise<void> {
 
   await addColumnIfMissing('users', 'istasyon', 'TEXT');
   await addColumnIfMissing('users', 'gorevi', 'TEXT');
+  await query(`
+    UPDATE users
+    SET role = CASE role
+      WHEN 'Personel' THEN 'user'
+      WHEN 'Şef' THEN 'sef'
+      WHEN 'Gar Müdürü' THEN 'gar_mudur'
+      WHEN 'Admin' THEN 'admin'
+      ELSE role
+    END
+    WHERE role IN ('Personel', 'Şef', 'Gar Müdürü', 'Admin')
+  `);
   await query(`UPDATE users SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
