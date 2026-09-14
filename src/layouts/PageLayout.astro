@@ -672,27 +672,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
       padding: 0.75rem 3rem 0.75rem 2.35rem;
       font-size: 0.94rem;
     }
-    .spotlight-voice-btn {
-      position: absolute;
-      right: 1.45rem;
-      top: 1.2rem;
-      width: 34px;
-      height: 34px;
-      border-radius: 10px;
-      border: 1px solid #cbd5e1;
-      background: #ffffff;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.95rem;
-    }
-    .spotlight-voice-btn.listening {
-      border-color: #ef4444;
-      color: #ef4444;
-      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
-    }
-
     .spotlight-input:focus {
       outline: none;
       border-color: #60a5fa;
@@ -708,12 +687,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     [data-theme="dark"] .spotlight-input::placeholder {
       color: #94a3b8;
     }
-    [data-theme="dark"] .spotlight-voice-btn {
-      background: #111827;
-      border-color: #374151;
-      color: #e5e7eb;
-    }
-
     .spotlight-hint {
       padding: 0 1rem 0.6rem;
       color: #64748b;
@@ -724,16 +697,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     [data-theme="dark"] .spotlight-hint {
       color: #94a3b8;
     }
-    .spotlight-voice-help {
-      padding: 0 1rem 0.55rem;
-      color: #64748b;
-      font-size: 0.78rem;
-      line-height: 1.35;
-    }
-    [data-theme="dark"] .spotlight-voice-help {
-      color: #94a3b8;
-    }
-
     .spotlight-results {
       overflow: auto;
       padding: 0 0.8rem 0.8rem;
@@ -970,10 +933,8 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
           <div class="spotlight-input-wrap">
             <span class="spotlight-input-icon">🔎</span>
             <input id="globalSearchInput" class="spotlight-input" type="text" placeholder="MMS, Çalışma İzni, Not, Kayıp Eşya, Dahili Numara..." autocomplete="off" />
-            <button id="globalSearchVoiceBtn" class="spotlight-voice-btn" type="button" aria-label="Sesli arama">🎙️</button>
           </div>
           <div id="globalSearchHint" class="spotlight-hint">En az 2 karakter yazın</div>
-          <div class="spotlight-voice-help">MMS için: <b>arıza kaydı oluştur</b> • Çalışma izni için: <b>çalışma izni ekle</b> • İstasyon için: <b>gebze istasyon şeması</b></div>
           <div id="globalSearchResults" class="spotlight-results"></div>
         </div>
       </div>
@@ -1233,7 +1194,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
         const modal = document.getElementById('globalSearchModal');
         const closeBtn = document.getElementById('globalSearchClose');
         const input = document.getElementById('globalSearchInput');
-        const voiceBtn = document.getElementById('globalSearchVoiceBtn');
         const hint = document.getElementById('globalSearchHint');
         const resultsEl = document.getElementById('globalSearchResults');
 
@@ -1759,65 +1719,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
         input.addEventListener('input', () => {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(onSearch, 220);
-        });
-        voiceBtn?.addEventListener('click', () => {
-          if (!SpeechRecognitionCtor) {
-            hint.textContent = 'Tarayıcı sesli aramayı desteklemiyor';
-            return;
-          }
-          const rec = new SpeechRecognitionCtor();
-          rec.lang = 'tr-TR';
-          rec.continuous = false;
-          rec.interimResults = false;
-          let pendingConfirmHref = '';
-          let pendingConfirmPrompt = '';
-          let confirmTriggered = false;
-          const triggerVoiceConfirm = (href, prompt) => {
-            if (!href || confirmTriggered) return;
-            confirmTriggered = true;
-            pendingConfirmHref = '';
-            pendingConfirmPrompt = '';
-            waitVoiceYesThenNavigate(href, prompt);
-          };
-          voiceBtn.classList.add('listening');
-          hint.textContent = 'Dinleniyor...';
-          rec.onresult = async (event) => {
-            const transcript = String(event.results?.[0]?.[0]?.transcript || '').trim();
-            const intent = detectVoiceIntent(transcript);
-            if (intent) {
-              hint.textContent = `${intent.label} ekranına yönlendirilecek. Devam edilsin mi?`;
-              const prompt = `${intent.label} ekranına yönlendirilecek. Devam edilsin mi?`;
-              pendingConfirmHref = intent.href;
-              pendingConfirmPrompt = prompt;
-              triggerVoiceConfirm(intent.href, prompt);
-              return;
-            }
-            input.value = transcript;
-            await onSearch();
-            if (resultsEl.querySelector('.spotlight-result')) {
-              const first = resultsEl.querySelector('.spotlight-result');
-              const firstHref = first?.getAttribute('href') || '';
-              const prompt = `${transcript} için sonuç bulundu. Bunu mu demek istediniz? Açılsın mı?`;
-              hint.textContent = `"${transcript}" için sonuç bulundu. Bunu mu demek istediniz? Açılsın mı?`;
-              pendingConfirmHref = firstHref;
-              pendingConfirmPrompt = prompt;
-              triggerVoiceConfirm(firstHref, prompt);
-            } else {
-              hint.textContent = `"${transcript}" için sonuç bulunamadı. Başka bir komut söyleyin ya da arayın.`;
-            }
-          };
-          rec.onerror = () => { hint.textContent = 'Ses algılanamadı. Başka bir komut söyleyin ya da arayın.'; };
-          rec.onend = () => {
-            voiceBtn.classList.remove('listening');
-            if (!confirmTriggered && pendingConfirmHref) {
-              const href = pendingConfirmHref;
-              const prompt = pendingConfirmPrompt;
-              pendingConfirmHref = '';
-              pendingConfirmPrompt = '';
-              triggerVoiceConfirm(href, prompt);
-            }
-          };
-          rec.start();
         });
 
         modal.addEventListener('click', (event) => {
