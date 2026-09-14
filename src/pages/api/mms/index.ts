@@ -135,10 +135,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const acilanBirim = userInfo.rows[0]?.department || null;
 
     const result = await query<any>(
-      `INSERT INTO mms_records (zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by)
-       VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO mms_records (zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
+       VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8, CASE WHEN $4 = 'Onarıldı' THEN CURRENT_TIMESTAMP ELSE NULL END)
        RETURNING *`,
-      [body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id]
+      [body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id, body.not?.trim() || null]
     );
 
     await createStationNotifications(body.istasyon, 'notify_mms', {

@@ -111,12 +111,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'Çalışma kodu, yapılacak iş ve istasyon zorunludur' }, 400);
     }
 
+    const userInfo = await query<any>('SELECT full_name FROM users WHERE id = $1', [locals.user.id]);
+    const bildirenAdSoyad = userInfo.rows[0]?.full_name || locals.user.displayName || null;
+
     const result = await query<any>(
       `INSERT INTO calisma_izinleri (
-        zaman_damgasi, mms_numarasi, calisma_kodu, yapilacak_is, calisanlar, istasyon
-      ) VALUES (NOW(), $1, $2, $3, $4, $5)
+        zaman_damgasi, mms_numarasi, calisma_kodu, yapilacak_is, calisanlar, istasyon, bildiren_ad_soyad
+      ) VALUES (NOW(), $1, $2, $3, $4, $5, $6)
       RETURNING *`,
-      [body.mms_numarasi || null, body.calisma_kodu, body.yapilacak_is, body.calisanlar || null, body.istasyon]
+      [body.mms_numarasi || null, body.calisma_kodu, body.yapilacak_is, body.calisanlar || null, body.istasyon, bildirenAdSoyad]
     );
 
     await createStationNotifications(body.istasyon, 'notify_calisma', {

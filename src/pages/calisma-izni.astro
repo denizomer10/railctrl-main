@@ -52,11 +52,12 @@ const marmarayIstasyonlari = [
             <th>Yapılacak İş</th>
             <th>Çalışanlar</th>
             <th>İstasyon</th>
+            <th>Bildiren</th>
             <th>İşlem</th>
           </tr>
         </thead>
         <tbody id="tableBody">
-          <tr class="loading-row"><td colspan="7"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>
+          <tr class="loading-row"><td colspan="8"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>
         </tbody>
       </table>
     </div>
@@ -468,7 +469,7 @@ const marmarayIstasyonlari = [
     }
 
     async function loadRecords() {
-      tableBody.innerHTML = `<tr class="loading-row"><td colspan="7"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>`;
+      tableBody.innerHTML = `<tr class="loading-row"><td colspan="8"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>`;
       noResults.style.display = 'none';
 
       try {
@@ -517,6 +518,7 @@ const marmarayIstasyonlari = [
             <td class="is-cell" data-label="Yapılacak İş">${r.yapilacak_is || '-'}</td>
             <td class="calisan-cell" data-label="Çalışanlar">${r.calisanlar || '-'}</td>
             <td data-label="İstasyon"><span class="istasyon-badge">${r.istasyon || '-'}</span></td>
+            <td data-label="Bildiren">${r.bildiren_ad_soyad || '-'}</td>
             <td data-label="İşlem">${canEditCalisma() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
           `;
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
@@ -527,7 +529,7 @@ const marmarayIstasyonlari = [
         totalPages = Math.max(1, Number(data.pagination?.totalPages ?? Math.ceil(paginationTotalCount / limit) ?? 1));
         renderPagination();
       } catch (error: any) {
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
       }
     }
 
@@ -792,6 +794,7 @@ const marmarayIstasyonlari = [
             { text: 'Yapılacak İş', style: 'tableHeader' },
             { text: 'Çalışanlar', style: 'tableHeader' },
             { text: 'İstasyon', style: 'tableHeader' },
+            { text: 'Bildiren', style: 'tableHeader' },
           ],
           ...reportData.map((r: any) => [
             String(r.mms_numarasi || '-'),
@@ -800,6 +803,7 @@ const marmarayIstasyonlari = [
             String(r.yapilacak_is || '-'),
             String(r.calisanlar || '-'),
             String(r.istasyon || '-'),
+            String(r.bildiren_ad_soyad || '-'),
           ]),
         ];
 
@@ -811,7 +815,7 @@ const marmarayIstasyonlari = [
         content.push({
           table: {
             headerRows: 1,
-            widths: [52, 72, 48, '*', 95, 62],
+            widths: [45, 62, 45, '*', 75, 55, 65],
             body: tableBody,
           },
           layout: {

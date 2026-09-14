@@ -137,6 +137,10 @@ const marmarayIstasyonlari = [
             <option value="Parça Bekleniyor">📦 Parça Bekleniyor</option>
           </select>
         </div>
+        <div class="form-group" id="notGroup" style="display: none;">
+          <label>Not <span class="optional-label">(Opsiyonel)</span></label>
+          <textarea id="not" rows="2" placeholder="Durumla ilgili not ekleyin..."></textarea>
+        </div>
         <div id="formMessage" class="form-message" style="display: none;"></div>
         <div class="form-actions">
           <button type="button" id="deleteRecordBtn" class="btn-delete" style="display: none;">Sil</button>
@@ -391,6 +395,9 @@ const marmarayIstasyonlari = [
   .mms-no { font-weight: 700; color: #667eea; font-family: monospace; }
   [data-theme="dark"] .mms-no { color: #a5b4fc; }
   .date-cell { color: #666; font-size: 0.8rem; white-space: nowrap; }
+  .date-cell small { display: block; margin-top: 0.2rem; color: #15803d; font-size: 0.72rem; }
+  .mms-note { margin-top: 0.35rem; color: #64748b; font-size: 0.78rem; white-space: pre-wrap; }
+  .optional-label { color: #64748b; font-size: 0.78rem; font-weight: normal; }
   [data-theme="dark"] .date-cell { color: #aaa; }
   .ariza-cell { max-width: 280px; line-height: 1.3; }
   [data-theme="dark"] .ariza-cell { color: #e0e0e0; }
@@ -649,6 +656,7 @@ const marmarayIstasyonlari = [
     const recordForm = document.getElementById('recordForm') as HTMLFormElement;
     const formMessage = document.getElementById('formMessage') as HTMLElement;
     const durumGroup = document.getElementById('durumGroup') as HTMLElement;
+    const notGroup = document.getElementById('notGroup') as HTMLElement;
     const deleteRecordBtn = document.getElementById('deleteRecordBtn') as HTMLButtonElement;
     const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement;
     const allModals: HTMLElement[] = [];
@@ -687,6 +695,15 @@ const marmarayIstasyonlari = [
     let currentUserRole = 'user';
     const pageParams = new URLSearchParams(window.location.search);
     const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
+
+    function escapeHtml(value: unknown) {
+      return String(value)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
 
     function clearAutoEditQuery() {
       const next = new URLSearchParams(window.location.search);
@@ -811,11 +828,16 @@ const marmarayIstasyonlari = [
           const tarih = r.zaman_damgasi ? new Date(r.zaman_damgasi).toLocaleString('tr-TR', {
             day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
           }) : '-';
+          const onarilmaTarihi = r.onarilma_tarihi ? new Date(r.onarilma_tarihi).toLocaleString('tr-TR', {
+            day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          }) : '';
+          const tarihGosterimi = onarilmaTarihi ? `${tarih}<br><small>Onarıldı: ${onarilmaTarihi}</small>` : tarih;
+          const notGosterimi = r.not ? `<div class="mms-note">Not: ${escapeHtml(r.not)}</div>` : '';
           
           row.innerHTML = `
             <td data-label="MMS No"><span class="mms-no">${r.mms_numarasi || '-'}</span></td>
-            <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
-            <td class="ariza-cell" data-label="Arıza Tanımı">${r.ariza_tanimi || '-'}</td>
+            <td data-label="Tarih"><span class="date-cell">${tarihGosterimi}</span></td>
+            <td class="ariza-cell" data-label="Arıza Tanımı">${escapeHtml(r.ariza_tanimi || '-')} ${notGosterimi}</td>
             <td class="istasyon-cell" data-label="İstasyon">${r.istasyon || '-'}</td>
             <td data-label="Bildiren">${r.acan_ad_soyad || '-'}</td>
             <td data-label="Durum">${getStatusBadge(r.durum)}</td>
@@ -843,8 +865,10 @@ const marmarayIstasyonlari = [
       (document.getElementById('ariza_tanimi') as HTMLTextAreaElement).value = record.ariza_tanimi || '';
       (document.getElementById('istasyon') as HTMLSelectElement).value = record.istasyon || '';
       (document.getElementById('durum') as HTMLSelectElement).value = record.durum || '';
+      (document.getElementById('not') as HTMLTextAreaElement).value = record.not || '';
       
       durumGroup.style.display = 'block';
+      notGroup.style.display = 'block';
       
       const canEdit = canEditMms();
       (document.getElementById('mms_numarasi') as HTMLInputElement).disabled = !canEdit;
@@ -863,6 +887,7 @@ const marmarayIstasyonlari = [
       modalTitle.textContent = 'Yeni MMS Kaydı';
       recordForm.reset();
       durumGroup.style.display = 'none';
+      notGroup.style.display = 'none';
       deleteRecordBtn.style.display = 'none';
       
       (document.getElementById('mms_numarasi') as HTMLInputElement).disabled = false;
@@ -899,6 +924,7 @@ const marmarayIstasyonlari = [
       };
       if (editingId) {
         payload.durum = (document.getElementById('durum') as HTMLSelectElement).value;
+        payload.not = (document.getElementById('not') as HTMLTextAreaElement).value.trim() || null;
       }
 
       try {

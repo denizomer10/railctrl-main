@@ -78,14 +78,18 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     const values: any[] = [];
     let paramIndex = 1;
 
-    const allowedFields = ['mms_numarasi', 'ariza_tanimi', 'istasyon', 'durum'];
+    const allowedFields = ['mms_numarasi', 'ariza_tanimi', 'istasyon', 'durum', 'not'];
 
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
-        updates.push(`${field} = $${paramIndex}`);
-        values.push(body[field]);
+        updates.push(`${field === 'not' ? '"not"' : field} = $${paramIndex}`);
+        values.push(field === 'not' ? (String(body[field] || '').trim() || null) : body[field]);
         paramIndex++;
       }
+    }
+
+    if (body.durum !== undefined) {
+      updates.push(`onarilma_tarihi = ${body.durum === 'Onarıldı' ? 'CURRENT_TIMESTAMP' : 'NULL'}`);
     }
 
     if (updates.length === 0) {

@@ -71,6 +71,9 @@ export async function ensureAppSchema(): Promise<void> {
   await addColumnIfMissing('mms_records', 'acan_ad_soyad', 'TEXT');
   await addColumnIfMissing('mms_records', 'acilan_birim', 'TEXT');
   await addColumnIfMissing('mms_records', 'created_by', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'bildiren_ad_soyad', 'TEXT');
+  await addColumnIfMissing('mms_records', '"not"', 'TEXT');
+  await addColumnIfMissing('mms_records', 'onarilma_tarihi', 'TEXT');
 
   await addColumnIfMissing('notlar', 'istasyon', 'TEXT');
   await addColumnIfMissing('notlar', 'hedef_roller', "TEXT DEFAULT '[]'");
