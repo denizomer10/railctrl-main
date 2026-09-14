@@ -45,12 +45,7 @@ const adminOnlyApiRoutes = [
 ];
 
 // Şef veya admin gerektiren sayfalar
-const sefOnlyPages = [
-  '/hakedis-islemleri',
-  '/izin-takip',
-  '/vardiya-modeli',
-  '/sef-islemleri',
-];
+const sefOnlyPages = ['/sef-islemleri'];
 
 /**
  * Güvenlik başlıkları middleware
