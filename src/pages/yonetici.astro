@@ -575,12 +575,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
         font-weight: 700;
       }
 
-      .edit-user-field small {
-        color: var(--muted);
-        font-size: .74rem;
-        line-height: 1.35;
-      }
-
       .full-span {
         grid-column: span 2;
       }
@@ -1493,17 +1487,14 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                   <div class="modal-grid edit-user-grid">
                     <div class="edit-user-field">
                       <label for="edit-user-name">Ad Soyad</label>
-                      <small>Personelin sistemde ve formlarda görünecek adı soyadı.</small>
                       <input id="edit-user-name" v-model="editUser.name" placeholder="Ad Soyad" />
                     </div>
                     <div class="edit-user-field">
                       <label for="edit-user-email">E-posta</label>
-                      <small>Personelin giriş yaparken kullanacağı e-posta adresi.</small>
                       <input id="edit-user-email" v-model="editUser.email" type="email" placeholder="E-posta" />
                     </div>
                     <div class="edit-user-field">
                       <label for="edit-user-role">Rol</label>
-                      <small>Personelin sistemde sahip olacağı yetki seviyesini belirler.</small>
                       <select id="edit-user-role" v-model="editUser.role">
                         <option value="user">Personel</option>
                         <option value="sef">Şef</option>
@@ -1513,7 +1504,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                     </div>
                     <div class="edit-user-field">
                       <label for="edit-user-job">Görevi</label>
-                      <small>Personelin görev unvanı.</small>
                       <select id="edit-user-job" v-model="editUser.gorevi">
                         <option value="Şef">Şef</option>
                         <option value="İstasyon Operasyon İşçisi">İstasyon Operasyon İşçisi</option>
@@ -1523,7 +1513,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                     </div>
                     <div class="edit-user-field">
                       <label for="edit-user-station">İstasyon</label>
-                      <small>Personelin bağlı olduğu istasyonu seçin.</small>
                       <select id="edit-user-station" v-model="editUser.istasyon">
                         <option value="">İstasyon</option>
                         <option v-for="s in stations" :key="s" :value="s">{{ s }}</option>
@@ -1531,7 +1520,6 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                     </div>
                     <div class="edit-user-field">
                       <label for="edit-user-password">Yeni Şifre</label>
-                      <small>Değiştirmek istemiyorsanız boş bırakın.</small>
                       <input id="edit-user-password" v-model="editUser.password" type="password" placeholder="Yeni şifre (opsiyonel)" />
                     </div>
                   </div>
