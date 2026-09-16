@@ -25,20 +25,13 @@ import PageLayout from '../layouts/PageLayout.astro';
       </div>
     </div>
 
-    <!-- Search & Filters -->
-    <div class="toolbar">
-      <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Belge No, Eşya, İsim)" />
-        <button id="searchClear" class="search-clear" style="display: none;">✕</button>
-      </div>
-      <div class="filter-chips">
-        <button class="chip active" data-durum="all">Tümü</button>
-        <button class="chip" data-durum="">⏳ Beklemede</button>
-        <button class="chip" data-durum="Teslim Edildi">✅ Teslim Edildi</button>
-        <button class="chip" data-durum="İmha Edildi">🗑️ İmha</button>
-        <button class="chip" data-durum="Depoda">📦 Depoda</button>
-      </div>
+    <!-- Filter Chips -->
+    <div class="filter-chips">
+      <button class="chip active" data-durum="all">Tümü</button>
+      <button class="chip" data-durum="">⏳ Beklemede</button>
+      <button class="chip" data-durum="Teslim Edildi">✅ Teslim Edildi</button>
+      <button class="chip" data-durum="İmha Edildi">🗑️ İmha</button>
+      <button class="chip" data-durum="Depoda">📦 Depoda</button>
     </div>
 
     <!-- Stats Bar -->
@@ -515,8 +508,6 @@ import PageLayout from '../layouts/PageLayout.astro';
 
 <script>
   document.addEventListener('DOMContentLoaded', () => {
-    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-    const searchClear = document.getElementById('searchClear') as HTMLElement;
     const chips = document.querySelectorAll('.chip');
     const tableBody = document.getElementById('tableBody') as HTMLElement;
     const noResults = document.getElementById('noResults') as HTMLElement;
@@ -538,8 +529,6 @@ import PageLayout from '../layouts/PageLayout.astro';
     const reportAllDates = document.getElementById('reportAllDates') as HTMLInputElement;
     const reportDateRangeRow = document.getElementById('reportDateRangeRow') as HTMLElement;
     const reportDurum = document.getElementById('reportDurum') as HTMLSelectElement;
-    const downloadPdfBtn = document.getElementById('downloadPdfBtn') as HTMLButtonElement;
-    const tarihInput = document.getElementById('tarih') as HTMLInputElement;
     const allModals: HTMLElement[] = [modal, reportModal].filter(Boolean) as HTMLElement[];
 
     allModals.forEach((m) => {
@@ -563,15 +552,13 @@ import PageLayout from '../layouts/PageLayout.astro';
       syncBodyScroll();
     };
 
-    let currentDurum: string | null = null;
+let currentDurum: string | null = null;
     let currentPage = 1;
     let totalPages = 1;
     const limit = 30;
     let editingId: number | null = null;
     let currentUserRole = 'user';
     const pageParams = new URLSearchParams(window.location.search);
-    const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
-    const autoViewId = Number.parseInt(pageParams.get('viewId') || '', 10);
 
     function clearAutoQueryParams() {
       const next = new URLSearchParams(window.location.search);
@@ -705,13 +692,13 @@ import PageLayout from '../layouts/PageLayout.astro';
       }
     }
 
-    async function loadRecords() {
+async function loadRecords() {
       tableBody.innerHTML = `<tr class="loading-row"><td colspan="6"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>`;
       noResults.style.display = 'none';
 
       try {
         const params = new URLSearchParams();
-        if (searchInput?.value) params.set('search', searchInput.value);
+        if (pageParams.get('search')) params.set('search', pageParams.get('search') || '');
         if (currentDurum !== null) params.set('durum', currentDurum);
         params.set('page', currentPage.toString());
         params.set('limit', limit.toString());
@@ -882,21 +869,6 @@ import PageLayout from '../layouts/PageLayout.astro';
       } catch (error: any) {
         alert('Silme hatası: ' + error.message);
       }
-    });
-
-    let searchTimeout: ReturnType<typeof setTimeout>;
-    searchInput?.addEventListener('input', (e) => {
-      clearTimeout(searchTimeout);
-      const value = (e.target as HTMLInputElement).value;
-      searchClear.style.display = value ? 'flex' : 'none';
-      searchTimeout = setTimeout(() => { currentPage = 1; loadRecords(); }, 300);
-    });
-
-    searchClear?.addEventListener('click', () => {
-      searchInput.value = '';
-      searchClear.style.display = 'none';
-      currentPage = 1;
-      loadRecords();
     });
 
     chips.forEach(chip => {
