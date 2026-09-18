@@ -195,5 +195,26 @@ export async function ensureAppSchema(): Promise<void> {
   await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS kayip_esya (
+      id INTEGER PRIMARY KEY,
+      tarih TEXT,
+      belge_no TEXT,
+      teslim_alan TEXT,
+      buroya_teslim_eden TEXT,
+      buroya_teslim_tarihi TEXT,
+      teslim_alan_buro_gorevlisi TEXT,
+      esya_tanimi TEXT,
+      durumu TEXT,
+      esya_sahibi_ad_soyad TEXT,
+      esya_sahibi_tel TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_tarih ON kayip_esya(tarih DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_durum ON kayip_esya(durumu)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_belge ON kayip_esya(belge_no)`);
+
   bootstrapped = true;
 }

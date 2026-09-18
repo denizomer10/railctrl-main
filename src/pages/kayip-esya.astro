@@ -25,13 +25,20 @@ import PageLayout from '../layouts/PageLayout.astro';
       </div>
     </div>
 
-    <!-- Filter Chips -->
-    <div class="filter-chips">
-      <button class="chip active" data-durum="all">Tümü</button>
-      <button class="chip" data-durum="">⏳ Beklemede</button>
-      <button class="chip" data-durum="Teslim Edildi">✅ Teslim Edildi</button>
-      <button class="chip" data-durum="İmha Edildi">🗑️ İmha</button>
-      <button class="chip" data-durum="Depoda">📦 Depoda</button>
+    <!-- Search & Filters -->
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Belge No, Eşya, İsim)" />
+        <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+      </div>
+      <div class="filter-chips">
+        <button class="chip active" data-durum="all">Tümü</button>
+        <button class="chip" data-durum="">⏳ Beklemede</button>
+        <button class="chip" data-durum="Teslim Edildi">✅ Teslim Edildi</button>
+        <button class="chip" data-durum="İmha Edildi">🗑️ İmha</button>
+        <button class="chip" data-durum="Depoda">📦 Depoda</button>
+      </div>
     </div>
 
     <!-- Stats Bar -->
@@ -529,6 +536,14 @@ import PageLayout from '../layouts/PageLayout.astro';
     const reportAllDates = document.getElementById('reportAllDates') as HTMLInputElement;
     const reportDateRangeRow = document.getElementById('reportDateRangeRow') as HTMLElement;
     const reportDurum = document.getElementById('reportDurum') as HTMLSelectElement;
+    const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+    const searchClear = document.getElementById('searchClear') as HTMLElement;
+    // Initialize search input from URL
+    const initialSearch = new URLSearchParams(window.location.search).get('search');
+    if (initialSearch && searchInput) {
+      searchInput.value = initialSearch;
+      searchClear.style.display = 'flex';
+    }
     const allModals: HTMLElement[] = [modal, reportModal].filter(Boolean) as HTMLElement[];
 
     allModals.forEach((m) => {
@@ -580,7 +595,7 @@ let currentDurum: string | null = null;
     // Kullanıcı rolü
     async function getUserRole() {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
           currentUserRole = data.user?.role || 'user';
@@ -698,12 +713,14 @@ async function loadRecords() {
 
       try {
         const params = new URLSearchParams();
-        if (pageParams.get('search')) params.set('search', pageParams.get('search') || '');
+        // Use current URL search params
+        const currentSearch = new URLSearchParams(window.location.search).get('search');
+        if (currentSearch) params.set('search', currentSearch);
         if (currentDurum !== null) params.set('durum', currentDurum);
-        params.set('page', currentPage.toString());
+params.set('page', currentPage.toString());
         params.set('limit', limit.toString());
 
-        const response = await fetch(`/api/kayip-esya?${params}`);
+        const response = await fetch(`/api/kayip-esya?${params}`, { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
@@ -832,6 +849,7 @@ async function loadRecords() {
         
         const response = await fetch(url, {
           method,
+          credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
@@ -859,7 +877,7 @@ async function loadRecords() {
       if (!editingId || !confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
       
       try {
-        const response = await fetch(`/api/kayip-esya/${editingId}`, { method: 'DELETE' });
+        const response = await fetch(`/api/kayip-esya/${editingId}`, { method: 'DELETE', credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
@@ -880,6 +898,30 @@ async function loadRecords() {
         currentPage = 1;
         loadRecords();
       });
+    });
+
+    // Search functionality
+    searchInput?.addEventListener('input', (e) => {
+      const value = (e.target as HTMLInputElement).value;
+      searchClear.style.display = value ? 'flex' : 'none';
+      // Update URL search param
+      const url = new URL(window.location.href);
+      if (value) url.searchParams.set('search', value);
+      else url.searchParams.delete('search');
+      window.history.replaceState({}, '', url);
+      currentPage = 1;
+      loadRecords();
+    });
+
+    searchClear?.addEventListener('click', () => {
+      searchInput.value = '';
+      searchClear.style.display = 'none';
+      // Update URL search param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('search');
+      window.history.replaceState({}, '', url);
+      currentPage = 1;
+      loadRecords();
     });
 
     
@@ -927,7 +969,7 @@ async function loadRecords() {
           params.set('durum', reportDurum.value === 'Beklemede' ? '' : reportDurum.value);
         }
 
-        const response = await fetch(`/api/kayip-esya?${params}`);
+        const response = await fetch(`/api/kayip-esya?${params}`, { credentials: 'include' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Rapor verisi alınamadı');
 

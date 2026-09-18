@@ -314,10 +314,10 @@ export async function createUser(
   const passwordHash = await hashPassword(password);
   
   const result = await query<any>(
-    `INSERT INTO ${Tables.USERS} (username, email, password_hash, full_name, role, department)
-     VALUES ($1, $2, $3, $4, $5, $6)
+    `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, department)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING *`,
-    [username.toLowerCase(), email.toLowerCase(), passwordHash, fullName, role, department]
+    [crypto.randomUUID(), username.toLowerCase(), email.toLowerCase(), passwordHash, fullName, role, department]
   );
   
   const row = result.rows[0];

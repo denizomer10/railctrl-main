@@ -35,7 +35,6 @@ const publicApiRoutes = [
   '/api/calisma-izni',
   '/api/notlar',
   '/api/dahili-numaralar',
-  '/api/kayip-esya',
 ];
 
 // Sadece admin erişebilir
