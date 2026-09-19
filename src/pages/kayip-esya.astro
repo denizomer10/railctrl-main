@@ -538,6 +538,7 @@ import PageLayout from '../layouts/PageLayout.astro';
     const reportDurum = document.getElementById('reportDurum') as HTMLSelectElement;
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear') as HTMLElement;
+    const tarihInput = document.getElementById('tarih') as HTMLInputElement;
     // Initialize search input from URL
     const initialSearch = new URLSearchParams(window.location.search).get('search');
     if (initialSearch && searchInput) {
@@ -574,6 +575,8 @@ let currentDurum: string | null = null;
     let editingId: number | null = null;
     let currentUserRole = 'user';
     const pageParams = new URLSearchParams(window.location.search);
+    const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
+    const autoViewId = Number.parseInt(pageParams.get('viewId') || '', 10);
 
     function clearAutoQueryParams() {
       const next = new URLSearchParams(window.location.search);
