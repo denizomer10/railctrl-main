@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { query } from '../../../lib/database';
+import { query, Tables } from '../../../lib/database';
 import { jsonResponse, requireRole, requireUser } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { buildMonthCalendar, normalizePersonnel, normalizeWeekShifts } from '../../../lib/vardiya';
@@ -23,7 +23,7 @@ function looseStationKey(value: string): string {
 }
 
 async function getUserStation(userId: string): Promise<string | null> {
-  const result = await query<{ istasyon: string | null }>('SELECT istasyon FROM users WHERE id = $1', [userId]);
+  const result = await query<{ istasyon: string | null }>(`SELECT istasyon FROM ${Tables.USERS} WHERE id = $1`, [userId]);
   return result.rows[0]?.istasyon || null;
 }
 

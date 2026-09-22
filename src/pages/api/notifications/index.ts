@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
     const result = await query<any>(
       `SELECT id, category, title, message, resource_type, resource_id, station, is_read, created_at
-       FROM notifications
+           FROM ${Tables.NOTIFICATIONS}
        WHERE user_id = $1
          ${unreadOnly ? 'AND is_read = false' : ''}
        ORDER BY created_at DESC
@@ -25,7 +26,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     );
 
     const unreadCountResult = await query<any>(
-      `SELECT COUNT(*)::int AS count FROM notifications WHERE user_id = $1 AND is_read = false`,
+          `SELECT COUNT(*)::int AS count FROM ${Tables.NOTIFICATIONS} WHERE user_id = $1 AND is_read = false`,
       [locals.user.id]
     );
 
@@ -50,11 +51,11 @@ export const PUT: APIRoute = async ({ locals, request }) => {
 
     if (body?.id) {
       await query(
-        `UPDATE notifications SET is_read = true WHERE id = $1 AND user_id = $2`,
+            `UPDATE ${Tables.NOTIFICATIONS} SET is_read = true WHERE id = $1 AND user_id = $2`,
         [body.id, locals.user.id]
       );
     } else {
-      await query(`UPDATE notifications SET is_read = true WHERE user_id = $1`, [locals.user.id]);
+          await query(`UPDATE ${Tables.NOTIFICATIONS} SET is_read = true WHERE user_id = $1`, [locals.user.id]);
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -74,9 +75,9 @@ export const DELETE: APIRoute = async ({ locals, request }) => {
     const body = await request.json().catch(() => ({}));
 
     if (body?.id) {
-      await query(`DELETE FROM notifications WHERE id = $1 AND user_id = $2`, [body.id, locals.user.id]);
+          await query(`DELETE FROM ${Tables.NOTIFICATIONS} WHERE id = $1 AND user_id = $2`, [body.id, locals.user.id]);
     } else {
-      await query(`DELETE FROM notifications WHERE user_id = $1`, [locals.user.id]);
+          await query(`DELETE FROM ${Tables.NOTIFICATIONS} WHERE user_id = $1`, [locals.user.id]);
     }
 
     return new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } });

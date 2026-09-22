@@ -165,6 +165,16 @@ export const Tables = {
   FILE_CATEGORIES: 'file_categories',
   FILES: 'files',
   AUDIT_LOGS: 'audit_logs',
+  problem_records: 'problem_records',
+  CALISMA_IZINLERI: 'calisma_izinleri',
+  NOTLAR: 'notlar',
+  DAHILI_NUMARALAR: 'dahili_numaralar',
+  PERSONEL_KAYITLARI: 'personel_kayitlari',
+  IZIN_ISTEKLERI: 'izin_istekleri',
+  GERI_BILDIRIMLER: 'geri_bildirimler',
+  VARDIYALAR: 'vardiyalar',
+  KAYIP_ESYA: 'kayip_esya',
+  NOTIFICATIONS: 'notifications',
 } as const;
 
 export type TableName = (typeof Tables)[keyof typeof Tables];

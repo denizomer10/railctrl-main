@@ -30,6 +30,7 @@ const publicApiRoutes = [
   '/api/auth/logout',
   '/api/auth/refresh',
   '/api/health',
+  '/api/admin/bootstrap',
   '/api/mms',
   '/api/calisma-izni',
   '/api/notlar',
@@ -43,7 +44,7 @@ const adminOnlyApiRoutes = [
 ];
 
 // Şef veya admin gerektiren sayfalar
-const sefOnlyPages = ['/sef-islemleri'];
+const sefOnlyPages = [];
 
 /**
  * Güvenlik başlıkları middleware

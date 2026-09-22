@@ -4,6 +4,7 @@ import { jsonResponse, parsePagination, requireRole } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -14,7 +15,7 @@ export const GET: APIRoute = async ({ url }) => {
     const search = url.searchParams.get('search');
     const istasyon = url.searchParams.get('istasyon');
 
-    let queryText = 'SELECT * FROM calisma_izinleri WHERE 1=1';
+    let queryText = `SELECT * FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -41,7 +42,7 @@ export const GET: APIRoute = async ({ url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = 'SELECT COUNT(*) FROM calisma_izinleri WHERE 1=1';
+    let countQuery = `SELECT COUNT(*) FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -67,12 +68,12 @@ export const GET: APIRoute = async ({ url }) => {
 
     const statsResult = await query<any>(`
       SELECT COUNT(*) as total, COUNT(DISTINCT istasyon) as istasyon_sayisi
-      FROM calisma_izinleri
+          FROM ${Tables.CALISMA_IZINLERI}
     `);
 
     const istasyonlarResult = await query<any>(`
       SELECT DISTINCT istasyon
-      FROM calisma_izinleri
+          FROM ${Tables.CALISMA_IZINLERI}
       WHERE istasyon IS NOT NULL AND istasyon != ''
       ORDER BY istasyon
     `);
@@ -112,7 +113,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const userInfo = await query<any>(
-      'SELECT full_name FROM users WHERE id = $1',
+          `SELECT full_name FROM ${Tables.USERS} WHERE id = $1`,
       [locals.user.id]
     );
     const bildirenAdSoyad =
@@ -121,7 +122,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       null;
 
     const result = await query<any>(
-      `INSERT INTO calisma_izinleri (
+          `INSERT INTO ${Tables.CALISMA_IZINLERI} (
         zaman_damgasi, mms_numarasi, calisma_kodu, yapilacak_is, calisanlar, istasyon, bildiren_ad_soyad
       ) VALUES (NOW(), $1, $2, $3, $4, $5, $6)
       RETURNING *`,

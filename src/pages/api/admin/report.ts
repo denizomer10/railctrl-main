@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -13,12 +14,12 @@ export const GET: APIRoute = async ({ locals }) => {
     await ensureAppSchema();
 
     const [users, mms, calisma, kayip, notlar, feedback] = await Promise.all([
-      query<any>(`SELECT COUNT(*)::int AS count FROM users`),
-      query<any>(`SELECT COUNT(*)::int AS count FROM mms_records`),
-      query<any>(`SELECT COUNT(*)::int AS count FROM calisma_izinleri`),
-      query<any>(`SELECT COUNT(*)::int AS count FROM kayip_esya`),
-      query<any>(`SELECT COUNT(*)::int AS count FROM notlar`),
-      query<any>(`SELECT COUNT(*)::int AS count FROM geri_bildirimler`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.USERS}`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.MMS_RECORDS}`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.CALISMA_IZINLERI}`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.KAYIP_ESYA}`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.NOTLAR}`),
+          query<any>(`SELECT COUNT(*)::int AS count FROM ${Tables.GERI_BILDIRIMLER}`),
     ]);
 
     return new Response(JSON.stringify({

@@ -49,54 +49,181 @@ export async function ensureAppSchema(): Promise<void> {
   await removeUnusedEmptyTables();
   await pruneDeprecatedUserColumns();
 
-  await addColumnIfMissing('users', 'istasyon', 'TEXT');
-  await addColumnIfMissing('users', 'gorevi', 'TEXT');
+  // Core tables that must exist for auth and features
   await query(`
-    UPDATE users
-    SET role = CASE role
-      WHEN 'Personel' THEN 'user'
-      WHEN 'Şef' THEN 'sef'
-      WHEN 'Gar Müdürü' THEN 'gar_mudur'
-      WHEN 'Admin' THEN 'admin'
-      ELSE role
-    END
-    WHERE role IN ('Personel', 'Şef', 'Gar Müdürü', 'Admin')
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT NOT NULL UNIQUE,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      full_name TEXT NOT NULL,
+      role TEXT NOT NULL DEFAULT 'user',
+      department TEXT,
+      istasyon TEXT,
+      gorevi TEXT,
+      phone TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      notify_mms INTEGER NOT NULL DEFAULT 1,
+      notify_calisma INTEGER NOT NULL DEFAULT 1,
+      notify_vardiya INTEGER NOT NULL DEFAULT 1,
+      notify_kayip_esya INTEGER NOT NULL DEFAULT 1,
+      last_login TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
   `);
-  await query(`UPDATE users SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
-  await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
-  await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
-  await addColumnIfMissing('users', 'notify_vardiya', 'INTEGER NOT NULL DEFAULT 1');
-  await addColumnIfMissing('users', 'notify_kayip_esya', 'INTEGER NOT NULL DEFAULT 1');
-
-  await addColumnIfMissing('mms_records', 'acan_ad_soyad', 'TEXT');
-  await addColumnIfMissing('mms_records', 'acilan_birim', 'TEXT');
-  await addColumnIfMissing('mms_records', 'created_by', 'TEXT');
-  await addColumnIfMissing('calisma_izinleri', 'bildiren_ad_soyad', 'TEXT');
-  await addColumnIfMissing('mms_records', '"not"', 'TEXT');
-  await addColumnIfMissing('mms_records', 'onarilma_tarihi', 'TEXT');
-
-  await addColumnIfMissing('notlar', 'istasyon', 'TEXT');
-  await addColumnIfMissing('notlar', 'hedef_roller', "TEXT DEFAULT '[]'");
-  await addColumnIfMissing('notlar', 'created_by', 'TEXT');
-  await addColumnIfMissing('notlar', 'medya', "TEXT DEFAULT '[]'");
+  await query(`CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`);
 
   await query(`
-    CREATE TABLE IF NOT EXISTS notifications (
-      id INTEGER PRIMARY KEY,
-      user_id TEXT,
-      station TEXT,
-      category TEXT NOT NULL,
-      title TEXT NOT NULL,
-      message TEXT NOT NULL,
-      resource_type TEXT,
-      resource_id TEXT,
-      is_read INTEGER NOT NULL DEFAULT 0,
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_id ON refresh_tokens(user_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS file_categories (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      slug TEXT NOT NULL UNIQUE,
+      description TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
 
-  await query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read)`);
+  await query(`
+    CREATE TABLE IF NOT EXISTS files (
+      id TEXT PRIMARY KEY,
+      category_id TEXT,
+      name TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      content_encrypted BLOB NOT NULL,
+      encryption_iv BLOB NOT NULL,
+      checksum TEXT NOT NULL,
+      metadata TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_files_category ON files(category_id)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_files_name ON files(name)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_files_active ON files(is_active)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT,
+      action TEXT NOT NULL,
+      entity_type TEXT,
+      entity_id TEXT,
+      old_data TEXT,
+      new_data TEXT,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_created ON audit_logs(user_id, created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS problem_records (
+      id TEXT PRIMARY KEY,
+      problem_no TEXT NOT NULL UNIQUE,
+      baslik TEXT NOT NULL,
+      aciklama TEXT,
+      durum TEXT NOT NULL DEFAULT 'acik',
+      oncelik TEXT NOT NULL DEFAULT 'normal',
+      istasyon TEXT,
+      acan_ad_soyad TEXT,
+      acilan_birim TEXT,
+      created_by TEXT,
+      "not" TEXT,
+      onarilma_tarihi TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_no ON problem_records(problem_no)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_durum ON problem_records(durum)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_istasyon ON problem_records(istasyon)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS calisma_izinleri (
+      id TEXT PRIMARY KEY,
+      baslik TEXT NOT NULL,
+      aciklama TEXT,
+      baslangic_tarihi TEXT NOT NULL,
+      bitis_tarihi TEXT NOT NULL,
+      durum TEXT NOT NULL DEFAULT 'beklemede',
+      istasyon TEXT,
+      bildiren_ad_soyad TEXT,
+      created_by TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_calisma_izinleri_durum ON calisma_izinleri(durum)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_calisma_izinleri_istasyon ON calisma_izinleri(istasyon)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS notlar (
+      id TEXT PRIMARY KEY,
+      baslik TEXT NOT NULL,
+      icerik TEXT NOT NULL,
+      istasyon TEXT,
+      hedef_roller TEXT DEFAULT '[]',
+      created_by TEXT,
+      medya TEXT DEFAULT '[]',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notlar_active ON notlar(is_active)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notlar_istasyon ON notlar(istasyon)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS dahili_numaralar (
+      id TEXT PRIMARY KEY,
+      birim TEXT NOT NULL,
+      ad_soyad TEXT NOT NULL,
+      gorev TEXT,
+      dahili_no TEXT NOT NULL,
+      harici_no TEXT,
+      email TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_dahili_numaralar_birim ON dahili_numaralar(birim)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_dahili_numaralar_active ON dahili_numaralar(is_active)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS personel_kayitlari (
@@ -112,7 +239,6 @@ export async function ensureAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  await query(`UPDATE personel_kayitlari SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await query(`CREATE INDEX IF NOT EXISTS idx_personel_kayitlari_user_id ON personel_kayitlari(user_id)`);
 
   await query(`
@@ -139,7 +265,6 @@ export async function ensureAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  await query(`UPDATE izin_istekleri SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
   await query(`CREATE INDEX IF NOT EXISTS idx_izin_istekleri_user_created ON izin_istekleri(user_id, created_at DESC)`);
 
   await query(`
@@ -148,73 +273,97 @@ export async function ensureAppSchema(): Promise<void> {
       user_id TEXT,
       full_name TEXT,
       station TEXT,
-      mesaj TEXT NOT NULL,
-      status TEXT NOT NULL DEFAULT 'Yeni',
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+      category TEXT NOT NULL,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_created ON geri_bildirimler(created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_status ON geri_bildirimler(status)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_user_created ON geri_bildirimler(user_id, created_at DESC)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS vardiyalar (
-      id INTEGER PRIMARY KEY,
-      istasyon TEXT NOT NULL,
-      yil INTEGER NOT NULL,
-      ay INTEGER NOT NULL,
-      week_shifts TEXT NOT NULL,
-      personel TEXT NOT NULL DEFAULT '[]',
-      created_by TEXT,
-      updated_by TEXT,
-      is_active INTEGER NOT NULL DEFAULT 1,
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      baslangic TEXT NOT NULL,
+      bitis TEXT NOT NULL,
+      tip TEXT NOT NULL,
+      istasyon TEXT,
+      aciklama TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-
-  // Existing backup data may contain historical duplicates; keep this index non-unique in local SQLite.
-  await query(`CREATE INDEX IF NOT EXISTS idx_vardiyalar_station_month_active ON vardiyalar (istasyon, yil, ay, is_active)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_vardiyalar_station ON vardiyalar(istasyon)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_vardiyalar_period ON vardiyalar(yil, ay)`);
-
-  await query(`
-    CREATE TABLE IF NOT EXISTS audit_logs (
-      id INTEGER PRIMARY KEY,
-      user_id TEXT,
-      action TEXT NOT NULL,
-      resource_type TEXT,
-      resource_id TEXT,
-      details TEXT,
-      ip_address TEXT,
-      user_agent TEXT,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user ON audit_logs(user_id)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created ON audit_logs(created_at)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_vardiyalar_user_created ON vardiyalar(user_id, created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_vardiyalar_istasyon ON vardiyalar(istasyon)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS kayip_esya (
-      id INTEGER PRIMARY KEY,
-      tarih TEXT,
-      belge_no TEXT,
-      teslim_alan TEXT,
-      buroya_teslim_eden TEXT,
-      buroya_teslim_tarihi TEXT,
-      teslim_alan_buro_gorevlisi TEXT,
-      esya_tanimi TEXT,
-      durumu TEXT,
-      esya_sahibi_ad_soyad TEXT,
-      esya_sahibi_tel TEXT,
+      id TEXT PRIMARY KEY,
+      esya_adi TEXT NOT NULL,
+      aciklama TEXT,
+      bulundu_yeri TEXT,
+      tarih TEXT NOT NULL,
+      durum TEXT NOT NULL DEFAULT 'kayip',
+      bildiren_id TEXT,
+      teslim_alan_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_tarih ON kayip_esya(tarih DESC)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_durum ON kayip_esya(durumu)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_belge ON kayip_esya(belge_no)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_durum ON kayip_esya(durum)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_kayip_esya_tarih ON kayip_esya(tarih)`);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id INTEGER PRIMARY KEY,
+      user_id TEXT,
+      station TEXT,
+      category TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      resource_type TEXT,
+      resource_id TEXT,
+      is_read INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notifications_unread ON notifications(user_id, is_read)`);
+
+  // Now add missing columns to existing tables (for migrations)
+  await addColumnIfMissing('users', 'istasyon', 'TEXT');
+  await addColumnIfMissing('users', 'gorevi', 'TEXT');
+  await query(`
+    UPDATE users
+    SET role = CASE role
+      WHEN 'Personel' THEN 'user'
+      WHEN 'Şef' THEN 'sef'
+      WHEN 'Gar Müdürü' THEN 'gar_mudur'
+      WHEN 'Admin' THEN 'admin'
+      ELSE role
+    END
+    WHERE role IN ('Personel', 'Şef', 'Gar Müdürü', 'Admin')
+  `);
+  await query(`UPDATE users SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
+  await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
+  await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
+  await addColumnIfMissing('users', 'notify_vardiya', 'INTEGER NOT NULL DEFAULT 1');
+  await addColumnIfMissing('users', 'notify_kayip_esya', 'INTEGER NOT NULL DEFAULT 1');
+
+  await addColumnIfMissing('problem_records', 'acan_ad_soyad', 'TEXT');
+  await addColumnIfMissing('problem_records', 'acilan_birim', 'TEXT');
+  await addColumnIfMissing('problem_records', 'created_by', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'bildiren_ad_soyad', 'TEXT');
+  await addColumnIfMissing('problem_records', '"not"', 'TEXT');
+  await addColumnIfMissing('problem_records', 'onarilma_tarihi', 'TEXT');
+
+  await addColumnIfMissing('notlar', 'istasyon', 'TEXT');
+  await addColumnIfMissing('notlar', 'hedef_roller', "TEXT DEFAULT '[]'");
+  await addColumnIfMissing('notlar', 'created_by', 'TEXT');
+  await addColumnIfMissing('notlar', 'medya', "TEXT DEFAULT '[]'");
 
   bootstrapped = true;
 }

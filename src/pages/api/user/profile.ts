@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { query } from '../../../lib/database';
+import { query, Tables } from '../../../lib/database';
 import { hashPassword, verifyPassword } from '../../../lib/auth';
 import { ensureAppSchema } from '../../../lib/schema';
 
@@ -29,7 +29,7 @@ export const GET: APIRoute = async ({ locals }) => {
     await ensureAppSchema();
     const result = await query(
       `SELECT id, username, email, full_name, role, gorevi, department, phone, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, created_at 
-       FROM users WHERE id = $1`,
+           FROM ${Tables.USERS} WHERE id = $1`,
       [locals.user.id]
     );
 
@@ -130,7 +130,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
       // Email zaten kullanılıyor mu kontrol et
       const existing = await query(
-        'SELECT id FROM users WHERE email = $1 AND id != $2',
+              `SELECT id FROM ${Tables.USERS} WHERE email = $1 AND id != $2`,
         [email.toLowerCase(), locals.user.id]
       );
       if (existing.rows.length > 0) {
@@ -169,7 +169,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
       // Mevcut şifreyi doğrula
       const userResult = await query(
-        'SELECT password_hash FROM users WHERE id = $1',
+              `SELECT password_hash FROM ${Tables.USERS} WHERE id = $1`,
         [locals.user.id]
       );
 
@@ -207,7 +207,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
     values.push(locals.user.id);
     const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} 
+          `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} 
        RETURNING id, username, email, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya`,
       values
     );

@@ -1,6 +1,6 @@
-# RailCtrl - TCDD İstasyon Operasyon Yönetim Sistemi
+# RailCtrl - Tren İstasyon Operasyon Yönetim Sistemi
 
-RailCtrl, TCDD saha ve istasyon operasyonlarını tek noktadan yönetmek için geliştirilmiş Astro tabanlı bir web uygulamasıdır.
+RailCtrl, Tren saha ve istasyon operasyonlarını tek noktadan yönetmek için geliştirilmiş Astro tabanlı bir web uygulamasıdır.
 
 ## Mimari
 

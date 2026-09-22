@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { query, transaction, Tables } from './database';
 import { hashString } from './encryption';
 import { getEnvVar } from './runtime-env';
+import { ensureAppSchema } from './schema';
 
 // Tipler
 export type UserRole = 'user' | 'sef' | 'gar_mudur' | 'admin';
@@ -132,6 +133,10 @@ export async function login(
   ipAddress?: string,
   userAgent?: string
 ): Promise<{ user: User; tokens: AuthTokens } | null> {
+  // Şema başlatılmamışsa başlat
+  await ensureAppSchema();
+  await seedAdminIfMissing();
+  
   // identifier'ı normalize et (kurum alan adı dayatması yok)
   const normalizedIdentifier = identifier.toLowerCase().trim();
 
@@ -211,6 +216,9 @@ export async function login(
  * Token yenile
  */
 export async function refreshTokens(refreshToken: string): Promise<AuthTokens | null> {
+  // Şema başlatılmamışsa başlat
+  await ensureAppSchema();
+  
   // Token'ı doğrula
   const payload = verifyToken(refreshToken);
   if (!payload || payload.type !== 'refresh') {
@@ -276,6 +284,8 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens | 
  * Çıkış yap - tüm token'ları geçersiz kıl
  */
 export async function logout(userId: string, accessToken?: string): Promise<void> {
+  await ensureAppSchema();
+  
   await transaction(async (client) => {
     // Refresh token'ları sil
     await client.query(
@@ -307,15 +317,20 @@ export async function createUser(
   password: string,
   fullName: string,
   role: UserRole = 'user',
-  department?: string
+  department?: string,
+  istasyon?: string,
+  gorevi?: string,
+  phone?: string
 ): Promise<User> {
+  await ensureAppSchema();
+  
   const passwordHash = await hashPassword(password);
   
   const result = await query<any>(
-    `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, department)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, department, istasyon, gorevi, phone, is_active, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, 1, 1, 1, 1)
      RETURNING *`,
-    [crypto.randomUUID(), username.toLowerCase(), email.toLowerCase(), passwordHash, fullName, role, department]
+    [crypto.randomUUID(), username.toLowerCase(), email.toLowerCase(), passwordHash, fullName, role, department, istasyon || null, gorevi || null, phone || null]
   );
   
   const row = result.rows[0];
@@ -339,6 +354,8 @@ export async function createUser(
  * Kullanıcı bilgilerini getir
  */
 export async function getUserById(userId: string): Promise<User | null> {
+  await ensureAppSchema();
+  
   const result = await query<any>(
     `SELECT * FROM ${Tables.USERS} WHERE id = $1`,
     [userId]
@@ -369,6 +386,8 @@ export async function getUserById(userId: string): Promise<User | null> {
  * Kullanıcı e-posta ile getir
  */
 export async function getUserByEmail(email: string): Promise<User | null> {
+  await ensureAppSchema();
+  
   const result = await query<any>(
     `SELECT * FROM ${Tables.USERS} WHERE email = $1`,
     [email.toLowerCase()]
@@ -399,6 +418,8 @@ export async function getUserByEmail(email: string): Promise<User | null> {
  * Kullanıcı username ile getir
  */
 export async function getUserByUsername(username: string): Promise<User | null> {
+  await ensureAppSchema();
+  
   const result = await query<any>(
     `SELECT * FROM ${Tables.USERS} WHERE username = $1`,
     [username.toLowerCase()]
@@ -439,6 +460,8 @@ export async function updateUserRole(
     return { success: false, error: 'Yetkisiz işlem' };
   }
   
+  await ensureAppSchema();
+  
   await query(
     `UPDATE ${Tables.USERS} SET role = $1 WHERE id = $2`,
     [newRole, targetUserId]
@@ -455,6 +478,8 @@ export async function changePassword(
   currentPassword: string,
   newPassword: string
 ): Promise<{ success: boolean; error?: string }> {
+  await ensureAppSchema();
+  
   // Mevcut şifreyi kontrol et
   const result = await query<any>(
     `SELECT password_hash FROM ${Tables.USERS} WHERE id = $1`,
@@ -487,6 +512,8 @@ export async function changePassword(
  * Tüm kullanıcıları listele (admin için)
  */
 export async function listUsers(): Promise<User[]> {
+  await ensureAppSchema();
+  
   const result = await query<any>(
     `SELECT * FROM ${Tables.USERS} ORDER BY created_at DESC`
   );
@@ -523,3 +550,13 @@ export default {
   changePassword,
   listUsers,
 };
+
+// Admin seed (DB silindiğinde otomatik ekle)
+export async function seedAdminIfMissing() {
+  await ensureAppSchema();
+  const existing = await query<any>(`SELECT * FROM ${Tables.USERS} WHERE username = 'admin'`);
+  if (existing.rows.length === 0) {
+    const hashed = await bcrypt.hash('admin123', 10);
+    await query(`INSERT INTO ${Tables.USERS} (id, username, email, full_name, role, password_hash, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)`, ['admin-id', 'admin', 'admin@tren.gov.tr', 'Admin User', 'admin', hashed, true]);
+  }
+}

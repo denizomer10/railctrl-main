@@ -28,6 +28,15 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
   <script is:inline>
     try {
+      var __savedLanguage = localStorage.getItem('lang');
+      var __systemLanguage = navigator.languages?.[0] || navigator.language || 'en';
+      document.documentElement.lang = __savedLanguage === 'tr' || __savedLanguage === 'en'
+        ? __savedLanguage
+        : (__systemLanguage.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+    } catch (e) {
+      document.documentElement.lang = 'en';
+    }
+    try {
       var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
       document.documentElement.setAttribute('data-theme', __t);
     } catch (e) {}
@@ -38,6 +47,39 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   </script>
   <link rel="stylesheet" href={`/css/app.css?v=${assetVersion}`} />
   <style>
+    .auth-language-switch {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 10;
+      display: inline-flex;
+      gap: 0.2rem;
+      padding: 0.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.36);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.58);
+      box-shadow: 0 6px 18px rgba(2, 6, 23, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .auth-language-switch button {
+      min-width: 2.6rem;
+      min-height: 2.2rem;
+      padding: 0.35rem 0.55rem;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .auth-language-switch button.active {
+      background: white;
+      color: #1d4ed8;
+    }
+
     :root {
       --primary-color: #007acc;
       --text-color: #333;
@@ -108,13 +150,33 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   </style>
 </head>
 <body class="auth-layout">
+  <div class="auth-language-switch" role="group" aria-label="Language">
+    <button type="button" data-language-choice="tr" aria-label="Türkçe">TR</button>
+    <button type="button" data-language-choice="en" aria-label="English">EN</button>
+  </div>
   <main>
     <slot />
   </main>
   <Footer />
   <script>
     import { finalizeShell } from '../scripts/app-shell';
+    import { getPreferredLanguage, initLocalization } from '../scripts/localization';
     finalizeShell();
+    initLocalization();
+    const languageButtons = document.querySelectorAll<HTMLButtonElement>('[data-language-choice]');
+    const updateLanguageSwitch = () => {
+      const language = getPreferredLanguage();
+      languageButtons.forEach((button) => {
+        const selected = button.dataset.languageChoice === language;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    };
+    updateLanguageSwitch();
+    languageButtons.forEach((button) => button.addEventListener('click', () => {
+      localStorage.setItem('lang', button.dataset.languageChoice === 'tr' ? 'tr' : 'en');
+      window.location.reload();
+    }));
   </script>
 </body>
 </html>

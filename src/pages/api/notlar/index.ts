@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -43,7 +44,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   try {
     await ensureAppSchema();
     await query(
-      `DELETE FROM notlar 
+      `DELETE FROM ${Tables.NOTLAR} 
        WHERE baslik IN ('Tren Saatleri Çizelgesi', 'İdari Ceza Çizelgesi')
        AND created_by = 'system'`
     );
@@ -52,10 +53,10 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const istasyon = url.searchParams.get('istasyon');
     const userRole = locals.user.role;
     const isPrivileged = userRole === 'admin' || userRole === 'sef' || userRole === 'gar_mudur';
-    const userStationResult = await query<any>('SELECT istasyon FROM users WHERE id = $1', [locals.user.id]);
+    const userStationResult = await query<any>(`SELECT istasyon FROM ${Tables.USERS} WHERE id = $1`, [locals.user.id]);
     const userStation = userStationResult.rows[0]?.istasyon || null;
 
-    let queryText = `SELECT * FROM notlar WHERE 1=1`;
+    let queryText = `SELECT * FROM ${Tables.NOTLAR} WHERE 1=1`;
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -115,7 +116,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const result = await query<any>(queryText, params);
 
     // Kategorileri de getir
-    const kategorilerResult = await query<any>(`SELECT DISTINCT kategori FROM notlar WHERE kategori IS NOT NULL ORDER BY kategori`);
+    const kategorilerResult = await query<any>(`SELECT DISTINCT kategori FROM ${Tables.NOTLAR} WHERE kategori IS NOT NULL ORDER BY kategori`);
 
     return new Response(JSON.stringify({
       notes: result.rows,
@@ -169,7 +170,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       : ['user', 'sef', 'gar_mudur', 'admin'];
 
     const result = await query<any>(`
-      INSERT INTO notlar (baslik, icerik, kategori, istasyon, hedef_roller, created_by, medya, created_at)
+      INSERT INTO ${Tables.NOTLAR} (baslik, icerik, kategori, istasyon, hedef_roller, created_by, medya, created_at)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `, [

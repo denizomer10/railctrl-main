@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -16,13 +17,13 @@ export const GET: APIRoute = async ({ locals }) => {
     const result = locals.user.role === 'admin'
       ? await query<any>(
         `SELECT id, user_id, full_name, station, mesaj, status, created_at
-         FROM geri_bildirimler
+             FROM ${Tables.GERI_BILDIRIMLER}
          ORDER BY created_at DESC
          LIMIT 500`
       )
       : await query<any>(
         `SELECT id, user_id, full_name, station, mesaj, status, created_at
-         FROM geri_bildirimler
+             FROM ${Tables.GERI_BILDIRIMLER}
          WHERE user_id = $1
          ORDER BY created_at DESC
          LIMIT 200`,
@@ -53,7 +54,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     }
 
     const userInfo = await query<any>(
-      `SELECT full_name, istasyon FROM users WHERE id = $1`,
+          `SELECT full_name, istasyon FROM ${Tables.USERS} WHERE id = $1`,
       [locals.user.id]
     );
 
@@ -61,7 +62,7 @@ export const POST: APIRoute = async ({ locals, request }) => {
     const station = userInfo.rows[0]?.istasyon || null;
 
     const result = await query<any>(
-      `INSERT INTO geri_bildirimler (user_id, full_name, station, mesaj)
+          `INSERT INTO ${Tables.GERI_BILDIRIMLER} (user_id, full_name, station, mesaj)
        VALUES ($1, $2, $3, $4)
        RETURNING *`,
       [locals.user.id, fullName, station, String(body.mesaj).trim()]

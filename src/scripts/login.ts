@@ -26,8 +26,17 @@ function initLoginForm() {
 			loginButton.disabled = false;
 			loginButton.classList.remove('success');
 			buttonText.style.display = 'inline';
-			buttonText.textContent = 'Giriş Yap';
+			buttonText.textContent = document.documentElement.lang === 'en' ? 'Log in' : 'Giriş Yap';
 			buttonLoading.style.display = 'none';
+		}
+
+		function setLoading(isLoading: boolean) {
+			loginButton.disabled = isLoading;
+			buttonText.style.display = isLoading ? 'none' : 'inline';
+			buttonLoading.style.display = isLoading ? 'inline-flex' : 'none';
+			if (isLoading) {
+				buttonLoading.textContent = document.documentElement.lang === 'en' ? 'Signing in...' : 'Giriş yapılıyor...';
+			}
 		}
 
 		form.addEventListener('submit', async (e) => {
@@ -36,7 +45,7 @@ function initLoginForm() {
 			const password = passwordInput.value;
 
 			if (!username || !password) {
-				errorDiv.textContent = 'Lütfen tüm alanları doldurun';
+				errorDiv.textContent = document.documentElement.lang === 'en' ? 'Please fill in all fields.' : 'Lütfen tüm alanları doldurun';
 				errorDiv.classList.add('show');
 				loginButton.classList.remove('success');
 				loginButton.classList.add('error');
@@ -45,9 +54,7 @@ function initLoginForm() {
 
 			errorDiv.classList.remove('show');
 			loginButton.classList.remove('error', 'success');
-			loginButton.disabled = true;
-			buttonText.style.display = 'none';
-			buttonLoading.style.display = 'inline-flex';
+			setLoading(true);
 
 			try {
 				const response = await fetch('/api/auth/login', {
@@ -62,9 +69,14 @@ function initLoginForm() {
 				const data = await response.json().catch(() => ({}));
 
 				if (!response.ok) {
-					const errorMessage = typeof data?.error === 'string'
-						? data.error
-						: 'Şifre hatalı veya giriş başarısız.';
+					const englishErrors: Record<string, string> = {
+						missing_fields: 'Username and password are required.',
+						invalid_credentials: 'Incorrect username or password.',
+						rate_limit: 'Too many failed attempts. Please try again later.',
+					};
+					const errorMessage = document.documentElement.lang === 'en'
+						? (englishErrors[data?.code] || 'Sign-in failed. Please try again.')
+						: (typeof data?.error === 'string' ? data.error : 'Şifre hatalı veya giriş başarısız.');
 					errorDiv.textContent = errorMessage;
 					errorDiv.classList.add('show');
 					loginButton.classList.add('error');
@@ -76,16 +88,17 @@ function initLoginForm() {
 					? data.user.fullName.trim()
 					: username;
 
+				loginButton.disabled = true;
 				buttonLoading.style.display = 'none';
 				buttonText.style.display = 'inline';
-				buttonText.textContent = `Hoş geldiniz, ${fullName}`;
+				buttonText.textContent = document.documentElement.lang === 'en' ? `Welcome, ${fullName}` : `Hoş geldiniz, ${fullName}`;
 				loginButton.classList.add('success');
 
-				setTimeout(() => {
-					window.location.href = '/';
-				}, 1800);
+				window.location.replace('/');
 			} catch {
-				errorDiv.textContent = 'Giriş sırasında ağ hatası oluştu. Tekrar deneyin.';
+				errorDiv.textContent = document.documentElement.lang === 'en'
+					? 'A network error occurred. Please try again.'
+					: 'Giriş sırasında ağ hatası oluştu. Tekrar deneyin.';
 				errorDiv.classList.add('show');
 				loginButton.classList.add('error');
 				setButtonIdle();

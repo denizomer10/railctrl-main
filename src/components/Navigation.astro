@@ -3,7 +3,6 @@
 // @ts-ignore - user is defined in env.d.ts
 const user = Astro.locals.user;
 const isAdmin = user?.role === 'admin';
-const isSefOperationsRole = user?.role === 'sef' || user?.role === 'gar_mudur' || user?.role === 'admin';
 const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanıcı';
 ---
 
@@ -17,32 +16,19 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
       <line x1="16" y1="17" x2="8" y2="17"></line>
       <polyline points="10 9 9 9 8 9"></polyline>
     </svg>
-    Notlar
+    <span data-i18n="notes">Notlar</span>
   </a>
   <a href="/personel-islemleri">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-      <circle cx="12" cy="7" r="4"></circle>
-    </svg>
-    Personel İşlemleri
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+    <span data-i18n="personnel">Personel İşlemleri</span>
   </a>
-  {isSefOperationsRole && (
-    <a href="/sef-islemleri">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M12 3l8 4v6c0 5-3.5 8.7-8 10-4.5-1.3-8-5-8-10V7l8-4z"></path>
-        <path d="M9 12l2 2 4-4"></path>
-      </svg>
-      Şef İşlemleri
-    </a>
-  )}
-  
   {isAdmin && (
   <a href="/yonetici" class="yonetici-link">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <circle cx="12" cy="12" r="3"></circle>
       <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
-    Yönetici İşlemleri
+    <span data-nav-i18n="adminOperations">Yönetici İşlemleri</span>
   </a>
   )}
 </nav>
@@ -50,14 +36,12 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
 <div class="nav-right">
   {user && (
     <div class="user-info">
-      <a href="/kullanici-islemleri" class="user-profile-link">
-        <span class="user-name">{welcomeName}</span>
-      </a>
-      <button id="logout-btn" class="logout-btn">Çıkış</button>
+      <span class="user-name">{welcomeName}</span>
+      <button id="logout-btn" class="logout-btn" data-nav-i18n="logout">Çıkış</button>
     </div>
   )}
   
-  <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Tema Değiştir">
+  <button id="theme-toggle-btn" class="theme-toggle-btn" aria-label="Tema Değiştir" data-nav-attr="aria-label:theme">
     <div class="theme-icon">
       <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="5"/>
@@ -75,12 +59,13 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
       </svg>
     </div>
   </button>
+  <button id="lang-toggle-btn" class="lang-toggle" type="button" aria-label="Change language">TR</button>
 </div>
 
 <!-- Mobile Menu -->
 <div class="mobile-header">
   <button class="hamburger" id="hamburger-btn">☰</button>
-  <button id="theme-toggle-btn-mobile" class="theme-toggle-btn" aria-label="Tema Değiştir">
+  <button id="theme-toggle-btn-mobile" class="theme-toggle-btn" aria-label="Tema Değiştir" data-nav-attr="aria-label:theme">
     <div class="theme-icon">
       <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <circle cx="12" cy="12" r="5"/>
@@ -98,6 +83,7 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
       </svg>
     </div>
   </button>
+  <button id="lang-toggle-btn-mobile" class="lang-toggle" type="button" aria-label="Change language">TR</button>
 </div>
 <div class="sidebar" id="sidebar">
   <button class="close-btn" id="close-btn">×</button>
@@ -110,42 +96,12 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
         <line x1="16" y1="17" x2="8" y2="17"></line>
         <polyline points="10 9 9 9 8 9"></polyline>
       </svg>
-      Notlar
+      <span data-i18n="notes">Notlar</span>
     </a>
-    
-    <div class="sef-section">
-    <a href="/personel-islemleri" class="sef-header">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-        <circle cx="12" cy="7" r="4"></circle>
-      </svg>
-      Personel İşlemleri
+    <a href="/personel-islemleri">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span data-i18n="personnel">Personel İşlemleri</span>
     </a>
-      {isSefOperationsRole && (
-      <a href="/sef-islemleri" class="sef-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M12 3l8 4v6c0 5-3.5 8.7-8 10-4.5-1.3-8-5-8-10V7l8-4z"></path>
-          <path d="M9 12l2 2 4-4"></path>
-        </svg>
-        Şef İşlemleri
-      </a>
-      )}
-      <a href="/calisma-izni" class="sef-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-          <polyline points="14 2 14 8 20 8"></polyline>
-        </svg>
-        Çalışma İzni
-      </a>
-      <a href="/mms" class="sef-link">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="9" y1="9" x2="15" y2="9"></line>
-          <line x1="9" y1="15" x2="15" y2="15"></line>
-        </svg>
-        MMS
-      </a>
-    </div>
     
     {isAdmin && (
       <a href="/yonetici" class="sef-link yonetici-link-mobile">
@@ -153,16 +109,14 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
           <circle cx="12" cy="12" r="3"></circle>
           <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
         </svg>
-        Yönetici İşlemleri
+        <span data-nav-i18n="adminOperations">Yönetici İşlemleri</span>
       </a>
     )}
     
     {user && (
       <div class="user-info-mobile">
-        <a href="/kullanici-islemleri" class="user-profile-link-mobile">
-          <span class="user-name-mobile">{welcomeName}</span>
-        </a>
-        <button id="logout-btn-mobile" class="logout-btn-mobile">Çıkış</button>
+        <span class="user-name-mobile">{welcomeName}</span>
+        <button id="logout-btn-mobile" class="logout-btn-mobile" data-nav-i18n="logout">Çıkış</button>
       </div>
     )}
   </div>
@@ -911,9 +865,44 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
       transition: none !important;
     }
   }
+
+  .lang-toggle { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--glass-border, rgba(148,163,184,.28)); background: var(--glass-bg-strong, rgba(255,255,255,.56)); color: var(--app-text, #1f2937); font-weight: 700; cursor: pointer; }
+  .lang-toggle:hover { transform: scale(1.05); }
+  .lang-toggle[aria-pressed="true"] { background: var(--primary-color, #007acc); color: #fff; }
+  @media (max-width: 768px) { .lang-toggle { display: flex; align-items: center; justify-content: center; } }
 </style>
 
 <script>
   import { initNavigation } from '../scripts/navigation';
   initNavigation();
+
+  const dictionaries = { tr: { notes:'Notlar', personnel:'Personel İşlemleri', workPermit:'Çalışma İzni', problemRecords:'Arıza Kayıtları', problemTracking:'Bakım ve arıza takip sistemi', admin:'Yönetici', adminOperations:'Yönetici İşlemleri', logout:'Çıkış', theme:'Tema Değiştir', feedback:'Geri bildirim', notifications:'Bildirimler', markRead:'Okundu yap', clear:'Temizle', search:'Site içinde ara', searchPlaceholder:'Arıza, Çalışma İzni, Not, Kayıp Eşya, Dahili Numara...', searchTitle:'Site İçi Arama', appTitle:'Tren Yönetim Sistemi' }, en: { notes:'Notes', personnel:'Personnel', workPermit:'Work Permit', problemRecords:'Problem Records', problemTracking:'Maintenance and problem tracking', admin:'Admin', adminOperations:'Administration', logout:'Log out', theme:'Toggle theme', feedback:'Feedback', notifications:'Notifications', markRead:'Mark as read', clear:'Clear', search:'Search the site', searchPlaceholder:'Problems, Work Permits, Notes, Lost & Found, Extensions...', searchTitle:'Site Search', appTitle:'Train Management System' } };
+  const langButtons = [document.getElementById('lang-toggle-btn'), document.getElementById('lang-toggle-btn-mobile')].filter(Boolean);
+  const activeLanguage = document.documentElement.lang === 'en' ? 'en' : 'tr';
+  document.documentElement.lang = activeLanguage;
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n');
+    if (dictionaries[activeLanguage][key]) el.textContent = dictionaries[activeLanguage][key];
+  });
+  document.querySelectorAll('[data-i18n]').forEach((element) => {
+    const key = element.getAttribute('data-i18n');
+    if (dictionaries[activeLanguage][key]) element.textContent = dictionaries[activeLanguage][key];
+  });
+  document.querySelectorAll('[data-nav-i18n]').forEach((element) => {
+    const key = element.getAttribute('data-nav-i18n');
+    if (dictionaries[activeLanguage][key]) element.textContent = dictionaries[activeLanguage][key];
+  });
+  document.querySelectorAll('[data-nav-attr]').forEach((element) => {
+    const [attribute, key] = element.getAttribute('data-nav-attr').split(':');
+    if (dictionaries[activeLanguage][key]) element.setAttribute(attribute, dictionaries[activeLanguage][key]);
+  });
+  langButtons.forEach((button) => {
+    button.textContent = activeLanguage === 'tr' ? 'TR' : 'EN';
+    button.setAttribute('aria-label', activeLanguage === 'tr' ? 'Switch to English' : 'Türkçeye geç');
+    button.title = activeLanguage === 'tr' ? 'Switch to English' : 'Türkçeye geç';
+    button.addEventListener('click', () => {
+      localStorage.setItem('lang', activeLanguage === 'tr' ? 'en' : 'tr');
+      window.location.reload();
+    });
+  });
 </script>

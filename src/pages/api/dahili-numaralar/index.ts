@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { jsonResponse, parsePagination, requireRole, requireUser } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -16,7 +17,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const search = url.searchParams.get('search');
     const birim = url.searchParams.get('birim');
 
-    let queryText = 'SELECT * FROM dahili_numaralar WHERE 1=1';
+    let queryText = `SELECT * FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -41,7 +42,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = 'SELECT COUNT(*) FROM dahili_numaralar WHERE 1=1';
+    let countQuery = `SELECT COUNT(*) FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -65,12 +66,12 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
     const statsResult = await query<any>(`
       SELECT COUNT(*) as total, COUNT(DISTINCT birim) as birim_sayisi
-      FROM dahili_numaralar
+          FROM ${Tables.DAHILI_NUMARALAR}
     `);
 
     const birimlerResult = await query<any>(`
       SELECT DISTINCT birim
-      FROM dahili_numaralar
+          FROM ${Tables.DAHILI_NUMARALAR}
       WHERE birim IS NOT NULL AND birim != ''
       ORDER BY birim
     `);
@@ -109,7 +110,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const result = await query<any>(
-      `INSERT INTO dahili_numaralar (dahili_numara, birim, aciklama)
+          `INSERT INTO ${Tables.DAHILI_NUMARALAR} (dahili_numara, birim, aciklama)
        VALUES ($1, $2, $3)
        RETURNING *`,
       [body.dahili_numara, body.birim, body.aciklama || null]

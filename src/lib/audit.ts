@@ -1,4 +1,4 @@
-import { query } from './database';
+import { query, Tables } from './database';
 import { ensureAppSchema } from './schema';
 
 interface LogAuditParams {
@@ -65,7 +65,7 @@ export async function logAudit(params: LogAuditParams): Promise<void> {
     const normalizedIp = normalizeIpAddress(params.ipAddress || null, mode.ipAddress);
 
     await query(
-      `INSERT INTO audit_logs (id, user_id, action, resource_type, resource_id, details, ip_address, user_agent)
+          `INSERT INTO ${Tables.AUDIT_LOGS} (id, user_id, action, resource_type, resource_id, details, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
       [
         crypto.randomUUID(),

@@ -8,15 +8,15 @@ const marmarayIstasyonlari = [
 ];
 ---
 
-<PageLayout title="MMS Kayıtları">
+<PageLayout title="Arıza Kayıtları">
   <div class="mms-page modern-records-page">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
         <div class="header-icon">🔧</div>
         <div class="header-text">
-          <h1>MMS Arıza Kayıtları</h1>
-          <p>Bakım ve arıza takip sistemi</p>
+          <h1 data-i18n="problemRecords">Arıza Kayıtları</h1>
+          <p data-i18n="problemTracking">Bakım ve arıza takip sistemi</p>
         </div>
       </div>
       <div class="header-actions">
@@ -208,7 +208,7 @@ const marmarayIstasyonlari = [
   </div>
 
 <script>
-  import { initMms } from '../scripts/mms';
+  import { initMms } from '../scripts/problem-records';
   initMms();
 </script>
 </PageLayout>

@@ -40,6 +40,8 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   const markAllBtn = document.getElementById('markAllNotifications');
   const clearBtn = document.getElementById('clearNotifications');
   const notifyToast = document.getElementById('notifyToast') as HTMLElement | null;
+  const isEnglish = () => document.documentElement.lang === 'en';
+  const uiText = (turkish: string, english: string) => isEnglish() ? english : turkish;
   const feedbackIconBtn = document.getElementById('feedbackIconBtn');
   const feedbackModal = document.getElementById('feedbackModal') as HTMLElement | null;
   const feedbackCloseBtn = document.getElementById('feedbackCloseBtn');
@@ -59,19 +61,14 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   let latestNotificationId: string | number | null = null;
 
   const staticPages = [
-    { title: 'Haritalar', subtitle: 'Marmaray ve İstanbul ulaşım haritaları', href: '/guzergah', type: 'Sayfa', keywords: 'guzergah marmaray harita istanbul ulasim metro metrobus' },
+    { title: 'Güzergahlar', subtitle: 'Tren güzergahları ve ulaşım bilgileri', href: '/guzergah', type: 'Sayfa', keywords: 'guzergah harita ulaşım tren route maps' },
     { title: 'Vardiya', subtitle: 'Aylık vardiya planlama ekranı', href: '/vardiya', type: 'Sayfa', keywords: 'vardiya planlama istasyon ay hafta' },
-    { title: 'İstasyon Şeması', subtitle: 'İstasyonlara ait şema ve planlar', href: '/istasyon-semasi', type: 'Sayfa', keywords: 'istasyon semasi plan şema kroki' },
-    { title: 'Personel İşlemleri', subtitle: 'Formlar ve kurumsal sistem erişimi', href: '/personel-islemleri', type: 'Sayfa', keywords: 'personel islemleri portal talep formlari' },
-    { title: 'Formlar', subtitle: 'Personel formları ve belgeleri', href: '/formlar', type: 'Sayfa', keywords: 'form izin kimlik dogum yardim lojman beyanname' },
-    { title: 'Şef İşlemleri', subtitle: 'Şef ekranı ve özel formlar', href: '/sef-islemleri', type: 'Sayfa', keywords: 'sef islemleri gar muduru 4085 harcirah' },
-    { title: 'MMS Kayıtları', subtitle: 'Arıza kayıtları', href: '/mms', type: 'Sayfa', keywords: 'mms ariza bakim ariza kaydi', passSearch: true },
+    { title: 'Arıza Kayıtları', subtitle: 'Arıza kayıtları', href: '/problem-records', type: 'Sayfa', keywords: 'arıza kayıt problem records bakım', passSearch: true },
     { title: 'Çalışma İzinleri', subtitle: 'Saha çalışma izinleri', href: '/calisma-izni', type: 'Sayfa', keywords: 'calisma izni saha is emniyet', passSearch: true },
     { title: 'Notlar', subtitle: 'Prosedür, şifre, adres notları', href: '/notlar', type: 'Sayfa', keywords: 'not prosedur sifre adres', passSearch: true },
     { title: 'Kayıp Eşya', subtitle: 'Kayıp eşya kayıtları', href: '/kayip-esya', type: 'Sayfa', keywords: 'kayip esya teslim imha depo', passSearch: true },
     { title: 'Dahili Numaralar', subtitle: 'Birim rehberi', href: '/dahili-numaralar', type: 'Sayfa', keywords: 'dahili numara birim telefon rehber', passSearch: true },
     { title: 'İzin İsteği', subtitle: 'İzin talep ekranı', href: '/izin-istegi', type: 'Sayfa', keywords: 'izin yillik mazeret hastalik personel' },
-    { title: 'Kullanıcı İşlemleri', subtitle: 'Profil ve kişisel tercih ayarları', href: '/kullanici-islemleri', type: 'Sayfa', keywords: 'kullanici profil tercih ayar' },
   ];
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -98,13 +95,13 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   const renderNotifications = (items: NotificationItem[] = []): void => {
     if (!notifyList) return;
     if (!items.length) {
-      notifyList.innerHTML = '<div class="notify-item">Yeni bildirim yok</div>';
+      notifyList.textContent = uiText('Yeni bildirim yok', 'No new notifications');
       return;
     }
     notifyList.innerHTML = items.map((n) => {
-      const date = n.created_at ? new Date(n.created_at).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+      const date = n.created_at ? new Date(n.created_at).toLocaleString(isEnglish() ? 'en-US' : 'tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
       return `<div class="notify-item ${n.is_read ? '' : 'unread'}">
-        <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(n.title || 'Bildirim')}</div>
+        <div style="font-weight:700; margin-bottom:4px;">${escapeHtml(n.title || uiText('Bildirim', 'Notification'))}</div>
         <div style="margin-bottom:6px;">${escapeHtml(n.message || '')}</div>
         <small style="opacity:.75;">${escapeHtml(date)}</small>
       </div>`;
@@ -127,11 +124,11 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   const showNotificationToast = (item: NotificationItem | null, unreadCount: number): void => {
     if (!notifyToast || !item) return;
     const date = item.created_at
-      ? new Date(item.created_at).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+      ? new Date(item.created_at).toLocaleTimeString(isEnglish() ? 'en-US' : 'tr-TR', { hour: '2-digit', minute: '2-digit' })
       : '';
     notifyToast.innerHTML = `
-      <div class="notify-toast-title">Yeni Bildirim (${unreadCount})</div>
-      <div class="notify-toast-message">${escapeHtml(item.title || 'Bildirim')} - ${escapeHtml(item.message || '')}</div>
+      <div class="notify-toast-title">${uiText('Yeni Bildirim', 'New notification')} (${unreadCount})</div>
+      <div class="notify-toast-message">${escapeHtml(item.title || uiText('Bildirim', 'Notification'))} - ${escapeHtml(item.message || '')}</div>
       <div class="notify-toast-meta">${escapeHtml(date)}</div>
     `;
     notifyToast.classList.add('show');
@@ -233,7 +230,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     feedbackModalMsg.textContent = '';
     feedbackModalMsg.className = 'feedback-msg';
     feedbackSendBtn.disabled = false;
-    feedbackSendBtn.textContent = 'Gönder';
+    feedbackSendBtn.textContent = uiText('Gönder', 'Send');
   };
 
   feedbackIconBtn?.addEventListener('click', openFeedbackModal);
@@ -248,14 +245,14 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     if (!mesaj) {
       if (feedbackModalMsg) {
         feedbackModalMsg.className = 'feedback-msg';
-        feedbackModalMsg.textContent = 'Geri bildirim mesajı boş olamaz';
+        feedbackModalMsg.textContent = uiText('Geri bildirim mesajı boş olamaz', 'Feedback message cannot be empty');
       }
       return;
     }
 
     if (feedbackSendBtn) {
       feedbackSendBtn.disabled = true;
-      feedbackSendBtn.textContent = 'Gönderiliyor...';
+      feedbackSendBtn.textContent = uiText('Gönderiliyor...', 'Sending...');
     }
 
     try {
@@ -270,7 +267,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
 
       if (feedbackModalMsg) {
         feedbackModalMsg.className = 'feedback-msg success';
-        feedbackModalMsg.textContent = 'Geri bildiriminiz için teşekkür ederiz';
+        feedbackModalMsg.textContent = uiText('Geri bildiriminiz için teşekkür ederiz', 'Thank you for your feedback');
       }
       setTimeout(() => closeFeedbackModal(), 900);
     } catch (error) {
@@ -280,7 +277,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
       }
       if (feedbackSendBtn) {
         feedbackSendBtn.disabled = false;
-        feedbackSendBtn.textContent = 'Gönder';
+        feedbackSendBtn.textContent = uiText('Gönder', 'Send');
       }
     }
   });
@@ -313,12 +310,12 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     document.body.style.overflow = '';
     input.value = '';
     resultsEl.innerHTML = '';
-    hint.textContent = 'En az 2 karakter yazın';
+    hint.textContent = uiText('En az 2 karakter yazın', 'Enter at least 2 characters');
   };
 
   const renderResults = (items: SearchResultItem[]): void => {
     if (!items.length) {
-      resultsEl.innerHTML = '<div class="spotlight-empty">Sonuç bulunamadı</div>';
+      resultsEl.innerHTML = `<div class="spotlight-empty">${uiText('Sonuç bulunamadı', 'No results found')}</div>`;
       return;
     }
 
@@ -435,7 +432,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
       pushUnique({
         title: 'Arıza Kaydı Oluştur',
         subtitle: 'MMS yeni kayıt penceresini aç',
-        href: '/mms?open=new',
+        href: '/problem-records?open=new',
         type: 'Hızlı İşlem'
       });
     }
@@ -466,14 +463,14 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
         pushUnique({
           title: 'MMS Arıza Raporu',
           subtitle: 'Tüm istasyonlar için PDF rapor oluştur',
-          href: '/mms?report=pdf&allStations=1',
+          href: '/problem-records?report=pdf&allStations=1',
           type: 'Hızlı İşlem'
         });
       } else if (matchedMmsReportStation) {
         pushUnique({
           title: 'MMS Arıza Raporu',
           subtitle: `${query.trim()} için PDF rapor oluştur`,
-          href: `/mms?report=pdf&stationQuery=${encodeURIComponent(matchedMmsReportStation)}`,
+          href: `/problem-records?report=pdf&stationQuery=${encodeURIComponent(matchedMmsReportStation)}`,
           type: 'Hızlı İşlem'
         });
       }
@@ -523,14 +520,13 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
       pushUnique({
         title: 'İstasyon Şeması',
         subtitle: `${query.trim()} için istasyon şemasını aç`,
-        href: `/istasyon-semasi?station=${encodeURIComponent(matchedStationSlug)}`,
         type: 'Hızlı İşlem',
         searchValue: ''
       });
     }
 
     (mms?.records || []).slice(0, 5).forEach((r) => {
-      pushUnique({ title: `MMS #${r.mms_numarasi || '-'}`, subtitle: `${clipText(r.ariza_tanimi || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/mms?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'MMS', searchValue: query });
+      pushUnique({ title: `MMS #${r.mms_numarasi || '-'}`, subtitle: `${clipText(r.ariza_tanimi || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/problem-records?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'MMS', searchValue: query });
     });
     (izin?.records || []).slice(0, 5).forEach((r) => {
       pushUnique({ title: `Çalışma ${r.calisma_kodu || '-'}`, subtitle: `${clipText(r.yapilacak_is || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/calisma-izni?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'Çalışma', searchValue: query });
@@ -583,14 +579,14 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     const query = input.value.trim();
     activeQuery = query;
     if (query.length < 2) {
-      hint.textContent = 'En az 2 karakter yazın';
+      hint.textContent = uiText('En az 2 karakter yazın', 'Enter at least 2 characters');
       resultsEl.innerHTML = '';
       return;
     }
-    hint.textContent = 'Aranıyor...';
+    hint.textContent = uiText('Aranıyor...', 'Searching...');
     const items = await fetchSearchResults(query);
     if (activeQuery !== query) return;
-    hint.textContent = `${items.length} sonuç`;
+    hint.textContent = isEnglish() ? `${items.length} results` : `${items.length} sonuç`;
     renderResults(items);
   };
 

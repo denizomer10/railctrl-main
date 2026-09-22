@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -124,15 +125,15 @@ export const GET: APIRoute = async ({ locals, url }) => {
     if (user.role === 'sef' || user.role === 'admin') {
       queryText = `
         SELECT i.*, u.full_name as kullanici_adi
-        FROM izin_istekleri i
-        LEFT JOIN users u ON i.user_id = u.id
+            FROM ${Tables.IZIN_ISTEKLERI} i
+            LEFT JOIN ${Tables.USERS} u ON i.user_id = u.id
         ORDER BY i.created_at DESC
         LIMIT $1 OFFSET $2
       `;
       params = [limit, offset];
     } else {
       queryText = `
-        SELECT * FROM izin_istekleri 
+            SELECT * FROM ${Tables.IZIN_ISTEKLERI} 
         WHERE user_id = $1
         ORDER BY created_at DESC
         LIMIT $2 OFFSET $3
@@ -210,7 +211,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const aitOlduguYil = new Date(baslangic_tarihi).getFullYear();
 
     const result = await query<any>(
-      `INSERT INTO izin_istekleri (
+          `INSERT INTO ${Tables.IZIN_ISTEKLERI} (
         personel_id, user_id, ad_soyad, birim, gorevi,
         ait_oldugu_yil, izin_turu, baslangic_tarihi, bitis_tarihi, 
         izin_gun_sayisi, yol_izni, kalan_izin, is_basi_tarihi, aciklama,

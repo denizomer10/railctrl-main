@@ -1,5 +1,5 @@
 // PDF görüntüleyici modalı: data-pdf-viewer özniteliği taşıyan bağlantıları yakalar,
-// modalda gösterir. sef-islemleri ve personel-islemleri tarafından kullanılır.
+// modalda gösterir. problem-records ve notlar tarafından kullanılır.
 
 export function normalizePdfUrl(pdfUrl: string): string {
   try {

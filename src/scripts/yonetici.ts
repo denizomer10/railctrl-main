@@ -519,7 +519,7 @@ function recordApiPath(moduleKey: string, recordId: string): string {
 
 function editSystemRecord(record: SystemRecord): void {
   const id = encodeURIComponent(String(record.record_id));
-  if (record.module_key === 'mms') window.location.href = `/mms?editId=${id}&src=admin-records`;
+  if (record.module_key === 'mms') window.location.href = `/problem-records?editId=${id}&src=admin-records`;
   else if (record.module_key === 'calisma') window.location.href = `/calisma-izni?editId=${id}&src=admin-records`;
   else if (record.module_key === 'dahili') window.location.href = `/dahili-numaralar?editId=${id}&src=admin-records`;
   else if (record.module_key === 'kayip_esya') window.location.href = `/kayip-esya?editId=${id}&src=admin-records`;

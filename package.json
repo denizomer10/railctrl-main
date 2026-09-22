@@ -2,8 +2,8 @@
   "name": "railctrl",
   "type": "module",
   "version": "2.0.0",
-  "description": "TCDD Yönetim Sistemi V2 - Türkiye Cumhuriyeti Devlet Demiryolları İçin Kapsamlı Yönetim Platformu",
-  "author": "TCDD",
+  "description": "Tren Yönetim Sistemi V2 - Türkiye Cumhuriyeti Devlet Demiryolları İçin Kapsamlı Yönetim Platformu",
+  "author": "Tren",
   "license": "MIT",
   "scripts": {
     "dev": "env ASTRO_TELEMETRY_DISABLED=1 XDG_CONFIG_HOME=/tmp/astro-config HOME=/tmp node node_modules/astro/bin/astro.mjs dev",
@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
     "sharp": "^0.34.5",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   },
   "overrides": {

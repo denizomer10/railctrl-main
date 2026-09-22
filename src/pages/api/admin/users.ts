@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { query } from '../../../lib/database';
+import { query, Tables } from '../../../lib/database';
 import { hashPassword } from '../../../lib/auth';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
@@ -19,7 +19,7 @@ export const GET: APIRoute = async ({ locals }) => {
     await ensureAppSchema();
     const result = await query(
       `SELECT id, email, full_name as name, role, gorevi, is_active, created_at, last_login, istasyon, notify_mms, notify_calisma
-       FROM users 
+         FROM ${Tables.USERS} 
        ORDER BY created_at DESC`
     );
 
@@ -85,8 +85,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     // Create user
     const result = await query(
-      `INSERT INTO users (id, username, email, password_hash, full_name, role, gorevi, istasyon, notify_mms, notify_calisma) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
+          `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya) 
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, 1) 
        RETURNING id, email, full_name as name, role, gorevi, is_active, created_at, istasyon, notify_mms, notify_calisma`,
       [crypto.randomUUID(), username, email, passwordHash, name, role, gorevi || null, istasyon || null, notify_mms ?? true, notify_calisma ?? true]
     );

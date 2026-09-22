@@ -9,6 +9,7 @@ import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createGlobalNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -29,7 +30,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const durum = url.searchParams.get('durum');
     const offset = (page - 1) * limit;
 
-    let queryText = `SELECT * FROM kayip_esya WHERE 1=1`;
+    let queryText = `SELECT * FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -65,7 +66,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const result = await query<any>(queryText, params);
 
     // Toplam sayı
-    let countQuery = `SELECT COUNT(*) FROM kayip_esya WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -104,7 +105,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         SUM(CASE WHEN LOWER(COALESCE(durumu, '')) LIKE '%imha%' OR LOWER(COALESCE(durumu, '')) LIKE '%iett%' THEN 1 ELSE 0 END) as imha,
         SUM(CASE WHEN LOWER(COALESCE(durumu, '')) LIKE '%büroda%' OR LOWER(COALESCE(durumu, '')) LIKE '%depoda%' OR LOWER(COALESCE(durumu, '')) = 'depoda' THEN 1 ELSE 0 END) as depo,
         SUM(CASE WHEN durumu IS NULL OR durumu = '' OR LOWER(durumu) LIKE '%tcdd hesab%' OR LOWER(durumu) LIKE '%işlem no%' OR (LOWER(durumu) NOT LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%imha%' AND LOWER(durumu) NOT LIKE '%iett%' AND LOWER(durumu) NOT LIKE '%büroda%' AND LOWER(durumu) NOT LIKE '%depoda%') THEN 1 ELSE 0 END) as beklemede
-      FROM kayip_esya
+          FROM ${Tables.KAYIP_ESYA}
     `);
 
     return new Response(JSON.stringify({
@@ -164,7 +165,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const result = await query<any>(`
-      INSERT INTO kayip_esya (
+          INSERT INTO ${Tables.KAYIP_ESYA} (
         tarih, belge_no, teslim_alan, buroya_teslim_eden, 
         buroya_teslim_tarihi, teslim_alan_buro_gorevlisi,
         esya_tanimi, durumu, esya_sahibi_ad_soyad, esya_sahibi_tel

@@ -4,6 +4,7 @@ import { jsonResponse, parsePagination, requireRole } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
+import { Tables } from '../../../lib/database';
 
 export const prerender = false;
 
@@ -15,7 +16,7 @@ export const GET: APIRoute = async ({ url }) => {
     const istasyon = url.searchParams.get('istasyon');
     const search = url.searchParams.get('search');
 
-    let queryText = 'SELECT * FROM mms_records WHERE 1=1';
+    let queryText = `SELECT * FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
     const params: any[] = [];
     let paramIndex = 1;
 
@@ -50,7 +51,7 @@ export const GET: APIRoute = async ({ url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = 'SELECT COUNT(*) FROM mms_records WHERE 1=1';
+    let countQuery = `SELECT COUNT(*) FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -90,7 +91,7 @@ export const GET: APIRoute = async ({ url }) => {
         SUM(CASE WHEN durum = 'Onarımda' THEN 1 ELSE 0 END) as onarimda,
         SUM(CASE WHEN durum = 'Parça Bekleniyor' THEN 1 ELSE 0 END) as parca_bekleniyor,
         SUM(CASE WHEN durum IS NULL OR durum = '' OR durum = 'Beklemede' THEN 1 ELSE 0 END) as beklemede
-      FROM mms_records
+          FROM ${Tables.MMS_RECORDS}
     `);
 
     return jsonResponse({
@@ -130,12 +131,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'MMS numarası, arıza tanımı ve istasyon zorunludur' }, 400);
     }
 
-    const userInfo = await query<any>('SELECT full_name, department FROM users WHERE id = $1', [locals.user.id]);
+    const userInfo = await query<any>(`SELECT full_name, department FROM ${Tables.USERS} WHERE id = $1`, [locals.user.id]);
     const acanAdSoyad = userInfo.rows[0]?.full_name || locals.user.displayName || null;
     const acilanBirim = userInfo.rows[0]?.department || null;
 
     const result = await query<any>(
-      `INSERT INTO mms_records (zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
+          `INSERT INTO ${Tables.MMS_RECORDS} (zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
        VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8, CASE WHEN $4 = 'Onarıldı' THEN CURRENT_TIMESTAMP ELSE NULL END)
        RETURNING *`,
       [body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id, body.not?.trim() || null]

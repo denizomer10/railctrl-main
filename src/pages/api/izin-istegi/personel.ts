@@ -5,7 +5,7 @@
  */
 
 import type { APIRoute } from 'astro';
-import { query } from '../../../lib/database';
+import { query, Tables } from '../../../lib/database';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
 
@@ -96,7 +96,7 @@ export const GET: APIRoute = async ({ locals }) => {
 
     if (result.rows.length === 0) {
       const fromUser = await query<any>(
-        `SELECT full_name, istasyon FROM users WHERE id = $1`,
+              `SELECT full_name, istasyon FROM ${Tables.USERS} WHERE id = $1`,
         [user.id]
       );
       if (fromUser.rows.length > 0) {

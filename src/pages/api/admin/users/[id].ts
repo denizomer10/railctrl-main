@@ -3,6 +3,7 @@ import { query } from '../../../../lib/database';
 import { hashPassword } from '../../../../lib/auth';
 import { ensureAppSchema } from '../../../../lib/schema';
 import { logAudit } from '../../../../lib/audit';
+import { Tables } from '../../../../lib/database';
 
 export const prerender = false;
 
@@ -99,7 +100,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
     values.push(id);
     const result = await query(
-      `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, full_name as name, role, gorevi, is_active, istasyon, notify_mms, notify_calisma`,
+          `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, full_name as name, role, gorevi, is_active, istasyon, notify_mms, notify_calisma`,
       values
     );
 
@@ -170,11 +171,11 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
   try {
     await ensureAppSchema();
     // Delete user's sessions first
-    await query('DELETE FROM sessions WHERE user_id = $1', [id]);
-    await query('DELETE FROM refresh_tokens WHERE user_id = $1', [id]);
+      await query(`DELETE FROM ${Tables.SESSIONS} WHERE user_id = $1`, [id]);
+      await query(`DELETE FROM ${Tables.REFRESH_TOKENS} WHERE user_id = $1`, [id]);
     
     // Delete user
-    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+      const result = await query(`DELETE FROM ${Tables.USERS} WHERE id = $1 RETURNING id`, [id]);
 
     if (result.rows.length === 0) {
       return new Response(JSON.stringify({ error: 'User not found' }), {
