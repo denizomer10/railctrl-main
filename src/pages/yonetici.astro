@@ -3,6 +3,7 @@ const user = Astro.locals.user;
 if (!user || user.role !== 'admin') {
   return Astro.redirect('/403');
 }
+import { MARMARAY_ISTASYONLARI } from '../lib/stations';
 const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
 ---
 
@@ -684,7 +685,295 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     </style>
   </head>
   <body>
-    <div id="adminApp"></div>
+    <style>[hidden]{display:none !important;}</style>
+    <div class="admin-layout">
+      <div class="menu-backdrop" id="menuBackdrop" hidden></div>
+      <button id="drawerToggle" class="mobile-drawer-toggle" title="Menü">
+        <span>&#9776;</span>
+        <span>Men&uuml;</span>
+      </button>
+
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <img src="/logo.png" alt="TCDD" />
+          <h1>Y&ouml;netici &Idot;&#351;lemleri</h1>
+        </div>
+        <div class="menu" id="sideMenu">
+          <button class="menu-btn active" data-tab="dashboard"><span class="menu-ico">&#128202;</span><span>Genel Bak&imath;&#351;</span></button>
+          <button class="menu-btn" data-tab="users"><span class="menu-ico">&#128100;</span><span>Personel &Idot;&#351;lemleri</span></button>
+          <button class="menu-btn" data-tab="feedback"><span class="menu-ico">&#128172;</span><span>Geri Bildirimler</span></button>
+          <button class="menu-btn" data-tab="records"><span class="menu-ico">&#128451;</span><span>Sistem Kay&imath;tlar&imath;</span></button>
+          <button class="menu-btn" data-tab="files"><span class="menu-ico">&#128193;</span><span>Dosya Y&ouml;netimi</span></button>
+          <button class="menu-btn" data-tab="audit"><span class="menu-ico">&#129534;</span><span>Audit Kay&imath;tlar&imath;</span></button>
+          <button class="menu-btn" id="homeBtn"><span class="menu-ico">&#127968;</span><span>Ana Sayfa</span></button>
+        </div>
+        <div class="mobile-menu-tools">
+          <button class="btn soft icon" id="mRefreshBtn" title="&#350;imdi Yenile">
+            <span class="refresh-icon" id="mRefreshIcon">&#8635;</span>
+            <span>Yenile</span>
+          </button>
+          <button class="btn soft icon theme-btn" id="mThemeBtn" title="Tema De&#287;i&#351;tir">
+            <span class="theme-pill" id="mThemePill">
+              <span class="sun">&#9728;</span>
+              <span class="moon">&#9789;</span>
+            </span>
+            <span id="mThemeLabel">Gece Tema</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="right" id="mainRight">
+        <div class="topbar">
+          <div class="top-head">
+            <div>
+              <h2 id="topTitle">Y&ouml;netici Paneli</h2>
+              <div class="muted">Son &ccedil;ekilme: <span id="lastSync">-</span> &bull; Otomatik yenileme: 30 sn</div>
+            </div>
+          </div>
+          <div class="top-actions">
+            <button class="btn soft icon" id="refreshBtn" title="&#350;imdi Yenile">
+              <span class="refresh-icon" id="refreshIcon">&#8635;</span>
+              <span>Yenile</span>
+            </button>
+            <button class="btn soft icon theme-btn" id="themeBtn" title="Tema De&#287;i&#351;tir">
+              <span class="theme-pill" id="themePill">
+                <span class="sun">&#9728;</span>
+                <span class="moon">&#9789;</span>
+              </span>
+              <span id="themeLabel">Gece Tema</span>
+            </button>
+          </div>
+        </div>
+
+        <section id="tab-dashboard" class="split" data-section="dashboard">
+          <div class="panel">
+            <h3 class="panel-title">&#128200; Sistem &Ouml;zeti</h3>
+            <div class="cards" id="reportCards"></div>
+            <div class="empty" id="reportEmpty" hidden>Rapor verisi yok</div>
+          </div>
+          <div class="panel">
+            <h3 class="panel-title">Son 10 Audit</h3>
+            <div class="table-wrap" id="recentAuditWrap" hidden>
+              <table>
+                <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>Aksiyon</th></tr></thead>
+                <tbody id="recentAuditBody"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="recentAuditEmpty">Kay&imath;t yok</div>
+          </div>
+        </section>
+
+        <section id="tab-users" class="panel" data-section="users" hidden>
+          <div>
+            <h3 class="panel-title">&#10133; Personel Ekle</h3>
+            <button class="btn primary" id="openCreateBtn">Yeni Personel Ekle</button>
+          </div>
+          <div>
+            <h3 class="panel-title">&#128101; Personel Listesi</h3>
+            <div class="table-wrap users-desktop-table" id="usersDesktopWrap" hidden>
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>Ad Soyad</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>G&ouml;revi</th>
+                    <th>&Idot;stasyon</th>
+                    <th>Durum</th>
+                    <th>Son Giri&#351;</th>
+                    <th>&Idot;&#351;lem</th>
+                  </tr>
+                </thead>
+                <tbody id="usersBody"></tbody>
+              </table>
+            </div>
+            <div class="user-mobile-list" id="usersMobileList"></div>
+            <div class="empty" id="usersEmpty" hidden>Personel bulunamad&imath;</div>
+          </div>
+        </section>
+
+        <section id="tab-feedback" class="panel" data-section="feedback" hidden>
+          <h3 class="panel-title">Geri Bildirimler</h3>
+          <div class="table-wrap" id="feedbackWrap" hidden>
+            <table>
+              <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>&Idot;stasyon</th><th>Mesaj</th><th>&Idot;&#351;lem</th></tr></thead>
+              <tbody id="feedbackBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="feedbackEmpty">Geri bildirim yok</div>
+        </section>
+
+        <section id="tab-records" class="panel" data-section="records" hidden>
+          <h3 class="panel-title">Sistem Genel Kay&imath;tlar&imath;</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="exportRecordsExcel"><span>&#128202;</span><span>Excel Rapor</span></button>
+            <button class="btn soft icon" id="exportRecordsCsv"><span>&#128196;</span><span>CSV Rapor</span></button>
+          </div>
+          <div class="records-toolbar">
+            <select id="recordsModule">
+              <option value="mms">MMS</option>
+              <option value="calisma">&Ccedil;al&imath;&#351;ma &Idot;zni</option>
+              <option value="dahili">Dahili Numara</option>
+              <option value="vardiya">Vardiya</option>
+              <option value="kayip_esya">Kay&imath;p E&#351;ya</option>
+            </select>
+            <input id="recordsSearch" placeholder="Kay&imath;t, konum, kullan&imath;c&imath; ara" />
+            <div class="muted" style="display:flex;align-items:center;padding:0 .2rem;">Toplam: <span id="recordsTotal">&nbsp;0</span></div>
+            <button class="btn soft" id="clearRecordsBtn">Temizle</button>
+            <button class="btn primary" id="applyRecordsBtn">Filtrele</button>
+          </div>
+          <div class="table-wrap" id="recordsTableWrap" hidden>
+            <table>
+              <thead id="recordsHead"></thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="recordsEmpty">Sistem kayd&imath; bulunamad&imath;</div>
+          <div class="empty" id="recordsLoading" hidden>Y&uuml;kleniyor...</div>
+          <div class="records-pager">
+            <button class="btn soft" id="prevRecordsBtn">&Ouml;nceki</button>
+            <div class="muted">Sayfa <span id="recordsPageLabel">1 / 1</span></div>
+            <button class="btn soft" id="nextRecordsBtn">Sonraki</button>
+          </div>
+        </section>
+
+        <section id="tab-files" class="panel" data-section="files" hidden>
+          <h3 class="panel-title">Public Files Y&ouml;netimi</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="refreshFilesBtn"><span>&#8635;</span><span>Dosyalar&imath; Yenile</span></button>
+          </div>
+          <div class="table-wrap" id="filesWrap" hidden>
+            <table>
+              <thead><tr><th>Dosya</th><th>Boyut</th><th>G&uuml;ncelleme</th><th>Ba&#287;lant&imath;</th><th>&Idot;&#351;lem</th></tr></thead>
+              <tbody id="filesBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="filesEmpty">public/files i&ccedil;inde dosya bulunamad&imath;</div>
+        </section>
+
+        <section id="tab-audit" class="panel" data-section="audit" hidden>
+          <h3 class="panel-title">Audit Kay&imath;tlar&imath;</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="exportAuditExcel"><span>&#128202;</span><span>Excel'e Aktar</span></button>
+            <button class="btn soft icon" id="exportAuditCsv"><span>&#128196;</span><span>CSV Olarak Aktar</span></button>
+            <button class="btn danger icon" id="clearAuditBtn"><span>&#128465;</span><span>T&uuml;m&uuml;n&uuml; Sil</span></button>
+          </div>
+          <div class="table-wrap" id="auditWrap" hidden>
+            <table>
+              <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>Aksiyon</th><th>Kaynak</th><th>IP</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="auditEmpty">Audit kayd&imath; bulunamad&imath;</div>
+        </section>
+      </main>
+
+      <div class="modal" id="createModal" hidden>
+        <div class="modal-box">
+          <div class="modal-head">
+            <strong>Yeni Personel Ekle</strong>
+            <button class="btn soft" id="closeCreateBtn">Kapat</button>
+          </div>
+          <div class="modal-grid edit-user-grid">
+            <div class="edit-user-field">
+              <label for="new-user-name">Ad Soyad</label>
+              <input id="new-user-name" placeholder="Ad Soyad" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-email">E-posta</label>
+              <input id="new-user-email" type="email" placeholder="E-posta" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-password">&#350;ifre</label>
+              <input id="new-user-password" type="password" placeholder="&#350;ifre" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-role">Rol</label>
+              <select id="new-user-role">
+                <option value="user">Personel</option>
+                <option value="sef">&#350;ef</option>
+                <option value="gar_mudur">Gar M&uuml;d&uuml;r&uuml;</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-job">G&ouml;revi</label>
+              <select id="new-user-job">
+                <option value="&#350;ef">&#350;ef</option>
+                <option value="&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi">&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi</option>
+                <option value="Gar M&uuml;d&uuml;r&uuml;">Gar M&uuml;d&uuml;r&uuml;</option>
+                <option value="Personel" selected>Personel</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-station">&Idot;stasyon</label>
+              <select id="new-user-station">
+                <option value="">&Idot;stasyon</option>
+                {MARMARAY_ISTASYONLARI.map((s) => (<option value={s}>{s}</option>))}
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+            <button class="btn soft" id="cancelCreateBtn">&Idot;ptal</button>
+            <button class="btn primary" id="submitCreateBtn">Olu&#351;tur</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="editModal" hidden>
+        <div class="modal-box">
+          <div class="modal-head">
+            <strong>Personel D&uuml;zenle</strong>
+            <button class="btn soft" id="closeEditBtn">Kapat</button>
+          </div>
+          <div class="modal-grid edit-user-grid">
+            <div class="edit-user-field">
+              <label for="edit-user-name">Ad Soyad</label>
+              <input id="edit-user-name" placeholder="Ad Soyad" />
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-email">E-posta</label>
+              <input id="edit-user-email" type="email" placeholder="E-posta" />
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-role">Rol</label>
+              <select id="edit-user-role">
+                <option value="user">Personel</option>
+                <option value="sef">&#350;ef</option>
+                <option value="gar_mudur">Gar M&uuml;d&uuml;r&uuml;</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-job">G&ouml;revi</label>
+              <select id="edit-user-job">
+                <option value="&#350;ef">&#350;ef</option>
+                <option value="&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi">&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi</option>
+                <option value="Gar M&uuml;d&uuml;r&uuml;">Gar M&uuml;d&uuml;r&uuml;</option>
+                <option value="Personel">Personel</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-station">&Idot;stasyon</label>
+              <select id="edit-user-station">
+                <option value="">&Idot;stasyon</option>
+                {MARMARAY_ISTASYONLARI.map((s) => (<option value={s}>{s}</option>))}
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-password">Yeni &#350;ifre</label>
+              <input id="edit-user-password" type="password" placeholder="Yeni &#351;ifre (opsiyonel)" />
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+            <button class="btn soft" id="cancelEditBtn">&Idot;ptal</button>
+            <button class="btn primary" id="saveEditBtn">Kaydet</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" hidden></div>
+    </div>
 
     <script is:inline>
       (() => {
@@ -696,872 +985,809 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     <script is:inline>
       window.RailctrlShell?.finalize({ enablePwa: true, responsiveTables: true });
     </script>
-    <script is:inline src="/vendor/vue.global.prod.js"></script>
-    <script is:inline>
-      (() => {
-        const root = document.getElementById('adminApp');
-        const showFatal = (message) => {
-          if (!root) return;
-          root.innerHTML = `<div style="max-width:780px;margin:10vh auto;padding:1rem;border:1px solid #fca5a5;background:#fff1f2;border-radius:12px;color:#7f1d1d;">${message}</div>`;
-        };
 
-        if (!window.Vue || !window.Vue.createApp) {
-          showFatal('Vue yüklenemedi. /vendor/vue.global.prod.js kontrol edin.');
-          return;
-        }
+    <script>
+type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  gorevi?: string | null;
+  istasyon?: string | null;
+  is_active: boolean;
+  last_login?: string | null;
+  created_at?: string | null;
+};
+type AuditLog = {
+  id: string;
+  created_at?: string | null;
+  user_name?: string | null;
+  user_email?: string | null;
+  action: string;
+  resource_type?: string | null;
+  resource_id?: string | null;
+  ip_address?: string | null;
+};
+type Feedback = {
+  id: string;
+  created_at?: string | null;
+  full_name?: string | null;
+  station?: string | null;
+  mesaj: string;
+};
+type SystemRecord = {
+  module_key: string;
+  module_label: string;
+  record_id: string;
+  created_at?: string | null;
+  creator_name?: string | null;
+  details?: Record<string, unknown> | null;
+};
+type AdminFile = { name: string; size: number; modifiedAt?: string | null; url: string };
+type Report = {
+  users: number;
+  mms: number;
+  calisma: number;
+  kayip_esya: number;
+  notlar: number;
+  geri_bildirimler: number;
+};
 
-        const { createApp } = window.Vue;
+const state = {
+  activeTab: 'dashboard',
+  isDesktop: window.innerWidth > 1200,
+  menuOpen: window.innerWidth > 1200,
+  users: [] as AdminUser[],
+  logs: [] as AuditLog[],
+  feedbacks: [] as Feedback[],
+  systemRecords: [] as SystemRecord[],
+  files: [] as AdminFile[],
+  report: null as Report | null,
+  recordsLoading: false,
+  recordsPage: 1,
+  recordsLimit: 100,
+  recordsTotalCount: 0,
+  recordsTotalPages: 1,
+  recordsModule: 'mms',
+  recordsSearch: '',
+  loading: false,
+  lastSync: null as number | null,
+  editUserId: null as string | null,
+};
 
-        createApp({
-          data() {
-            return {
-              activeTab: 'dashboard',
-              menuOpen: false,
-              isDesktop: window.innerWidth > 1200,
-              users: [],
-              logs: [],
-              feedbacks: [],
-              systemRecords: [],
-              files: [],
-              recordsLoading: false,
-              recordsPage: 1,
-              recordsLimit: 100,
-              recordsTotalCount: 0,
-              recordsTotalPages: 1,
-              recordsModule: 'mms',
-              recordsSearch: '',
-              report: null,
-              showCreateUserModal: false,
-              newUser: { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' },
-              editUser: null,
-              theme: document.documentElement.getAttribute('data-theme') || 'light',
-              toast: '',
-              lastSync: null,
-              autoTimer: null,
-              resizeHandler: null,
-              loading: false,
-              stations: [
-                'Halkalı',
-                'Mustafa Kemal',
-                'Küçükçekmece',
-                'Florya',
-                'Florya Akvaryum',
-                'Yeşilköy',
-                'Yeşilyurt',
-                'Ataköy',
-                'Bakırköy',
-                'Yenimahalle',
-                'Zeytinburnu',
-                'Kazlıçeşme',
-                'Yenikapı',
-                'Sirkeci',
-                'Üsküdar',
-                'Ayrılık Çeşmesi',
-                'Söğütlüçeşme',
-                'Acıbadem',
-                'Ünalan',
-                'Göztepe',
-                'Feneryolu',
-                'Bostancı',
-                'Küçükyalı',
-                'İdealtepe',
-                'Süreyya Plajı',
-                'Maltepe',
-                'Cevizli',
-                'Atalar',
-                'Kartal',
-                'Yunus',
-                'Pendik',
-                'Tersane',
-                'Güzelyalı',
-                'Aydıntepe',
-                'İçmeler',
-                'Tuzla',
-                'Çayırova',
-                'Osmangazi',
-                'Gebze',
-              ],
-            };
-          },
-          computed: {
-            lastSyncText() {
-              return this.lastSync ? new Date(this.lastSync).toLocaleString('tr-TR') : '-';
-            },
-            topTitle() {
-              if (this.activeTab === 'users') return 'Personel Yönetimi';
-              if (this.activeTab === 'feedback') return 'Geri Bildirimler';
-              if (this.activeTab === 'records') return 'Sistem Kayıtları';
-              if (this.activeTab === 'files') return 'Dosya Yönetimi';
-              if (this.activeTab === 'audit') return 'Audit Kayıtları';
-              return 'Yönetici Paneli';
-            }
-          },
-          mounted() {
-            this.handleResize();
-            this.resizeHandler = () => this.handleResize();
-            window.addEventListener('resize', this.resizeHandler, { passive: true });
-            this.refreshAll();
-            this.autoTimer = setInterval(() => this.refreshAll(false), 30000);
-          },
-          beforeUnmount() {
-            if (this.autoTimer) clearInterval(this.autoTimer);
-            if (this.resizeHandler) window.removeEventListener('resize', this.resizeHandler);
-          },
-          methods: {
-            roleLabel(role) {
-              const labels = {
-                user: 'Personel',
-                sef: 'Şef',
-                gar_mudur: 'Gar Müdürü',
-                admin: 'Admin',
-              };
-              return labels[role] || role || '-';
-            },
-            async api(path, options = {}) {
-              const res = await fetch(path, {
-                credentials: 'include',
-                headers: { 'Content-Type': 'application/json' },
-                ...options,
-              });
-              const data = await res.json().catch(() => ({}));
-              if (!res.ok) throw new Error(data.error || 'İşlem başarısız');
-              return data;
-            },
-            notify(msg) {
-              this.toast = msg;
-              setTimeout(() => {
-                if (this.toast === msg) this.toast = '';
-              }, 2400);
-            },
-            async refreshAll(showToast = false) {
-              try {
-                this.loading = true;
-                const [u, l, f, r, fs] = await Promise.all([
-                  this.api('/api/admin/users'),
-                  this.api('/api/admin/audit-logs?limit=300'),
-                  this.api('/api/feedback'),
-                  this.api('/api/admin/report'),
-                  this.api('/api/admin/files'),
-                ]);
-                this.users = u.users || [];
-                this.logs = l.logs || [];
-                this.feedbacks = f.feedbacks || [];
-                this.report = r.report || null;
-                this.files = fs.files || [];
-                await this.loadSystemRecords();
-                this.lastSync = Date.now();
-                if (showToast) this.notify('Veriler yenilendi');
-              } catch (error) {
-                this.notify(error.message || 'Veri alınamadı');
-              } finally {
-                this.loading = false;
-              }
-            },
-            toggleTheme() {
-              this.theme = this.theme === 'dark' ? 'light' : 'dark';
-              document.documentElement.setAttribute('data-theme', this.theme);
-              localStorage.setItem('theme', this.theme);
-            },
-            handleResize() {
-              this.isDesktop = window.innerWidth > 1200;
-              this.menuOpen = this.isDesktop;
-            },
-            toggleMenu() {
-              if (this.isDesktop) return;
-              this.menuOpen = !this.menuOpen;
-            },
-            closeMenu() {
-              if (this.isDesktop) return;
-              this.menuOpen = false;
-            },
-            setTab(tab) {
-              this.activeTab = tab;
-              if (tab === 'records') {
-                this.recordsPage = 1;
-                this.loadSystemRecords();
-              }
-              if (!this.isDesktop) this.menuOpen = false;
-            },
-            async loadSystemRecords() {
-              this.recordsLoading = true;
-              try {
-                const params = new URLSearchParams();
-                params.set('page', String(this.recordsPage));
-                params.set('limit', String(this.recordsLimit));
-                if (this.recordsModule) params.set('module', this.recordsModule);
-                if (this.recordsSearch.trim()) params.set('search', this.recordsSearch.trim());
-                const payload = await this.api('/api/admin/system-records?' + params.toString());
-                this.systemRecords = payload.records || [];
-                this.recordsTotalCount = payload.pagination?.totalCount || 0;
-                this.recordsTotalPages = payload.pagination?.totalPages || 1;
-              } catch (error) {
-                this.notify(error.message || 'Sistem kayıtları alınamadı');
-              } finally {
-                this.recordsLoading = false;
-              }
-            },
-            applyRecordFilters() {
-              this.recordsPage = 1;
-              this.loadSystemRecords();
-            },
-            clearRecordFilters() {
-              this.recordsModule = 'mms';
-              this.recordsSearch = '';
-              this.recordsPage = 1;
-              this.loadSystemRecords();
-            },
-            prevRecordsPage() {
-              if (this.recordsPage <= 1) return;
-              this.recordsPage -= 1;
-              this.loadSystemRecords();
-            },
-            nextRecordsPage() {
-              if (this.recordsPage >= this.recordsTotalPages) return;
-              this.recordsPage += 1;
-              this.loadSystemRecords();
-            },
-            recordsApiBaseParams() {
-              const params = new URLSearchParams();
-              if (this.recordsModule) params.set('module', this.recordsModule);
-              if (this.recordsSearch.trim()) params.set('search', this.recordsSearch.trim());
-              return params;
-            },
-            exportSystemRecordsCsv() {
-              const params = this.recordsApiBaseParams();
-              params.set('format', 'csv');
-              params.set('export_limit', '20000');
-              window.location.href = '/api/admin/system-records?' + params.toString();
-            },
-            exportSystemRecordsExcel() {
-              const params = this.recordsApiBaseParams();
-              params.set('format', 'excel');
-              params.set('export_limit', '20000');
-              window.location.href = '/api/admin/system-records?' + params.toString();
-            },
-            recordApiPath(moduleKey, recordId) {
-              const id = encodeURIComponent(String(recordId));
-              if (moduleKey === 'mms') return '/api/mms/' + id;
-              if (moduleKey === 'calisma') return '/api/calisma-izni/' + id;
-              if (moduleKey === 'dahili') return '/api/dahili-numaralar/' + id;
-              if (moduleKey === 'vardiya') return '/api/vardiya/' + id;
-              if (moduleKey === 'kayip_esya') return '/api/kayip-esya/' + id;
-              return '';
-            },
-            async editSystemRecord(record) {
-              const id = encodeURIComponent(String(record.record_id));
-              if (record.module_key === 'mms') {
-                window.location.href = `/mms?editId=${id}&src=admin-records`;
-                return;
-              }
-              if (record.module_key === 'calisma') {
-                window.location.href = `/calisma-izni?editId=${id}&src=admin-records`;
-                return;
-              }
-              if (record.module_key === 'dahili') {
-                window.location.href = `/dahili-numaralar?editId=${id}&src=admin-records`;
-                return;
-              }
-              if (record.module_key === 'kayip_esya') {
-                window.location.href = `/kayip-esya?editId=${id}&src=admin-records`;
-                return;
-              }
-              if (record.module_key === 'vardiya') {
-                window.location.href = `/vardiya?editId=${id}&src=admin-records`;
-                return;
-              }
-            },
-            async deleteSystemRecord(record) {
-              const apiPath = this.recordApiPath(record.module_key, record.record_id);
-              if (!apiPath) return;
-              if (!confirm(`${record.module_label} kaydı (#${record.record_id}) kaldırılsın mı?`)) return;
-              try {
-                await this.api(apiPath, { method: 'DELETE' });
-                this.notify('Kayıt kaldırıldı');
-                await this.loadSystemRecords();
-              } catch (error) {
-                this.notify(error.message || 'Kayıt kaldırılamadı');
-              }
-            },
-            goHome() {
-              window.location.href = '/';
-            },
-            escapeHtml(value) {
-              return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/\"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-            },
-            exportAuditExcel() {
-              window.location.href = '/api/admin/audit-logs?format=excel&limit=5000';
-            },
-            exportAuditCsv() {
-              window.location.href = '/api/admin/audit-logs?format=csv&limit=5000';
-            },
-            async clearAuditLogs() {
-              if (!confirm('Tüm audit kayıtları silinsin mi? Bu işlem geri alınamaz.')) return;
-              try {
-                await this.api('/api/admin/audit-logs', { method: 'DELETE' });
-                this.logs = [];
-                this.notify('Audit kayıtları temizlendi');
-              } catch (error) {
-                this.notify(error.message || 'Audit kayıtları silinemedi');
-              }
-            },
-            async createUser() {
-              if (!this.newUser.name || !this.newUser.email || !this.newUser.password) {
-                this.notify('Ad, email ve şifre zorunlu');
-                return;
-              }
-              try {
-                await this.api('/api/admin/users', {
-                  method: 'POST',
-                  body: JSON.stringify(this.newUser),
-                });
-                this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' };
-                this.showCreateUserModal = false;
-                this.notify('Personel eklendi');
-                await this.refreshAll();
-              } catch (error) {
-                this.notify(error.message || 'Personel eklenemedi');
-              }
-            },
-            openCreateUser() {
-              this.newUser = { name: '', email: '', password: '', role: 'user', gorevi: 'Personel', istasyon: '' };
-              this.showCreateUserModal = true;
-            },
-            closeCreateUser() {
-              this.showCreateUserModal = false;
-            },
-            openEdit(user) {
-              this.editUser = {
-                id: user.id,
-                name: user.name || '',
-                email: user.email || '',
-                role: user.role || 'user',
-                gorevi: user.gorevi || 'Personel',
-                istasyon: user.istasyon || '',
-                password: '',
-              };
-            },
-            closeEdit() {
-              this.editUser = null;
-            },
-            async saveEdit() {
-              if (!this.editUser) return;
-              try {
-                const payload = {
-                  name: this.editUser.name,
-                  email: this.editUser.email,
-                  role: this.editUser.role,
-                  gorevi: this.editUser.gorevi,
-                  istasyon: this.editUser.istasyon,
-                  password: this.editUser.password || undefined,
-                };
-                await this.api('/api/admin/users/' + this.editUser.id, {
-                  method: 'PUT',
-                  body: JSON.stringify(payload),
-                });
-                this.notify('Personel güncellendi');
-                this.closeEdit();
-                await this.refreshAll();
-              } catch (error) {
-                this.notify(error.message || 'Güncelleme hatası');
-              }
-            },
-            async toggleUser(user) {
-              try {
-                await this.api('/api/admin/users/' + user.id + '/toggle', { method: 'POST' });
-                this.notify('Durum güncellendi');
-                await this.refreshAll();
-              } catch (error) {
-                this.notify(error.message || 'Durum güncellenemedi');
-              }
-            },
-            async deleteUser(user) {
-              if (!confirm(user.name + ' silinsin mi?')) return;
-              try {
-                await this.api('/api/admin/users/' + user.id, { method: 'DELETE' });
-                this.notify('Kullanıcı silindi');
-                await this.refreshAll();
-              } catch (error) {
-                this.notify(error.message || 'Silinemedi');
-              }
-            },
-            async deleteFeedback(feedback) {
-              if (!confirm('Geri bildirim silinsin mi?')) return;
-              try {
-                await this.api('/api/feedback/' + feedback.id, { method: 'DELETE' });
-                this.notify('Geri bildirim silindi');
-                await this.refreshAll();
-              } catch (error) {
-                this.notify(error.message || 'Geri bildirim silinemedi');
-              }
-            },
-            async refreshFiles() {
-              try {
-                const payload = await this.api('/api/admin/files');
-                this.files = payload.files || [];
-              } catch (error) {
-                this.notify(error.message || 'Dosyalar alınamadı');
-              }
-            },
-            async deleteFile(file) {
-              if (!confirm(file.name + ' dosyası silinsin mi?')) return;
-              try {
-                await this.api('/api/admin/files', {
-                  method: 'DELETE',
-                  body: JSON.stringify({ name: file.name }),
-                });
-                this.notify('Dosya silindi');
-                await this.refreshFiles();
-              } catch (error) {
-                this.notify(error.message || 'Dosya silinemedi');
-              }
-            },
-            formatFileSize(bytes) {
-              const size = Number(bytes || 0);
-              if (size < 1024) return size + ' B';
-              if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
-              return (size / (1024 * 1024)).toFixed(2) + ' MB';
-            },
-            fmtDate(value) {
-              if (!value) return '-';
-              return new Date(value).toLocaleString('tr-TR');
-            },
-          },
-          template: `
-            <div class="admin-layout">
-              <div class="menu-backdrop" v-if="menuOpen && !isDesktop" @click="closeMenu"></div>
-              <button v-if="!isDesktop" class="mobile-drawer-toggle" @click="toggleMenu" title="Menü">
-                <span>☰</span>
-                <span>Menü</span>
-              </button>
+function el<T extends HTMLElement>(id: string): T | null {
+  return document.getElementById(id) as T | null;
+}
 
-              <aside class="sidebar" :class="{ open: menuOpen }">
-                <div class="brand">
-                  <img src="/logo.png" alt="TCDD" />
-                  <h1>Yönetici İşlemleri</h1>
-                </div>
-                <div class="menu">
-                  <button class="menu-btn" :class="{active:activeTab==='dashboard'}" @click="setTab('dashboard')"><span class="menu-ico">📊</span><span>Genel Bakış</span></button>
-                  <button class="menu-btn" :class="{active:activeTab==='users'}" @click="setTab('users')"><span class="menu-ico">👤</span><span>Personel İşlemleri</span></button>
-                  <button class="menu-btn" :class="{active:activeTab==='feedback'}" @click="setTab('feedback')"><span class="menu-ico">💬</span><span>Geri Bildirimler</span></button>
-                  <button class="menu-btn" :class="{active:activeTab==='records'}" @click="setTab('records')"><span class="menu-ico">🗂️</span><span>Sistem Kayıtları</span></button>
-                  <button class="menu-btn" :class="{active:activeTab==='files'}" @click="setTab('files')"><span class="menu-ico">📁</span><span>Dosya Yönetimi</span></button>
-                  <button class="menu-btn" :class="{active:activeTab==='audit'}" @click="setTab('audit')"><span class="menu-ico">🧾</span><span>Audit Kayıtları</span></button>
-                  <button class="menu-btn" @click="goHome"><span class="menu-ico">🏠</span><span>Ana Sayfa</span></button>
-                </div>
-                <div class="mobile-menu-tools" v-if="!isDesktop">
-                  <button class="btn soft icon" @click="refreshAll(true); closeMenu()" title="Şimdi Yenile">
-                    <span class="refresh-icon" :class="{ spin: loading }">↻</span>
-                    <span>Yenile</span>
-                  </button>
-                  <button class="btn soft icon theme-btn" @click="toggleTheme" title="Tema Değiştir">
-                    <span class="theme-pill" :class="theme === 'dark' ? 'to-light' : 'to-dark'">
-                      <span class="sun">☀</span>
-                      <span class="moon">☾</span>
-                    </span>
-                    <span>{{ theme === 'dark' ? 'Açık Tema' : 'Gece Tema' }}</span>
-                  </button>
-                </div>
-              </aside>
+function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
-              <main class="right" :class="{ 'with-menu': menuOpen }">
-                <div class="topbar">
-                  <div class="top-head">
-                    <div>
-                      <h2>{{ topTitle }}</h2>
-                      <div class="muted">Son çekilme: {{ lastSyncText }} • Otomatik yenileme: 30 sn</div>
-                    </div>
-                  </div>
-                  <div class="top-actions" v-if="isDesktop">
-                    <button class="btn soft icon" @click="refreshAll(true)" title="Şimdi Yenile">
-                      <span class="refresh-icon" :class="{ spin: loading }">↻</span>
-                      <span>Yenile</span>
-                    </button>
-                    <button class="btn soft icon theme-btn" @click="toggleTheme" title="Tema Değiştir">
-                      <span class="theme-pill" :class="theme === 'dark' ? 'to-light' : 'to-dark'">
-                        <span class="sun">☀</span>
-                        <span class="moon">☾</span>
-                      </span>
-                      <span>{{ theme === 'dark' ? 'Açık Tema' : 'Gece Tema' }}</span>
-                    </button>
-                  </div>
-                </div>
+function fmtDate(value: unknown): string {
+  if (!value) return '-';
+  const d = new Date(String(value));
+  if (Number.isNaN(d.getTime())) return '-';
+  return d.toLocaleString('tr-TR');
+}
 
-                <section v-if="activeTab==='dashboard'" class="split">
-                  <div class="panel">
-                    <h3 class="panel-title">📈 Sistem Özeti</h3>
-                    <div class="cards" v-if="report">
-                      <div class="card"><div class="k">Toplam Kullanıcı</div><div class="v">{{ report.users }}</div></div>
-                      <div class="card"><div class="k">MMS Kayıt</div><div class="v">{{ report.mms }}</div></div>
-                      <div class="card"><div class="k">Çalışma Kayıt</div><div class="v">{{ report.calisma }}</div></div>
-                      <div class="card"><div class="k">Kayıp Eşya</div><div class="v">{{ report.kayip_esya }}</div></div>
-                      <div class="card"><div class="k">Notlar</div><div class="v">{{ report.notlar }}</div></div>
-                      <div class="card"><div class="k">Geri Bildirim</div><div class="v">{{ report.geri_bildirimler }}</div></div>
-                    </div>
-                    <div class="empty" v-else>Rapor verisi yok</div>
-                  </div>
+function roleLabel(role: unknown): string {
+  const labels: Record<string, string> = {
+    user: 'Personel',
+    sef: 'Şef',
+    gar_mudur: 'Gar Müdürü',
+    admin: 'Admin',
+  };
+  return labels[String(role ?? '')] ?? String(role ?? '-') ?? '-';
+}
 
-                  <div class="panel">
-                    <h3 class="panel-title">Son 10 Audit</h3>
-                    <div class="table-wrap" v-if="logs.length">
-                      <table>
-                        <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Aksiyon</th></tr></thead>
-                        <tbody>
-                          <tr v-for="l in logs.slice(0,10)" :key="l.id">
-                            <td>{{ fmtDate(l.created_at) }}</td>
-                            <td>{{ l.user_name || l.user_email || '-' }}</td>
-                            <td>{{ l.action }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div class="empty" v-else>Kayıt yok</div>
-                  </div>
-                </section>
+function formatFileSize(bytes: unknown): string {
+  const size = Number(bytes || 0);
+  if (size < 1024) return size + ' B';
+  if (size < 1024 * 1024) return (size / 1024).toFixed(1) + ' KB';
+  return (size / (1024 * 1024)).toFixed(2) + ' MB';
+}
 
-                <section v-else-if="activeTab==='users'" class="panel" style="display:grid;gap:1rem;">
-                  <div>
-                    <h3 class="panel-title">➕ Personel Ekle</h3>
-                    <button class="btn primary" @click="openCreateUser">Yeni Personel Ekle</button>
-                  </div>
+async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(path, {
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error((data as { error?: string }).error || 'İşlem başarısız');
+  return data as T;
+}
 
-                  <div>
-                    <h3 class="panel-title">👥 Personel Listesi</h3>
-                    <div class="table-wrap users-desktop-table" v-if="users.length && isDesktop">
-                      <table class="users-table">
-                        <thead>
-                          <tr>
-                            <th>Ad Soyad</th>
-                            <th>Email</th>
-                            <th>Rol</th>
-                            <th>Görevi</th>
-                            <th>İstasyon</th>
-                            <th>Durum</th>
-                            <th>Son Giriş</th>
-                            <th>İşlem</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="u in users" :key="u.id">
-                            <td>{{ u.name }}</td>
-                            <td>{{ u.email }}</td>
-                            <td><span class="tag role">{{ roleLabel(u.role) }}</span></td>
-                            <td>{{ u.gorevi || '-' }}</td>
-                            <td>{{ u.istasyon || '-' }}</td>
-                            <td><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></td>
-                            <td>{{ fmtDate(u.last_login) }}</td>
-                            <td>
-                              <div class="actions">
-                                <button class="btn soft" @click="openEdit(u)">Düzenle</button>
-                                <button class="btn soft" @click="toggleUser(u)">{{ u.is_active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
-                                <button class="btn danger" @click="deleteUser(u)">Sil</button>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <div class="user-mobile-list" v-else-if="users.length && !isDesktop">
-                      <div class="user-mobile-card" v-for="u in users" :key="'m-' + u.id">
-                        <div class="user-mobile-row"><div class="user-mobile-k">Ad Soyad</div><div class="user-mobile-v">{{ u.name }}</div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">E-posta</div><div class="user-mobile-v">{{ u.email }}</div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">{{ roleLabel(u.role) }}</span></div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">Görevi</div><div class="user-mobile-v">{{ u.gorevi || '-' }}</div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">İstasyon</div><div class="user-mobile-v">{{ u.istasyon || '-' }}</div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">Durum</div><div class="user-mobile-v"><span class="tag" :class="u.is_active ? 'active' : 'passive'">{{ u.is_active ? 'Aktif' : 'Pasif' }}</span></div></div>
-                        <div class="user-mobile-row"><div class="user-mobile-k">Son Giriş</div><div class="user-mobile-v">{{ fmtDate(u.last_login) }}</div></div>
-                        <div class="user-mobile-row">
-                          <div class="user-mobile-k">İşlem</div>
-                          <div class="user-mobile-v">
-                            <div class="user-mobile-actions">
-                              <button class="btn soft" @click="openEdit(u)">Düzenle</button>
-                              <button class="btn soft" @click="toggleUser(u)">{{ u.is_active ? 'Pasifleştir' : 'Aktifleştir' }}</button>
-                              <button class="btn danger" @click="deleteUser(u)">Sil</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="empty" v-else>Personel yok</div>
-                  </div>
-                </section>
+let toastTimer: number | undefined;
+function notify(msg: string): void {
+  const toast = el<HTMLDivElement>('toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.hidden = false;
+  window.clearTimeout(toastTimer);
+  toastTimer = window.setTimeout(() => {
+    if (toast.textContent === msg) toast.hidden = true;
+  }, 2400);
+}
 
-                <section v-else-if="activeTab==='feedback'" class="panel">
-                  <h3 class="panel-title">Geri Bildirimler</h3>
-                  <div class="table-wrap" v-if="feedbacks.length">
-                    <table>
-                      <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>İstasyon</th><th>Mesaj</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="f in feedbacks" :key="f.id">
-                          <td>{{ fmtDate(f.created_at) }}</td>
-                          <td>{{ f.full_name || '-' }}</td>
-                          <td>{{ f.station || '-' }}</td>
-                          <td>{{ f.mesaj }}</td>
-                          <td><button class="btn danger" @click="deleteFeedback(f)">Sil</button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="empty" v-else>Geri bildirim yok</div>
-                </section>
+function detail(record: SystemRecord, key: string): string {
+  const v = record.details?.[key];
+  if (v === null || v === undefined || v === '') return '-';
+  return String(v);
+}
 
-                <section v-else-if="activeTab==='records'" class="panel">
-                  <h3 class="panel-title">Sistem Genel Kayıtları</h3>
-                  <div class="audit-actions">
-                    <button class="btn soft icon" @click="exportSystemRecordsExcel()"><span>📊</span><span>Excel Rapor</span></button>
-                    <button class="btn soft icon" @click="exportSystemRecordsCsv()"><span>📄</span><span>CSV Rapor</span></button>
-                  </div>
-                  <div class="records-toolbar">
-                    <select v-model="recordsModule" @change="applyRecordFilters">
-                      <option value="mms">MMS</option>
-                      <option value="calisma">Çalışma İzni</option>
-                      <option value="dahili">Dahili Numara</option>
-                      <option value="vardiya">Vardiya</option>
-                      <option value="kayip_esya">Kayıp Eşya</option>
-                    </select>
-                    <input v-model="recordsSearch" placeholder="Kayıt, konum, kullanıcı ara" @keyup.enter="applyRecordFilters" />
-                    <div class="muted" style="display:flex;align-items:center;padding:0 .2rem;">Toplam: {{ recordsTotalCount }}</div>
-                    <button class="btn soft" @click="clearRecordFilters">Temizle</button>
-                    <button class="btn primary" @click="applyRecordFilters">Filtrele</button>
-                  </div>
-                  <div class="table-wrap" v-if="systemRecords.length">
-                    <table v-if="recordsModule==='mms'">
-                      <thead><tr><th>MMS No</th><th>Arıza Tanımı</th><th>İstasyon</th><th>Durum</th><th>Bildiren</th><th>Tarih</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
-                          <td>{{ r.details?.mms_numarasi || '-' }}</td>
-                          <td>{{ r.details?.ariza_tanimi || '-' }}</td>
-                          <td>{{ r.details?.istasyon || '-' }}</td>
-                          <td>{{ r.details?.durum || '-' }}</td>
-                          <td>{{ r.details?.bildiren || r.creator_name || '-' }}</td>
-                          <td>{{ fmtDate(r.created_at) }}</td>
-                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <table v-else-if="recordsModule==='calisma'">
-                      <thead><tr><th>MMS No</th><th>Çalışma Kodu</th><th>Yapılacak İş</th><th>Çalışanlar</th><th>İstasyon</th><th>Tarih</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
-                          <td>{{ r.details?.mms_numarasi || '-' }}</td>
-                          <td>{{ r.details?.calisma_kodu || '-' }}</td>
-                          <td>{{ r.details?.yapilacak_is || '-' }}</td>
-                          <td>{{ r.details?.calisanlar || '-' }}</td>
-                          <td>{{ r.details?.istasyon || '-' }}</td>
-                          <td>{{ fmtDate(r.created_at) }}</td>
-                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <table v-else-if="recordsModule==='dahili'">
-                      <thead><tr><th>Dahili Numara</th><th>Birim</th><th>Açıklama</th><th>Oluşturan</th><th>Tarih</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
-                          <td>{{ r.details?.dahili_numara || '-' }}</td>
-                          <td>{{ r.details?.birim || '-' }}</td>
-                          <td>{{ r.details?.aciklama || '-' }}</td>
-                          <td>{{ r.creator_name || '-' }}</td>
-                          <td>{{ fmtDate(r.created_at) }}</td>
-                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <table v-else-if="recordsModule==='vardiya'">
-                      <thead><tr><th>İstasyon</th><th>Ay / Yıl</th><th>Personel Sayısı</th><th>Oluşturan</th><th>Tarih</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
-                          <td>{{ r.details?.istasyon || '-' }}</td>
-                          <td>{{ r.details?.ay || '-' }} / {{ r.details?.yil || '-' }}</td>
-                          <td>{{ r.details?.personel_sayisi || 0 }}</td>
-                          <td>{{ r.creator_name || '-' }}</td>
-                          <td>{{ fmtDate(r.created_at) }}</td>
-                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <table v-else>
-                      <thead><tr><th>Belge No</th><th>Eşya Tanımı</th><th>Durum</th><th>Teslim Alan</th><th>Tarih</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="r in systemRecords" :key="r.module_key + '-' + r.record_id">
-                          <td>{{ r.details?.belge_no || '-' }}</td>
-                          <td>{{ r.details?.esya_tanimi || '-' }}</td>
-                          <td>{{ r.details?.durumu || '-' }}</td>
-                          <td>{{ r.details?.teslim_alan || '-' }}</td>
-                          <td>{{ fmtDate(r.created_at) }}</td>
-                          <td><div class="actions"><button class="btn soft" @click="editSystemRecord(r)">Düzenle</button><button class="btn danger" @click="deleteSystemRecord(r)">Kaldır</button></div></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="empty" v-else-if="!recordsLoading">Sistem kaydı bulunamadı</div>
-                  <div class="empty" v-else>Yükleniyor...</div>
-                  <div class="records-pager">
-                    <button class="btn soft" :disabled="recordsPage <= 1 || recordsLoading" @click="prevRecordsPage">Önceki</button>
-                    <div class="muted">Sayfa {{ recordsPage }} / {{ recordsTotalPages }}</div>
-                    <button class="btn soft" :disabled="recordsPage >= recordsTotalPages || recordsLoading" @click="nextRecordsPage">Sonraki</button>
-                  </div>
-                </section>
+const TITLES: Record<string, string> = {
+  users: 'Personel Yönetimi',
+  feedback: 'Geri Bildirimler',
+  records: 'Sistem Kayıtları',
+  files: 'Dosya Yönetimi',
+  audit: 'Audit Kayıtları',
+};
 
-                <section v-else-if="activeTab==='files'" class="panel">
-                  <h3 class="panel-title">Public Files Yönetimi</h3>
-                  <div class="audit-actions">
-                    <button class="btn soft icon" @click="refreshFiles()"><span>↻</span><span>Dosyaları Yenile</span></button>
-                  </div>
-                  <div class="table-wrap" v-if="files.length">
-                    <table>
-                      <thead><tr><th>Dosya</th><th>Boyut</th><th>Güncelleme</th><th>Bağlantı</th><th>İşlem</th></tr></thead>
-                      <tbody>
-                        <tr v-for="f in files" :key="f.name">
-                          <td>{{ f.name }}</td>
-                          <td>{{ formatFileSize(f.size) }}</td>
-                          <td>{{ fmtDate(f.modifiedAt) }}</td>
-                          <td><a :href="f.url" target="_blank" rel="noopener noreferrer" class="btn soft">Aç</a></td>
-                          <td><button class="btn danger" @click="deleteFile(f)">Sil</button></td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="empty" v-else>public/files içinde dosya bulunamadı</div>
-                </section>
+function setTab(tab: string): void {
+  state.activeTab = tab;
+  document.querySelectorAll<HTMLButtonElement>('#sideMenu .menu-btn[data-tab]').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === tab);
+  });
+  document.querySelectorAll<HTMLElement>('[data-section]').forEach((s) => {
+    s.hidden = s.dataset.section !== tab;
+  });
+  const title = el<HTMLElement>('topTitle');
+  if (title) title.textContent = TITLES[tab] ?? 'Yönetici Paneli';
+  if (tab === 'records') {
+    state.recordsPage = 1;
+    void loadSystemRecords();
+  }
+  if (!state.isDesktop) closeMenu();
+  window.RailctrlShell?.finalize({ enablePwa: false, responsiveTables: true });
+}
 
-                <section v-else class="panel">
-                  <h3 class="panel-title">Audit Kayıtları</h3>
-                  <div class="audit-actions">
-                    <button class="btn soft icon" @click="exportAuditExcel()"><span>📊</span><span>Excel'e Aktar</span></button>
-                    <button class="btn soft icon" @click="exportAuditCsv()"><span>📄</span><span>CSV Olarak Aktar</span></button>
-                    <button class="btn danger icon" @click="clearAuditLogs()"><span>🗑</span><span>Tümünü Sil</span></button>
-                  </div>
-                  <div class="table-wrap" v-if="logs.length">
-                    <table>
-                      <thead><tr><th>Tarih</th><th>Kullanıcı</th><th>Aksiyon</th><th>Kaynak</th><th>IP</th></tr></thead>
-                      <tbody>
-                        <tr v-for="l in logs" :key="l.id">
-                          <td>{{ fmtDate(l.created_at) }}</td>
-                          <td>{{ l.user_name || l.user_email || '-' }}</td>
-                          <td>{{ l.action }}</td>
-                          <td>{{ l.resource_type || '-' }} #{{ l.resource_id || '-' }}</td>
-                          <td>{{ l.ip_address || '-' }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  <div class="empty" v-else>Audit kaydı bulunamadı</div>
-                </section>
-              </main>
+function applyMenu(): void {
+  const sidebar = el<HTMLElement>('sidebar');
+  const backdrop = el<HTMLElement>('menuBackdrop');
+  const main = el<HTMLElement>('mainRight');
+  if (sidebar) sidebar.classList.toggle('open', state.menuOpen);
+  if (backdrop) backdrop.hidden = state.isDesktop || !state.menuOpen;
+  if (main) main.classList.toggle('with-menu', state.menuOpen && state.isDesktop);
+  const toggle = el<HTMLElement>('drawerToggle');
+  if (toggle) toggle.style.display = state.isDesktop ? 'none' : '';
+}
 
-              <div class="modal" v-if="showCreateUserModal">
-                <div class="modal-box">
-                  <div class="modal-head">
-                    <strong>Yeni Personel Ekle</strong>
-                    <button class="btn soft" @click="closeCreateUser">Kapat</button>
-                  </div>
-                  <div class="modal-grid edit-user-grid">
-                    <div class="edit-user-field">
-                      <label for="new-user-name">Ad Soyad</label>
-                      <input id="new-user-name" v-model="newUser.name" placeholder="Ad Soyad" />
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="new-user-email">E-posta</label>
-                      <input id="new-user-email" v-model="newUser.email" type="email" placeholder="E-posta" />
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="new-user-password">Şifre</label>
-                      <input id="new-user-password" v-model="newUser.password" type="password" placeholder="Şifre" />
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="new-user-role">Rol</label>
-                      <select id="new-user-role" v-model="newUser.role">
-                        <option value="user">Personel</option>
-                        <option value="sef">Şef</option>
-                        <option value="gar_mudur">Gar Müdürü</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="new-user-job">Görevi</label>
-                      <select id="new-user-job" v-model="newUser.gorevi">
-                        <option value="Şef">Şef</option>
-                        <option value="İstasyon Operasyon İşçisi">İstasyon Operasyon İşçisi</option>
-                        <option value="Gar Müdürü">Gar Müdürü</option>
-                        <option value="Personel">Personel</option>
-                      </select>
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="new-user-station">İstasyon</label>
-                      <select id="new-user-station" v-model="newUser.istasyon">
-                        <option value="">İstasyon</option>
-                        <option v-for="s in stations" :key="'new-' + s" :value="s">{{ s }}</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
-                    <button class="btn soft" @click="closeCreateUser">İptal</button>
-                    <button class="btn primary" @click="createUser">Oluştur</button>
-                  </div>
-                </div>
-              </div>
+function handleResize(): void {
+  state.isDesktop = window.innerWidth > 1200;
+  state.menuOpen = state.isDesktop ? true : state.menuOpen;
+  applyMenu();
+}
 
-              <div class="modal" v-if="editUser">
-                <div class="modal-box">
-                  <div class="modal-head">
-                    <strong>Personel Düzenle</strong>
-                    <button class="btn soft" @click="closeEdit">Kapat</button>
-                  </div>
-                  <div class="modal-grid edit-user-grid">
-                    <div class="edit-user-field">
-                      <label for="edit-user-name">Ad Soyad</label>
-                      <input id="edit-user-name" v-model="editUser.name" placeholder="Ad Soyad" />
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="edit-user-email">E-posta</label>
-                      <input id="edit-user-email" v-model="editUser.email" type="email" placeholder="E-posta" />
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="edit-user-role">Rol</label>
-                      <select id="edit-user-role" v-model="editUser.role">
-                        <option value="user">Personel</option>
-                        <option value="sef">Şef</option>
-                        <option value="gar_mudur">Gar Müdürü</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="edit-user-job">Görevi</label>
-                      <select id="edit-user-job" v-model="editUser.gorevi">
-                        <option value="Şef">Şef</option>
-                        <option value="İstasyon Operasyon İşçisi">İstasyon Operasyon İşçisi</option>
-                        <option value="Gar Müdürü">Gar Müdürü</option>
-                        <option value="Personel">Personel</option>
-                      </select>
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="edit-user-station">İstasyon</label>
-                      <select id="edit-user-station" v-model="editUser.istasyon">
-                        <option value="">İstasyon</option>
-                        <option v-for="s in stations" :key="s" :value="s">{{ s }}</option>
-                      </select>
-                    </div>
-                    <div class="edit-user-field">
-                      <label for="edit-user-password">Yeni Şifre</label>
-                      <input id="edit-user-password" v-model="editUser.password" type="password" placeholder="Yeni şifre (opsiyonel)" />
-                    </div>
-                  </div>
-                  <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
-                    <button class="btn soft" @click="closeEdit">İptal</button>
-                    <button class="btn primary" @click="saveEdit">Kaydet</button>
-                  </div>
-                </div>
-              </div>
+function toggleMenu(): void {
+  if (state.isDesktop) return;
+  state.menuOpen = !state.menuOpen;
+  applyMenu();
+}
 
-              <div class="toast" v-if="toast">{{ toast }}</div>
-            </div>
-          `,
-        }).mount('#adminApp');
-      })();
+function closeMenu(): void {
+  if (state.isDesktop) return;
+  state.menuOpen = false;
+  applyMenu();
+}
+
+function applyThemeToDom(theme: string): void {
+  document.documentElement.setAttribute('data-theme', theme);
+  try {
+    localStorage.setItem('theme', theme);
+  } catch { /* yoksay */ }
+  const label = theme === 'dark' ? 'Açık Tema' : 'Gece Tema';
+  const pillCls = theme === 'dark' ? 'to-light' : 'to-dark';
+  const tl = el<HTMLElement>('themeLabel');
+  const ml = el<HTMLElement>('mThemeLabel');
+  if (tl) tl.textContent = label;
+  if (ml) ml.textContent = label;
+  const tp = el<HTMLElement>('themePill');
+  const mp = el<HTMLElement>('mThemePill');
+  if (tp) tp.className = 'theme-pill ' + pillCls;
+  if (mp) mp.className = 'theme-pill ' + pillCls;
+}
+
+function toggleTheme(): void {
+  const cur = document.documentElement.getAttribute('data-theme') || 'light';
+  applyThemeToDom(cur === 'dark' ? 'light' : 'dark');
+}
+
+function setLoading(on: boolean): void {
+  state.loading = on;
+  el<HTMLElement>('refreshIcon')?.classList.toggle('spin', on);
+  el<HTMLElement>('mRefreshIcon')?.classList.toggle('spin', on);
+}
+
+function renderSync(): void {
+  const s = el<HTMLElement>('lastSync');
+  if (s) s.textContent = state.lastSync ? new Date(state.lastSync).toLocaleString('tr-TR') : '-';
+}
+
+function renderReport(): void {
+  const cards = el<HTMLElement>('reportCards');
+  const empty = el<HTMLElement>('reportEmpty');
+  if (!cards || !empty) return;
+  if (!state.report) {
+    cards.innerHTML = '';
+    empty.hidden = false;
+    return;
+  }
+  empty.hidden = true;
+  const r = state.report;
+  const items: Array<[string, number]> = [
+    ['Toplam Kullanıcı', r.users],
+    ['MMS Kayıt', r.mms],
+    ['Çalışma Kayıt', r.calisma],
+    ['Kayıp Eşya', r.kayip_esya],
+    ['Notlar', r.notlar],
+    ['Geri Bildirim', r.geri_bildirimler],
+  ];
+  cards.innerHTML = items
+    .map(([k, v]) => `<div class="card"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div></div>`)
+    .join('');
+}
+
+function renderRecentAudit(): void {
+  const body = el<HTMLElement>('recentAuditBody');
+  const wrap = el<HTMLElement>('recentAuditWrap');
+  const empty = el<HTMLElement>('recentAuditEmpty');
+  if (!body || !wrap || !empty) return;
+  const rows = state.logs.slice(0, 10);
+  wrap.hidden = rows.length === 0;
+  empty.hidden = rows.length !== 0;
+  body.innerHTML = rows
+    .map(
+      (l) =>
+        `<tr><td>${esc(fmtDate(l.created_at))}</td><td>${esc(l.user_name || l.user_email || '-')}</td><td>${esc(l.action)}</td></tr>`
+    )
+    .join('');
+}
+
+function renderUsers(): void {
+  const body = el<HTMLElement>('usersBody');
+  const wrap = el<HTMLElement>('usersDesktopWrap');
+  const list = el<HTMLElement>('usersMobileList');
+  const empty = el<HTMLElement>('usersEmpty');
+  if (!body || !wrap || !list || !empty) return;
+  const has = state.users.length > 0;
+  empty.hidden = has;
+  wrap.hidden = !has || !state.isDesktop;
+  body.innerHTML = state.users
+    .map(
+      (u) => `<tr>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.email)}</td>
+        <td><span class="tag role">${esc(roleLabel(u.role))}</span></td>
+        <td>${esc(u.gorevi || '-')}</td>
+        <td>${esc(u.istasyon || '-')}</td>
+        <td><span class="tag ${u.is_active ? 'active' : 'passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></td>
+        <td>${esc(fmtDate(u.last_login))}</td>
+        <td><div class="actions">
+          <button class="btn soft" data-act="edit" data-id="${esc(u.id)}">Düzenle</button>
+          <button class="btn soft" data-act="toggle" data-id="${esc(u.id)}">${u.is_active ? 'Pasifleştir' : 'Aktifleştir'}</button>
+          <button class="btn danger" data-act="delete" data-id="${esc(u.id)}">Sil</button>
+        </div></td>
+      </tr>`
+    )
+    .join('');
+  list.innerHTML = state.users
+    .map(
+      (u) => `<div class="user-mobile-card">
+        <div class="user-mobile-row"><div class="user-mobile-k">Ad Soyad</div><div class="user-mobile-v">${esc(u.name)}</div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">E-posta</div><div class="user-mobile-v">${esc(u.email)}</div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">${esc(roleLabel(u.role))}</span></div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">Görevi</div><div class="user-mobile-v">${esc(u.gorevi || '-')}</div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">İstasyon</div><div class="user-mobile-v">${esc(u.istasyon || '-')}</div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">Durum</div><div class="user-mobile-v"><span class="tag ${u.is_active ? 'active' : 'passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">Son Giriş</div><div class="user-mobile-v">${esc(fmtDate(u.last_login))}</div></div>
+        <div class="user-mobile-actions">
+          <button class="btn soft" data-act="edit" data-id="${esc(u.id)}">Düzenle</button>
+          <button class="btn soft" data-act="toggle" data-id="${esc(u.id)}">${u.is_active ? 'Pasifleştir' : 'Aktifleştir'}</button>
+          <button class="btn danger" data-act="delete" data-id="${esc(u.id)}">Sil</button>
+        </div>
+      </div>`
+    )
+    .join('');
+  list.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) =>
+    b.addEventListener('click', () => void handleUserAction(b.dataset.act || '', b.dataset.id || ''))
+  );
+  body.querySelectorAll<HTMLButtonElement>('button[data-act]').forEach((b) =>
+    b.addEventListener('click', () => void handleUserAction(b.dataset.act || '', b.dataset.id || ''))
+  );
+  window.RailctrlShell?.finalize({ enablePwa: false, responsiveTables: true });
+}
+
+function renderFeedback(): void {
+  const body = el<HTMLElement>('feedbackBody');
+  const wrap = el<HTMLElement>('feedbackWrap');
+  const empty = el<HTMLElement>('feedbackEmpty');
+  if (!body || !wrap || !empty) return;
+  wrap.hidden = state.feedbacks.length === 0;
+  empty.hidden = state.feedbacks.length !== 0;
+  body.innerHTML = state.feedbacks
+    .map(
+      (f) => `<tr>
+        <td>${esc(fmtDate(f.created_at))}</td>
+        <td>${esc(f.full_name || '-')}</td>
+        <td>${esc(f.station || '-')}</td>
+        <td>${esc(f.mesaj)}</td>
+        <td><button class="btn danger" data-fb="${esc(f.id)}">Sil</button></td>
+      </tr>`
+    )
+    .join('');
+  body.querySelectorAll<HTMLButtonElement>('button[data-fb]').forEach((b) =>
+    b.addEventListener('click', () => void deleteFeedback(String(b.dataset.fb || '')))
+  );
+}
+
+const RECORD_COLUMNS: Record<string, string[]> = {
+  mms: ['MMS No', 'Arıza Tanımı', 'İstasyon', 'Durum', 'Bildiren', 'Tarih', 'İşlem'],
+  calisma: ['MMS No', 'Çalışma Kodu', 'Yapılacak İş', 'Çalışanlar', 'İstasyon', 'Tarih', 'İşlem'],
+  dahili: ['Dahili Numara', 'Birim', 'Açıklama', 'Oluşturan', 'Tarih', 'İşlem'],
+  vardiya: ['İstasyon', 'Ay / Yıl', 'Personel Sayısı', 'Oluşturan', 'Tarih', 'İşlem'],
+  kayip_esya: ['Belge No', 'Eşya Tanımı', 'Durum', 'Teslim Alan', 'Tarih', 'İşlem'],
+};
+
+function recordCells(r: SystemRecord): string {
+  const m = state.recordsModule;
+  if (m === 'mms')
+    return `<td>${esc(detail(r, 'mms_numarasi'))}</td><td>${esc(detail(r, 'ariza_tanimi'))}</td><td>${esc(detail(r, 'istasyon'))}</td><td>${esc(detail(r, 'durum'))}</td><td>${esc(detail(r, 'bildiren') !== '-' ? detail(r, 'bildiren') : r.creator_name || '-')}</td><td>${esc(fmtDate(r.created_at))}</td>`;
+  if (m === 'calisma')
+    return `<td>${esc(detail(r, 'mms_numarasi'))}</td><td>${esc(detail(r, 'calisma_kodu'))}</td><td>${esc(detail(r, 'yapilacak_is'))}</td><td>${esc(detail(r, 'calisanlar'))}</td><td>${esc(detail(r, 'istasyon'))}</td><td>${esc(fmtDate(r.created_at))}</td>`;
+  if (m === 'dahili')
+    return `<td>${esc(detail(r, 'dahili_numara'))}</td><td>${esc(detail(r, 'birim'))}</td><td>${esc(detail(r, 'aciklama'))}</td><td>${esc(r.creator_name || '-')}</td><td>${esc(fmtDate(r.created_at))}</td>`;
+  if (m === 'vardiya') {
+    const ay = detail(r, 'ay');
+    const yil = detail(r, 'yil');
+    return `<td>${esc(detail(r, 'istasyon'))}</td><td>${esc(ay)} / ${esc(yil)}</td><td>${esc(detail(r, 'personel_sayisi'))}</td><td>${esc(r.creator_name || '-')}</td><td>${esc(fmtDate(r.created_at))}</td>`;
+  }
+  return `<td>${esc(detail(r, 'belge_no'))}</td><td>${esc(detail(r, 'esya_tanimi'))}</td><td>${esc(detail(r, 'durumu'))}</td><td>${esc(detail(r, 'teslim_alan'))}</td><td>${esc(fmtDate(r.created_at))}</td>`;
+}
+
+function renderRecords(): void {
+  const head = el<HTMLElement>('recordsHead');
+  const body = el<HTMLElement>('recordsBody');
+  const wrap = el<HTMLElement>('recordsTableWrap');
+  const empty = el<HTMLElement>('recordsEmpty');
+  const loading = el<HTMLElement>('recordsLoading');
+  const total = el<HTMLElement>('recordsTotal');
+  const label = el<HTMLElement>('recordsPageLabel');
+  const prev = el<HTMLButtonElement>('prevRecordsBtn');
+  const next = el<HTMLButtonElement>('nextRecordsBtn');
+  if (!head || !body || !wrap || !empty || !loading || !total || !label || !prev || !next) return;
+  loading.hidden = !state.recordsLoading;
+  const cols = RECORD_COLUMNS[state.recordsModule] ?? RECORD_COLUMNS['kayip_esya'];
+  head.innerHTML = `<tr>${cols.map((c) => `<th>${esc(c)}</th>`).join('')}</tr>`;
+  wrap.hidden = state.systemRecords.length === 0;
+  empty.hidden = state.systemRecords.length !== 0 || state.recordsLoading;
+  body.innerHTML = state.systemRecords
+    .map(
+      (r) => `<tr>${recordCells(r)}<td><div class="actions">
+        <button class="btn soft" data-rec-act="edit" data-rec-mod="${esc(r.module_key)}" data-rec-id="${esc(r.record_id)}">Düzenle</button>
+        <button class="btn danger" data-rec-act="delete" data-rec-mod="${esc(r.module_key)}" data-rec-id="${esc(r.record_id)}">Kaldır</button>
+      </div></td></tr>`
+    )
+    .join('');
+  body.querySelectorAll<HTMLButtonElement>('button[data-rec-act]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const rec: SystemRecord = {
+        module_key: String(b.dataset.recMod || ''),
+        module_label: '',
+        record_id: String(b.dataset.recId || ''),
+      };
+      if (b.dataset.recAct === 'edit') editSystemRecord(rec);
+      else void deleteSystemRecord(rec);
+    })
+  );
+  total.textContent = ' ' + String(state.recordsTotalCount);
+  label.textContent = `${state.recordsPage} / ${state.recordsTotalPages}`;
+  prev.disabled = state.recordsPage <= 1 || state.recordsLoading;
+  next.disabled = state.recordsPage >= state.recordsTotalPages || state.recordsLoading;
+  window.RailctrlShell?.finalize({ enablePwa: false, responsiveTables: true });
+}
+
+function renderFiles(): void {
+  const body = el<HTMLElement>('filesBody');
+  const wrap = el<HTMLElement>('filesWrap');
+  const empty = el<HTMLElement>('filesEmpty');
+  if (!body || !wrap || !empty) return;
+  wrap.hidden = state.files.length === 0;
+  empty.hidden = state.files.length !== 0;
+  body.innerHTML = state.files
+    .map(
+      (f) => `<tr>
+        <td>${esc(f.name)}</td>
+        <td>${esc(formatFileSize(f.size))}</td>
+        <td>${esc(fmtDate(f.modifiedAt))}</td>
+        <td><a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer" class="btn soft">Aç</a></td>
+        <td><button class="btn danger" data-file="${esc(f.name)}">Sil</button></td>
+      </tr>`
+    )
+    .join('');
+  body.querySelectorAll<HTMLButtonElement>('button[data-file]').forEach((b) =>
+    b.addEventListener('click', () => void deleteFile(String(b.dataset.file || '')))
+  );
+}
+
+function renderAudit(): void {
+  const body = el<HTMLElement>('auditBody');
+  const wrap = el<HTMLElement>('auditWrap');
+  const empty = el<HTMLElement>('auditEmpty');
+  if (!body || !wrap || !empty) return;
+  wrap.hidden = state.logs.length === 0;
+  empty.hidden = state.logs.length !== 0;
+  body.innerHTML = state.logs
+    .map(
+      (l) => `<tr>
+        <td>${esc(fmtDate(l.created_at))}</td>
+        <td>${esc(l.user_name || l.user_email || '-')}</td>
+        <td>${esc(l.action)}</td>
+        <td>${esc(l.resource_type || '-')} #${esc(l.resource_id || '-')}</td>
+        <td>${esc(l.ip_address || '-')}</td>
+      </tr>`
+    )
+    .join('');
+  renderRecentAudit();
+}
+
+function renderAll(): void {
+  renderSync();
+  renderReport();
+  renderUsers();
+  renderFeedback();
+  renderRecords();
+  renderFiles();
+  renderAudit();
+  setLoading(state.loading);
+}
+
+async function loadSystemRecords(): Promise<void> {
+  state.recordsLoading = true;
+  renderRecords();
+  try {
+    const params = new URLSearchParams();
+    params.set('page', String(state.recordsPage));
+    params.set('limit', String(state.recordsLimit));
+    if (state.recordsModule) params.set('module', state.recordsModule);
+    if (state.recordsSearch.trim()) params.set('search', state.recordsSearch.trim());
+    const payload = await api<{
+      records?: SystemRecord[];
+      pagination?: { totalCount?: number; totalPages?: number };
+    }>('/api/admin/system-records?' + params.toString());
+    state.systemRecords = payload.records || [];
+    state.recordsTotalCount = payload.pagination?.totalCount || 0;
+    state.recordsTotalPages = payload.pagination?.totalPages || 1;
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Sistem kayıtları alınamadı');
+  } finally {
+    state.recordsLoading = false;
+    renderRecords();
+  }
+}
+
+async function refreshAll(showToast = false): Promise<void> {
+  try {
+    setLoading(true);
+    const [u, l, f, r, fs] = await Promise.all([
+      api<{ users?: AdminUser[] }>('/api/admin/users'),
+      api<{ logs?: AuditLog[] }>('/api/admin/audit-logs?limit=300'),
+      api<{ feedbacks?: Feedback[] }>('/api/feedback'),
+      api<{ report?: Report }>('/api/admin/report'),
+      api<{ files?: AdminFile[] }>('/api/admin/files'),
+    ]);
+    state.users = u.users || [];
+    state.logs = l.logs || [];
+    state.feedbacks = f.feedbacks || [];
+    state.report = r.report || null;
+    state.files = fs.files || [];
+    renderAll();
+    await loadSystemRecords();
+    state.lastSync = Date.now();
+    renderSync();
+    if (showToast) notify('Veriler yenilendi');
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Veri alınamadı');
+  } finally {
+    setLoading(false);
+    renderSync();
+  }
+}
+
+function recordApiPath(moduleKey: string, recordId: string): string {
+  const id = encodeURIComponent(String(recordId));
+  if (moduleKey === 'mms') return '/api/mms/' + id;
+  if (moduleKey === 'calisma') return '/api/calisma-izni/' + id;
+  if (moduleKey === 'dahili') return '/api/dahili-numaralar/' + id;
+  if (moduleKey === 'vardiya') return '/api/vardiya/' + id;
+  if (moduleKey === 'kayip_esya') return '/api/kayip-esya/' + id;
+  return '';
+}
+
+function editSystemRecord(record: SystemRecord): void {
+  const id = encodeURIComponent(String(record.record_id));
+  if (record.module_key === 'mms') window.location.href = `/mms?editId=${id}&src=admin-records`;
+  else if (record.module_key === 'calisma') window.location.href = `/calisma-izni?editId=${id}&src=admin-records`;
+  else if (record.module_key === 'dahili') window.location.href = `/dahili-numaralar?editId=${id}&src=admin-records`;
+  else if (record.module_key === 'kayip_esya') window.location.href = `/kayip-esya?editId=${id}&src=admin-records`;
+  else if (record.module_key === 'vardiya') window.location.href = `/vardiya?editId=${id}&src=admin-records`;
+}
+
+async function deleteSystemRecord(record: SystemRecord): Promise<void> {
+  const apiPath = recordApiPath(record.module_key, record.record_id);
+  if (!apiPath) return;
+  if (!confirm(`Kayıt (#${record.record_id}) kaldırılsın mı?`)) return;
+  try {
+    await api(apiPath, { method: 'DELETE' });
+    notify('Kayıt kaldırıldı');
+    await loadSystemRecords();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Kayıt kaldırılamadı');
+  }
+}
+
+function recordsBaseParams(): URLSearchParams {
+  const params = new URLSearchParams();
+  if (state.recordsModule) params.set('module', state.recordsModule);
+  if (state.recordsSearch.trim()) params.set('search', state.recordsSearch.trim());
+  return params;
+}
+
+function openCreate(): void {
+  (el<HTMLInputElement>('new-user-name') as HTMLInputElement).value = '';
+  (el<HTMLInputElement>('new-user-email') as HTMLInputElement).value = '';
+  (el<HTMLInputElement>('new-user-password') as HTMLInputElement).value = '';
+  (el<HTMLSelectElement>('new-user-role') as HTMLSelectElement).value = 'user';
+  (el<HTMLSelectElement>('new-user-job') as HTMLSelectElement).value = 'Personel';
+  (el<HTMLSelectElement>('new-user-station') as HTMLSelectElement).value = '';
+  const m = el<HTMLElement>('createModal');
+  if (m) m.hidden = false;
+}
+
+function closeCreate(): void {
+  const m = el<HTMLElement>('createModal');
+  if (m) m.hidden = true;
+}
+
+async function createUser(): Promise<void> {
+  const name = (el<HTMLInputElement>('new-user-name') as HTMLInputElement).value.trim();
+  const email = (el<HTMLInputElement>('new-user-email') as HTMLInputElement).value.trim();
+  const password = (el<HTMLInputElement>('new-user-password') as HTMLInputElement).value;
+  const role = (el<HTMLSelectElement>('new-user-role') as HTMLSelectElement).value;
+  const gorevi = (el<HTMLSelectElement>('new-user-job') as HTMLSelectElement).value;
+  const istasyon = (el<HTMLSelectElement>('new-user-station') as HTMLSelectElement).value;
+  if (!name || !email || !password) {
+    notify('Ad, email ve şifre zorunlu');
+    return;
+  }
+  try {
+    await api('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ name, email, password, role, gorevi, istasyon }),
+    });
+    closeCreate();
+    notify('Personel eklendi');
+    await refreshAll();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Personel eklenemedi');
+  }
+}
+
+function openEdit(id: string): void {
+  const u = state.users.find((x) => x.id === id);
+  if (!u) return;
+  state.editUserId = u.id;
+  (el<HTMLInputElement>('edit-user-name') as HTMLInputElement).value = u.name || '';
+  (el<HTMLInputElement>('edit-user-email') as HTMLInputElement).value = u.email || '';
+  (el<HTMLSelectElement>('edit-user-role') as HTMLSelectElement).value = u.role || 'user';
+  (el<HTMLSelectElement>('edit-user-job') as HTMLSelectElement).value = u.gorevi || 'Personel';
+  (el<HTMLSelectElement>('edit-user-station') as HTMLSelectElement).value = u.istasyon || '';
+  (el<HTMLInputElement>('edit-user-password') as HTMLInputElement).value = '';
+  const m = el<HTMLElement>('editModal');
+  if (m) m.hidden = false;
+}
+
+function closeEdit(): void {
+  state.editUserId = null;
+  const m = el<HTMLElement>('editModal');
+  if (m) m.hidden = true;
+}
+
+async function saveEdit(): Promise<void> {
+  if (!state.editUserId) return;
+  try {
+    const password = (el<HTMLInputElement>('edit-user-password') as HTMLInputElement).value;
+    const payload: Record<string, unknown> = {
+      name: (el<HTMLInputElement>('edit-user-name') as HTMLInputElement).value,
+      email: (el<HTMLInputElement>('edit-user-email') as HTMLInputElement).value,
+      role: (el<HTMLSelectElement>('edit-user-role') as HTMLSelectElement).value,
+      gorevi: (el<HTMLSelectElement>('edit-user-job') as HTMLSelectElement).value,
+      istasyon: (el<HTMLSelectElement>('edit-user-station') as HTMLSelectElement).value,
+    };
+    if (password) payload.password = password;
+    await api('/api/admin/users/' + state.editUserId, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+    notify('Personel güncellendi');
+    closeEdit();
+    await refreshAll();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Güncelleme hatası');
+  }
+}
+
+async function handleUserAction(act: string, id: string): Promise<void> {
+  if (act === 'edit') {
+    openEdit(id);
+    return;
+  }
+  if (act === 'toggle') {
+    try {
+      await api('/api/admin/users/' + id + '/toggle', { method: 'POST' });
+      notify('Durum güncellendi');
+      await refreshAll();
+    } catch (e) {
+      notify(e instanceof Error ? e.message : 'Durum güncellenemedi');
+    }
+    return;
+  }
+  if (act === 'delete') {
+    const u = state.users.find((x) => x.id === id);
+    if (!confirm((u?.name || 'Kullanıcı') + ' silinsin mi?')) return;
+    try {
+      await api('/api/admin/users/' + id, { method: 'DELETE' });
+      notify('Kullanıcı silindi');
+      await refreshAll();
+    } catch (e) {
+      notify(e instanceof Error ? e.message : 'Silinemedi');
+    }
+  }
+}
+
+async function deleteFeedback(id: string): Promise<void> {
+  if (!confirm('Geri bildirim silinsin mi?')) return;
+  try {
+    await api('/api/feedback/' + id, { method: 'DELETE' });
+    notify('Geri bildirim silindi');
+    await refreshAll();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Geri bildirim silinemedi');
+  }
+}
+
+async function refreshFiles(): Promise<void> {
+  try {
+    const payload = await api<{ files?: AdminFile[] }>('/api/admin/files');
+    state.files = payload.files || [];
+    renderFiles();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Dosyalar alınamadı');
+  }
+}
+
+async function deleteFile(name: string): Promise<void> {
+  if (!confirm(name + ' dosyası silinsin mi?')) return;
+  try {
+    await api('/api/admin/files', {
+      method: 'DELETE',
+      body: JSON.stringify({ name }),
+    });
+    notify('Dosya silindi');
+    await refreshFiles();
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Dosya silinemedi');
+  }
+}
+
+async function clearAuditLogs(): Promise<void> {
+  if (!confirm('Tüm audit kayıtları silinsin mi? Bu işlem geri alınamaz.')) return;
+  try {
+    await api('/api/admin/audit-logs', { method: 'DELETE' });
+    state.logs = [];
+    renderAudit();
+    notify('Audit kayıtları temizlendi');
+  } catch (e) {
+    notify(e instanceof Error ? e.message : 'Audit kayıtları silinemedi');
+  }
+}
+
+function bind(): void {
+  el<HTMLElement>('drawerToggle')?.addEventListener('click', toggleMenu);
+  el<HTMLElement>('menuBackdrop')?.addEventListener('click', closeMenu);
+  document.querySelectorAll<HTMLButtonElement>('#sideMenu .menu-btn[data-tab]').forEach((b) =>
+    b.addEventListener('click', () => setTab(String(b.dataset.tab || 'dashboard')))
+  );
+  el<HTMLElement>('homeBtn')?.addEventListener('click', () => {
+    window.location.href = '/';
+  });
+  el<HTMLElement>('refreshBtn')?.addEventListener('click', () => void refreshAll(true));
+  el<HTMLElement>('mRefreshBtn')?.addEventListener('click', () => void refreshAll(true));
+  el<HTMLElement>('themeBtn')?.addEventListener('click', toggleTheme);
+  el<HTMLElement>('mThemeBtn')?.addEventListener('click', toggleTheme);
+
+  el<HTMLElement>('openCreateBtn')?.addEventListener('click', openCreate);
+  el<HTMLElement>('closeCreateBtn')?.addEventListener('click', closeCreate);
+  el<HTMLElement>('cancelCreateBtn')?.addEventListener('click', closeCreate);
+  el<HTMLElement>('submitCreateBtn')?.addEventListener('click', () => void createUser());
+  el<HTMLElement>('closeEditBtn')?.addEventListener('click', closeEdit);
+  el<HTMLElement>('cancelEditBtn')?.addEventListener('click', closeEdit);
+  el<HTMLElement>('saveEditBtn')?.addEventListener('click', () => void saveEdit());
+
+  el<HTMLElement>('applyRecordsBtn')?.addEventListener('click', () => {
+    state.recordsModule = (el<HTMLSelectElement>('recordsModule') as HTMLSelectElement).value;
+    state.recordsSearch = (el<HTMLInputElement>('recordsSearch') as HTMLInputElement).value;
+    state.recordsPage = 1;
+    void loadSystemRecords();
+  });
+  el<HTMLElement>('clearRecordsBtn')?.addEventListener('click', () => {
+    state.recordsModule = 'mms';
+    state.recordsSearch = '';
+    (el<HTMLSelectElement>('recordsModule') as HTMLSelectElement).value = 'mms';
+    (el<HTMLInputElement>('recordsSearch') as HTMLInputElement).value = '';
+    state.recordsPage = 1;
+    void loadSystemRecords();
+  });
+  el<HTMLInputElement>('recordsSearch')?.addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') {
+      state.recordsModule = (el<HTMLSelectElement>('recordsModule') as HTMLSelectElement).value;
+      state.recordsSearch = (e.target as HTMLInputElement).value;
+      state.recordsPage = 1;
+      void loadSystemRecords();
+    }
+  });
+  el<HTMLSelectElement>('recordsModule')?.addEventListener('change', (e) => {
+    state.recordsModule = (e.target as HTMLSelectElement).value;
+    state.recordsPage = 1;
+    void loadSystemRecords();
+  });
+  el<HTMLElement>('prevRecordsBtn')?.addEventListener('click', () => {
+    if (state.recordsPage <= 1) return;
+    state.recordsPage -= 1;
+    void loadSystemRecords();
+  });
+  el<HTMLElement>('nextRecordsBtn')?.addEventListener('click', () => {
+    if (state.recordsPage >= state.recordsTotalPages) return;
+    state.recordsPage += 1;
+    void loadSystemRecords();
+  });
+  el<HTMLElement>('exportRecordsCsv')?.addEventListener('click', () => {
+    const params = recordsBaseParams();
+    params.set('format', 'csv');
+    params.set('export_limit', '20000');
+    window.location.href = '/api/admin/system-records?' + params.toString();
+  });
+  el<HTMLElement>('exportRecordsExcel')?.addEventListener('click', () => {
+    const params = recordsBaseParams();
+    params.set('format', 'excel');
+    params.set('export_limit', '20000');
+    window.location.href = '/api/admin/system-records?' + params.toString();
+  });
+
+  el<HTMLElement>('refreshFilesBtn')?.addEventListener('click', () => void refreshFiles());
+  el<HTMLElement>('exportAuditExcel')?.addEventListener('click', () => {
+    window.location.href = '/api/admin/audit-logs?format=excel&limit=5000';
+  });
+  el<HTMLElement>('exportAuditCsv')?.addEventListener('click', () => {
+    window.location.href = '/api/admin/audit-logs?format=csv&limit=5000';
+  });
+  el<HTMLElement>('clearAuditBtn')?.addEventListener('click', () => void clearAuditLogs());
+
+  window.addEventListener('resize', handleResize, { passive: true });
+}
+
+applyThemeToDom(document.documentElement.getAttribute('data-theme') || 'light');
+handleResize();
+bind();
+setTab('dashboard');
+void refreshAll(false);
+window.setInterval(() => void refreshAll(false), 30000);
+
     </script>
   </body>
 </html>

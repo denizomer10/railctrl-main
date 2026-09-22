@@ -39,7 +39,7 @@ const leaveTypeOptions = [
 ---
 
 <PageLayout title="Vardiya">
-  <div class="vardiya-page modern-records-page">
+  <div class="vardiya-page modern-records-page" id="vardiya-root" data-is-manager={isManager ? "1" : "0"} data-user-station={user?.station ?? ""}>
     <div class="page-header">
       <div>
         <h1>Vardiya</h1>
@@ -178,7 +178,10 @@ const leaveTypeOptions = [
   </div>
 </PageLayout>
 
-<script is:inline define:vars={{ isManager, userStation: user?.station || null }}>
+<script>
+  const vardiyaRoot = document.getElementById("vardiya-root");
+  const isManager = vardiyaRoot?.dataset.isManager === "1";
+  const userStation = vardiyaRoot?.dataset.userStation || null;
   const monthFilter = document.getElementById('monthFilter');
   const stationFilter = document.getElementById('stationFilter');
   const currentCard = document.getElementById('currentCard');
