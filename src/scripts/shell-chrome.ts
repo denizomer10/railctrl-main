@@ -72,21 +72,6 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     { title: 'Dahili Numaralar', subtitle: 'Birim rehberi', href: '/dahili-numaralar', type: 'Sayfa', keywords: 'dahili numara birim telefon rehber', passSearch: true },
     { title: 'İzin İsteği', subtitle: 'İzin talep ekranı', href: '/izin-istegi', type: 'Sayfa', keywords: 'izin yillik mazeret hastalik personel' },
     { title: 'Kullanıcı İşlemleri', subtitle: 'Profil ve kişisel tercih ayarları', href: '/kullanici-islemleri', type: 'Sayfa', keywords: 'kullanici profil tercih ayar' },
-    { title: 'TCDD Bulut', subtitle: 'Kurumsal bulut sistemine erişim', href: 'https://bulutum.tcdd.gov.tr/', type: 'Sistem', keywords: 'tcdd bulut dosya cloud', external: true },
-    { title: 'TCDD Port', subtitle: 'Kurumsal portal', href: 'https://port.tcdd.gov.tr/', type: 'Sistem', keywords: 'tcdd port portal', external: true },
-    { title: 'TCDD E-Posta', subtitle: 'Kurumsal e-posta erişimi', href: 'https://posta.tcdd.gov.tr/owa/#path=/mail', type: 'Sistem', keywords: 'posta e-posta owa mail', external: true },
-    { title: 'Seyrusefer', subtitle: 'Seyrusefer sistemi', href: 'https://seyrusefer.tcdd.gov.tr/', type: 'Sistem', keywords: 'seyrusefer tren trafik', external: true },
-    { title: 'TCDD Paylaşım Modülü', subtitle: 'Paylaşım modülü erişimi', href: 'https://port.tcdd.gov.tr/Sayfalar/PaylasimModulu.aspx', type: 'Sistem', keywords: 'paylasim modul dosya', external: true },
-    { title: 'TCDD Belgenet', subtitle: 'Belge yönetim sistemi', href: 'https://belgenet.tcdd.gov.tr/edys-web/mainInbox.xhtml', type: 'Sistem', keywords: 'belgenet ebys edys belge', external: true },
-    { title: 'Toplantı ve Görev Yönetim Sistemi', subtitle: 'TGYS erişimi', href: 'https://tgys.tcdd.gov.tr/', type: 'Sistem', keywords: 'toplanti gorev yonetim tgys', external: true },
-    { title: 'Lojman Başvurusu ve Yönetimi', subtitle: 'Lojman başvuru sistemi', href: 'https://lojman.tcdd.gov.tr/', type: 'Sistem', keywords: 'lojman basvuru yonetim', external: true },
-    { title: 'TCDD E-Rehber', subtitle: 'Kurumsal rehber', href: 'https://rehber.tcdd.gov.tr/', type: 'Sistem', keywords: 'e-rehber rehber telefon', external: true },
-    { title: 'KVKK Aydınlatma Metni', subtitle: 'KVKK bilgilendirme metni', href: 'https://port.tcdd.gov.tr/privacy-html.html', type: 'Sistem', keywords: 'kvkk aydinlatma gizlilik', external: true },
-    { title: 'PDFSigner', subtitle: 'Akıllı kart ile PDF imzalama', href: 'https://pdfsigner.tcdd.gov.tr/smartcard', type: 'Sistem', keywords: 'pdf signer imza akilli kart', external: true },
-    { title: 'TCDD Becayiş', subtitle: 'Becayiş başvuru ve takip', href: 'https://becayis.tcdd.gov.tr/', type: 'Sistem', keywords: 'becayis tayin yer degisimi', external: true },
-    { title: 'TCDD Sınav', subtitle: 'Sınav sistemi', href: 'https://sinav.tcdd.gov.tr/', type: 'Sistem', keywords: 'sinav egitim test', external: true },
-    { title: 'TCDD Yemek Listesi', subtitle: 'Güncel yemek listeleri', href: 'https://port.tcdd.gov.tr/Sayfalar/YemekListeleri.aspx', type: 'Sistem', keywords: 'yemek listesi menu', external: true },
-    { title: 'TCDD Kurumsal E-Posta Yönetimi', subtitle: 'Kurumsal posta yönetimi', href: 'https://kurumsalposta.tcdd.gov.tr/', type: 'Sistem', keywords: 'kurumsal posta yonetim', external: true }
   ];
 
   let debounceTimer: ReturnType<typeof setTimeout> | undefined;

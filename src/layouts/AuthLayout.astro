@@ -9,7 +9,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} - TCDD Yönetim Sistemi</title>
+  <title>{title} - Tren Yönetim Sistemi</title>
   
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -25,7 +25,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
+  <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
   <script is:inline>
     try {
       var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -55,7 +55,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
 
     /* Make page background dark with overlay in dark mode */
     html[data-theme="dark"] body {
-      background: rgba(0, 0, 0, 0.8), url('/files/Marmaray.webp') no-repeat center center fixed;
+      background: linear-gradient(135deg, #020617 0%, #0f172a 60%, #0b3b5e 100%);
       background-size: cover;
       color: var(--text-color);
     }

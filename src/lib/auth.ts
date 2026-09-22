@@ -123,7 +123,7 @@ export function verifyToken(token: string): JWTPayload | null {
 
 /**
  * Kullanıcı girişi - username veya email ile
- * @param identifier - username (örn: "yasin") veya email (örn: "yasin@tcdd.gov.tr")
+ * @param identifier - username (örn: "yasin") veya email (örn: "yasin@ornek.com")
  * @param password - kullanıcı şifresi
  */
 export async function login(
@@ -132,15 +132,13 @@ export async function login(
   ipAddress?: string,
   userAgent?: string
 ): Promise<{ user: User; tokens: AuthTokens } | null> {
-  // identifier'ı normalize et: eğer @ içermiyorsa @tcdd.gov.tr ekle
-  const normalizedIdentifier = identifier.includes('@') 
-    ? identifier.toLowerCase().trim()
-    : `${identifier.toLowerCase().trim()}@tcdd.gov.tr`;
-  
+  // identifier'ı normalize et (kurum alan adı dayatması yok)
+  const normalizedIdentifier = identifier.toLowerCase().trim();
+
   // Username veya email ile kullanıcıyı bul
   const result = await query<any>(
-    `SELECT * FROM ${Tables.USERS} WHERE (username = $1 OR email = $2) AND is_active = true`,
-    [identifier.toLowerCase().trim(), normalizedIdentifier]
+    `SELECT * FROM ${Tables.USERS} WHERE (username = $1 OR email = $1) AND is_active = true`,
+    [normalizedIdentifier]
   );
   
   if (result.rows.length === 0) {

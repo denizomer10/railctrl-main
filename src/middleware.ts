@@ -16,7 +16,6 @@ function isStaticAssetPath(pathname: string): boolean {
     pathname.startsWith('/vendor/') ||
     pathname.startsWith('/_astro/') ||
     pathname === '/sw.js' ||
-    pathname === '/logo.png' ||
     pathname === '/manifest.json' ||
     STATIC_ASSET_EXTENSIONS.test(pathname)
   );

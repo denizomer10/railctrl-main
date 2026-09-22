@@ -9,7 +9,7 @@ const errorParam = url.searchParams.get('error');
 const errorMessages: Record<string, string> = {
 	'rate_limit': 'Çok fazla başarısız deneme. 15 dakika sonra tekrar deneyin.',
 	'missing_fields': 'Kullanıcı adı ve şifre gerekli.',
-	'invalid_email': 'Sadece @tcdd.gov.tr e-posta adresleri kullanılabilir.',
+	'invalid_email': 'Geçerli bir kullanıcı adı veya e-posta girin.',
 	'invalid_credentials': 'Kullanıcı adı veya şifre hatalı.',
 	'unknown': 'Giriş yapılırken bir hata oluştu.'
 };
@@ -17,15 +17,15 @@ const errorMessages: Record<string, string> = {
 const serverError = errorParam ? errorMessages[errorParam] || null : null;
 ---
 
-<AuthLayout title="Giriş Yap - TCDD Yönetim Sistemi">
+<AuthLayout title="Giriş Yap - Tren Yönetim Sistemi">
 	<div class="login-container">
 		<div class="login-content">
 			<div class="login-card">
 				<div class="login-header">
 					<div class="logo-container">
-						<div class="logo animated-logo">🚆</div>
+						<div class="logo animated-logo">🚂</div>
 					</div>
-					<h1>TCDD Yönetim Sistemi</h1>
+					<h1>Tren Yönetim Sistemi</h1>
 					<p>Kurumsal hesabınızla giriş yapın</p>
 				</div>
 
@@ -48,9 +48,8 @@ const serverError = errorParam ? errorMessages[errorParam] || null : null;
 								required
 								autocomplete="username"
 							/>
-							<span class="email-suffix">@tcdd.gov.tr</span>
-						</div>
-						<small class="form-hint">Sadece kullanıcı adınızı girin (örn: yasin)</small>
+													</div>
+						<small class="form-hint">Kullanıcı adınızı veya e-postanızı girin (örn: yasin)</small>
 					</div>
 
 					<div class="form-group">
@@ -136,8 +135,7 @@ const serverError = errorParam ? errorMessages[errorParam] || null : null;
 		padding: 1.25rem;
 		overflow: hidden;
 		background:
-			linear-gradient(160deg, rgba(15, 23, 42, 0.62), rgba(15, 23, 42, 0.48)),
-			url('/files/Marmaray.webp') center/cover no-repeat;
+			linear-gradient(160deg, #0f172a 0%, #1b2845 55%, #0b3b5e 100%);
 	}
 
 	.login-container::before {
@@ -246,18 +244,6 @@ const serverError = errorParam ? errorMessages[errorParam] || null : null;
 		outline: none;
 		border-color: rgba(59, 130, 246, 0.68);
 		box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
-	}
-
-	.email-suffix {
-		position: absolute;
-		right: 0.55rem;
-		padding: 0.22rem 0.48rem;
-		font-size: 0.75rem;
-		font-weight: 700;
-		border-radius: 999px;
-		background: rgba(148, 163, 184, 0.22);
-		color: #475569;
-		pointer-events: none;
 	}
 
 	.form-hint {

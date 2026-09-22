@@ -1,4 +1,4 @@
-const VERSION = 'v3.0.2';
+const VERSION = 'v3.1.0';
 const STATIC_CACHE = `railctrl-static-${VERSION}`;
 const RUNTIME_CACHE = `railctrl-runtime-${VERSION}`;
 const OFFLINE_URL = '/offline.html';
@@ -7,7 +7,7 @@ const STATIC_ASSETS = [
   '/',
   '/login',
   '/manifest.json',
-  '/logo.png',
+  '/favicon.svg',
   '/css/app.css',
   OFFLINE_URL,
 ];

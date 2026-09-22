@@ -1,7 +1,7 @@
 {
-  "name": "TCDD Yönetim Sistemi",
-  "short_name": "TCDD",
-  "description": "TCDD Yönetim Sistemi kurumsal yönetim platformu",
+  "name": "Tren Yönetim Sistemi",
+  "short_name": "Tren YS",
+  "description": "Tren Yönetim Sistemi yönetim platformu",
   "id": "/",
   "start_url": "/login",
   "scope": "/",

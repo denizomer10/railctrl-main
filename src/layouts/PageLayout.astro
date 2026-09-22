@@ -12,7 +12,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{title} - TCDD Yönetim Sistemi</title>
+  <title>{title} - Tren Yönetim Sistemi</title>
   
   <!-- Favicon -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
@@ -30,7 +30,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
+  <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
   <script is:inline>
     try {
       var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -121,8 +121,15 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     }
 
     .logo {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
       height: 60px;
+      min-width: 60px;
       margin-right: 1rem;
+      font-size: 2.5rem;
+      line-height: 1;
+      text-decoration: none;
       transition: transform var(--transition-speed);
     }
 
@@ -885,7 +892,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <header>
     <div class="header-left">
       <a href="/">
-        <img src="/logo.png" alt="TCDD Logo" class="logo" />
+        <span class="logo" role="img" aria-label="Tren Yönetim Sistemi">🚂</span>
       </a>
       {user && (
         <button id="feedbackIconBtn" class="header-feedback-btn" type="button" aria-label="Geri bildirim">

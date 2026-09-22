@@ -12,7 +12,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Yönetici İşlemleri - TCDD</title>
+    <title>Yönetici İşlemleri - Tren Yönetim Sistemi</title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
@@ -23,7 +23,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
+    <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
     <script is:inline>
       try {
         var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -124,14 +124,10 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
         border-bottom: 1px solid var(--glass-border);
       }
 
-      .brand img {
-        width: 180px;
-        max-width: 100%;
+      .brand .logo {
+        font-size: 4rem;
+        line-height: 1;
         filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
-      }
-
-      html[data-theme='dark'] .brand img {
-        filter: brightness(0) invert(1) drop-shadow(0 8px 20px rgba(0,0,0,.35));
       }
 
       .brand h1 {
@@ -701,7 +697,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
 
       <aside class="sidebar" id="sidebar">
         <div class="brand">
-          <img src="/logo.png" alt="TCDD" />
+          <span class="logo" role="img" aria-label="Tren Yönetim Sistemi">🚂</span>
           <h1>Y&ouml;netici &Idot;&#351;lemleri</h1>
         </div>
         <div class="menu" id="sideMenu">
