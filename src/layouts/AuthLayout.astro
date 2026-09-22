@@ -5,7 +5,7 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
 ---
 
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="tr" data-asset-version={assetVersion}>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,9 +26,15 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="TCDD Yönetim Sistemi" />
-  <script is:inline src={`/js/app-shell.js?v=${assetVersion}`}></script>
-  <script is:inline define:vars={{ assetVersion }}>
-    window.RailctrlShell?.init({ assetVersion });
+  <script is:inline>
+    try {
+      var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', __t);
+    } catch (e) {}
+  </script>
+  <script>
+    import { initShell } from '../scripts/app-shell';
+    initShell({ assetVersion: document.documentElement.dataset.assetVersion });
   </script>
   <link rel="stylesheet" href={`/css/app.css?v=${assetVersion}`} />
   <style>
@@ -107,7 +113,8 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
   </main>
   <Footer />
   <script>
-    window.RailctrlShell?.finalize();
+    import { finalizeShell } from '../scripts/app-shell';
+    finalizeShell();
   </script>
 </body>
 </html>

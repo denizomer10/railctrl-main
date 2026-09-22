@@ -9,7 +9,6 @@ const STATIC_ASSETS = [
   '/manifest.json',
   '/logo.png',
   '/css/app.css',
-  '/js/app-shell.js',
   OFFLINE_URL,
 ];
 

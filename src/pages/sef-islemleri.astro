@@ -760,70 +760,7 @@ const sayfaLinkleri = [
 </style>
 
 <script>
-  function normalizePdfUrl(pdfUrl: string): string {
-    try {
-      return encodeURI(pdfUrl).replace(/#/g, '%23');
-    } catch {
-      return pdfUrl;
-    }
-  }
-
-  function initPdfViewer() {
-    const modal = document.getElementById('pdfViewerModal');
-    const closeBtn = document.getElementById('closePdfViewerBtn');
-    const frame = document.getElementById('pdfViewerFrame');
-    const titleEl = document.getElementById('pdfViewerTitle');
-    const openInNewTabBtn = document.getElementById('openPdfInNewTabBtn');
-    const downloadBtn = document.getElementById('downloadPdfBtn');
-
-    // Keep viewer outside page content stacking/filters
-    if (modal && modal.parentElement !== document.body) {
-      document.body.appendChild(modal);
-    }
-
-    function closePdfViewer() {
-      if (!modal || !frame) return;
-      modal.style.display = 'none';
-      frame.removeAttribute('src');
-      document.body.style.overflow = '';
-    }
-
-    document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement;
-      const card = target.closest('.js-pdf-card') as HTMLAnchorElement | null;
-      if (!card) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-
-      const rawUrl = card.getAttribute('data-pdf');
-      const pdfTitle = card.getAttribute('data-title') || 'PDF Görüntüleyici';
-      if (!rawUrl || !modal || !frame || !titleEl || !openInNewTabBtn || !downloadBtn) return;
-
-      const pdfUrl = normalizePdfUrl(rawUrl);
-
-      titleEl.textContent = pdfTitle;
-      frame.setAttribute('src', pdfUrl);
-      openInNewTabBtn.setAttribute('href', pdfUrl);
-      downloadBtn.setAttribute('href', pdfUrl);
-
-      modal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    });
-
-    closeBtn?.addEventListener('click', closePdfViewer);
-
-    modal?.addEventListener('click', (event) => {
-      if (event.target === modal) closePdfViewer();
-    });
-
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape' && modal?.style.display === 'flex') {
-        closePdfViewer();
-      }
-    });
-  }
-
+  import { initPdfViewer } from '../scripts/pdf-viewer';
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initPdfViewer, { once: true });
   } else {
