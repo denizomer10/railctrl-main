@@ -33,8 +33,8 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
   try {
     await ensureAppSchema();
-    const id = Number.parseInt(params.id || '', 10);
-    if (!Number.isFinite(id)) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
+    const id = params.id;
+    if (!id) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
 
     const result = await query<any>(
       `SELECT id, istasyon, yil, ay, week_shifts, personel, created_at, updated_at
@@ -75,8 +75,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const id = Number.parseInt(params.id || '', 10);
-    if (!Number.isFinite(id)) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
+    const id = params.id;
+    if (!id) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
 
     const body = await request.json();
 
@@ -151,8 +151,8 @@ export const DELETE: APIRoute = async ({ params, locals, request }) => {
 
   try {
     await ensureAppSchema();
-    const id = Number.parseInt(params.id || '', 10);
-    if (!Number.isFinite(id)) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
+    const id = params.id;
+    if (!id) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
 
     const result = await query(
       `UPDATE vardiyalar SET is_active = false, updated_by = $1, updated_at = CURRENT_TIMESTAMP

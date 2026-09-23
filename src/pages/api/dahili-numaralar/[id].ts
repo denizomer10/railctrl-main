@@ -7,6 +7,7 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { logAudit } from '../../../lib/audit';
+import { ensureAppSchema } from '../../../lib/schema';
 
 export const prerender = false;
 
@@ -19,6 +20,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
   }
 
   try {
+    await ensureAppSchema();
     const id = params.id;
     const result = await query('SELECT * FROM dahili_numaralar WHERE id = $1', [id]);
 
@@ -58,12 +60,13 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 
   try {
+    await ensureAppSchema();
     const id = params.id;
     const body = await request.json();
     const { dahili_numara, birim, aciklama } = body;
 
     const result = await query(
-      `UPDATE dahili_numaralar 
+      `UPDATE dahili_numaralar
        SET dahili_numara = $1, birim = $2, aciklama = $3
        WHERE id = $4
        RETURNING *`,
@@ -120,6 +123,7 @@ export const DELETE: APIRoute = async ({ params, locals, request }) => {
   }
 
   try {
+    await ensureAppSchema();
     const id = params.id;
 
     const result = await query(

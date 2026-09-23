@@ -66,7 +66,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const result = await query<any>(queryText, params);
 
     // Toplam sayı
-    let countQuery = `SELECT COUNT(*) FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -166,12 +166,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const result = await query<any>(`
           INSERT INTO ${Tables.KAYIP_ESYA} (
-        tarih, belge_no, teslim_alan, buroya_teslim_eden, 
+            id, tarih, belge_no, teslim_alan, buroya_teslim_eden,
         buroya_teslim_tarihi, teslim_alan_buro_gorevlisi,
         esya_tanimi, durumu, esya_sahibi_ad_soyad, esya_sahibi_tel
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `, [
+      crypto.randomUUID(),
       body.tarih ? new Date(body.tarih) : new Date(),
       body.belge_no || null,
       body.teslim_alan || null,

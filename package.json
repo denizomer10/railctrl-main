@@ -1,34 +1,30 @@
 {
-  "name": "railctrl",
-  "type": "module",
+  "name": "tren-yonetim-sistemi",
   "version": "2.0.0",
-  "description": "Tren Yönetim Sistemi V2 - Türkiye Cumhuriyeti Devlet Demiryolları İçin Kapsamlı Yönetim Platformu",
-  "author": "Tren",
+  "private": true,
+  "type": "module",
+  "description": "Tren Yönetim Sistemi",
   "license": "MIT",
-  "scripts": {
-    "dev": "env ASTRO_TELEMETRY_DISABLED=1 XDG_CONFIG_HOME=/tmp/astro-config HOME=/tmp node node_modules/astro/bin/astro.mjs dev",
-    "build": "env ASTRO_TELEMETRY_DISABLED=1 XDG_CONFIG_HOME=/tmp/astro-config HOME=/tmp node node_modules/astro/bin/astro.mjs build",
-    "preview": "env ASTRO_TELEMETRY_DISABLED=1 XDG_CONFIG_HOME=/tmp/astro-config HOME=/tmp node node_modules/astro/bin/astro.mjs preview"
-  },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "ASTRO_TELEMETRY_DISABLED=1 ASTRO_DATABASE_FILE=.astro/build.db astro build",
+    "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/db": "^0.21.1",
-    "@astrojs/node": "^10.0.6",
-    "astro": "^6.2.1",
+    "@astrojs/db": "^0.21.3",
+    "@astrojs/node": "^11.1.6",
+    "astro": "^7.3.4",
     "bcryptjs": "^3.0.3",
-    "exceljs": "^4.4.0",
-    "jsonwebtoken": "^9.0.3",
-    "pdfmake": "^0.2.10"
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
-    "sharp": "^0.34.5",
-    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "rollup": "^4.59.0"
+    "rollup": "^4.63.4"
   }
 }

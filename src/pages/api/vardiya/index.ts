@@ -138,10 +138,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       );
     } else {
       saved = await query<any>(
-        `INSERT INTO vardiyalar (istasyon, yil, ay, week_shifts, personel, created_by, updated_by, is_active)
-         VALUES ($1, $2, $3, $4, $5, $6, $6, 1)
+        `INSERT INTO vardiyalar (id, istasyon, yil, ay, week_shifts, personel, created_by, updated_by, is_active)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $7, 1)
          RETURNING id, istasyon, yil, ay, week_shifts, personel, is_active, created_at, updated_at`,
-        [istasyon, yil, ay, JSON.stringify(weekShifts), JSON.stringify(personel), auth.user.id]
+                [crypto.randomUUID(), istasyon, yil, ay, JSON.stringify(weekShifts), JSON.stringify(personel), auth.user.id]
       );
     }
 

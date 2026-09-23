@@ -1,6 +1,6 @@
 import { query } from './database';
 
-let bootstrapped = false;
+let bootstrapPromise: Promise<void> | null = null;
 
 async function hasColumn(table: string, column: string): Promise<boolean> {
   const result = await query<{ name: string }>(`PRAGMA table_info(${table})`);
@@ -43,9 +43,7 @@ async function pruneDeprecatedUserColumns(): Promise<void> {
   }
 }
 
-export async function ensureAppSchema(): Promise<void> {
-  if (bootstrapped) return;
-
+async function bootstrapAppSchema(): Promise<void> {
   await removeUnusedEmptyTables();
   await pruneDeprecatedUserColumns();
 
@@ -139,6 +137,9 @@ export async function ensureAppSchema(): Promise<void> {
       id TEXT PRIMARY KEY,
       user_id TEXT,
       action TEXT NOT NULL,
+      resource_type TEXT,
+      resource_id TEXT,
+      details TEXT,
       entity_type TEXT,
       entity_id TEXT,
       old_data TEXT,
@@ -169,6 +170,23 @@ export async function ensureAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS mms_records (
+      id TEXT PRIMARY KEY,
+      zaman_damgasi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      mms_numarasi TEXT,
+      ariza_tanimi TEXT NOT NULL,
+      istasyon TEXT NOT NULL,
+      durum TEXT NOT NULL DEFAULT 'Beklemede',
+      acan_ad_soyad TEXT,
+      acilan_birim TEXT,
+      created_by TEXT,
+      "not" TEXT,
+      onarilma_tarihi TEXT,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
   await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_no ON problem_records(problem_no)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_durum ON problem_records(durum)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_istasyon ON problem_records(istasyon)`);
@@ -176,10 +194,15 @@ export async function ensureAppSchema(): Promise<void> {
   await query(`
     CREATE TABLE IF NOT EXISTS calisma_izinleri (
       id TEXT PRIMARY KEY,
-      baslik TEXT NOT NULL,
+      baslik TEXT NOT NULL DEFAULT '',
       aciklama TEXT,
-      baslangic_tarihi TEXT NOT NULL,
-      bitis_tarihi TEXT NOT NULL,
+      baslangic_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      bitis_tarihi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      zaman_damgasi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      mms_numarasi TEXT,
+      calisma_kodu TEXT,
+      yapilacak_is TEXT,
+      calisanlar TEXT,
       durum TEXT NOT NULL DEFAULT 'beklemede',
       istasyon TEXT,
       bildiren_ad_soyad TEXT,
@@ -195,7 +218,8 @@ export async function ensureAppSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS notlar (
       id TEXT PRIMARY KEY,
       baslik TEXT NOT NULL,
-      icerik TEXT NOT NULL,
+      icerik TEXT NOT NULL DEFAULT '',
+      kategori TEXT,
       istasyon TEXT,
       hedef_roller TEXT DEFAULT '[]',
       created_by TEXT,
@@ -212,9 +236,11 @@ export async function ensureAppSchema(): Promise<void> {
     CREATE TABLE IF NOT EXISTS dahili_numaralar (
       id TEXT PRIMARY KEY,
       birim TEXT NOT NULL,
-      ad_soyad TEXT NOT NULL,
+      ad_soyad TEXT NOT NULL DEFAULT '',
       gorev TEXT,
-      dahili_no TEXT NOT NULL,
+      dahili_no TEXT NOT NULL DEFAULT '',
+      dahili_numara TEXT,
+      aciklama TEXT,
       harici_no TEXT,
       email TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
@@ -273,8 +299,9 @@ export async function ensureAppSchema(): Promise<void> {
       user_id TEXT,
       full_name TEXT,
       station TEXT,
-      category TEXT NOT NULL,
-      message TEXT NOT NULL,
+      category TEXT,
+      message TEXT,
+      mesaj TEXT,
       status TEXT NOT NULL DEFAULT 'pending',
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -286,12 +313,19 @@ export async function ensureAppSchema(): Promise<void> {
   await query(`
     CREATE TABLE IF NOT EXISTS vardiyalar (
       id TEXT PRIMARY KEY,
-      user_id TEXT NOT NULL,
-      baslangic TEXT NOT NULL,
-      bitis TEXT NOT NULL,
-      tip TEXT NOT NULL,
+      user_id TEXT,
+      baslangic TEXT,
+      bitis TEXT,
+      tip TEXT,
       istasyon TEXT,
       aciklama TEXT,
+      yil INTEGER,
+      ay INTEGER,
+      week_shifts TEXT NOT NULL DEFAULT '{}',
+      personel TEXT NOT NULL DEFAULT '[]',
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT,
+      updated_by TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
@@ -302,11 +336,21 @@ export async function ensureAppSchema(): Promise<void> {
   await query(`
     CREATE TABLE IF NOT EXISTS kayip_esya (
       id TEXT PRIMARY KEY,
-      esya_adi TEXT NOT NULL,
+      esya_adi TEXT NOT NULL DEFAULT '',
       aciklama TEXT,
       bulundu_yeri TEXT,
-      tarih TEXT NOT NULL,
+      tarih TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
       durum TEXT NOT NULL DEFAULT 'kayip',
+      durumu TEXT,
+      belge_no TEXT,
+      teslim_alan TEXT,
+      buroya_teslim_eden TEXT,
+      buroya_teslim_tarihi TEXT,
+      teslim_alan_buro_gorevlisi TEXT,
+      esya_tanimi TEXT,
+      esya_sahibi_ad_soyad TEXT,
+      esya_sahibi_tel TEXT,
+      created_by TEXT,
       bildiren_id TEXT,
       teslim_alan_id TEXT,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -353,17 +397,70 @@ export async function ensureAppSchema(): Promise<void> {
   await addColumnIfMissing('users', 'notify_vardiya', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_kayip_esya', 'INTEGER NOT NULL DEFAULT 1');
 
+  await addColumnIfMissing('audit_logs', 'resource_type', 'TEXT');
+  await addColumnIfMissing('audit_logs', 'resource_id', 'TEXT');
+  await addColumnIfMissing('audit_logs', 'details', 'TEXT');
   await addColumnIfMissing('problem_records', 'acan_ad_soyad', 'TEXT');
   await addColumnIfMissing('problem_records', 'acilan_birim', 'TEXT');
   await addColumnIfMissing('problem_records', 'created_by', 'TEXT');
   await addColumnIfMissing('calisma_izinleri', 'bildiren_ad_soyad', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'baslik', "TEXT NOT NULL DEFAULT ''");
+  await addColumnIfMissing('calisma_izinleri', 'aciklama', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'baslangic_tarihi', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
+  await addColumnIfMissing('calisma_izinleri', 'bitis_tarihi', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
+  await addColumnIfMissing('calisma_izinleri', 'zaman_damgasi', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
+  await addColumnIfMissing('calisma_izinleri', 'mms_numarasi', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'calisma_kodu', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'yapilacak_is', 'TEXT');
+  await addColumnIfMissing('calisma_izinleri', 'calisanlar', 'TEXT');
+  await addColumnIfMissing('mms_records', 'created_at', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
+  await addColumnIfMissing('mms_records', 'updated_at', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
   await addColumnIfMissing('problem_records', '"not"', 'TEXT');
   await addColumnIfMissing('problem_records', 'onarilma_tarihi', 'TEXT');
 
+  await addColumnIfMissing('notlar', 'icerik', "TEXT NOT NULL DEFAULT ''");
+  await addColumnIfMissing('notlar', 'kategori', 'TEXT');
   await addColumnIfMissing('notlar', 'istasyon', 'TEXT');
   await addColumnIfMissing('notlar', 'hedef_roller', "TEXT DEFAULT '[]'");
   await addColumnIfMissing('notlar', 'created_by', 'TEXT');
   await addColumnIfMissing('notlar', 'medya', "TEXT DEFAULT '[]'");
 
-  bootstrapped = true;
+  await addColumnIfMissing('dahili_numaralar', 'dahili_numara', 'TEXT');
+  await addColumnIfMissing('dahili_numaralar', 'aciklama', 'TEXT');
+  await query(`UPDATE dahili_numaralar SET dahili_numara = dahili_no WHERE dahili_numara IS NULL AND dahili_no IS NOT NULL`);
+  await addColumnIfMissing('geri_bildirimler', 'mesaj', 'TEXT');
+  await query(`UPDATE geri_bildirimler SET mesaj = message WHERE mesaj IS NULL AND message IS NOT NULL`);
+
+  await addColumnIfMissing('vardiyalar', 'yil', 'INTEGER');
+  await addColumnIfMissing('vardiyalar', 'ay', 'INTEGER');
+  await addColumnIfMissing('vardiyalar', 'week_shifts', "TEXT NOT NULL DEFAULT '{}'");
+  await addColumnIfMissing('vardiyalar', 'personel', "TEXT NOT NULL DEFAULT '[]'");
+  await addColumnIfMissing('vardiyalar', 'is_active', 'INTEGER NOT NULL DEFAULT 1');
+  await addColumnIfMissing('vardiyalar', 'created_by', 'TEXT');
+  await addColumnIfMissing('vardiyalar', 'updated_by', 'TEXT');
+  await query(`UPDATE vardiyalar SET id = rowid WHERE id IS NULL OR id = ''`);
+
+  await addColumnIfMissing('kayip_esya', 'durumu', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'belge_no', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'teslim_alan', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'buroya_teslim_eden', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'buroya_teslim_tarihi', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'teslim_alan_buro_gorevlisi', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'esya_tanimi', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'esya_sahibi_ad_soyad', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'esya_sahibi_tel', 'TEXT');
+  await addColumnIfMissing('kayip_esya', 'created_by', 'TEXT');
+  await query(`UPDATE kayip_esya SET esya_tanimi = esya_adi WHERE esya_tanimi IS NULL AND esya_adi != ''`);
+  await query(`UPDATE kayip_esya SET durumu = durum WHERE durumu IS NULL`);
+
+}
+
+export async function ensureAppSchema(): Promise<void> {
+  if (!bootstrapPromise) {
+    bootstrapPromise = bootstrapAppSchema().catch((error) => {
+      bootstrapPromise = null;
+      throw error;
+    });
+  }
+  await bootstrapPromise;
 }

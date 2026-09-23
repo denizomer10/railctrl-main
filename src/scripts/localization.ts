@@ -9,7 +9,8 @@ const translateValue = (value: string): string => {
 export const applyEnglishDocument = (): void => {
   document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((element) => {
     const key = element.dataset.i18n;
-    if (key && en[key]) element.textContent = en[key];
+    const translation = key ? en[key] : undefined;
+    if (translation && element.textContent !== translation) element.textContent = translation;
   });
 
   const ignoredTags = new Set(['SCRIPT', 'STYLE', 'NOSCRIPT', 'CODE', 'PRE']);

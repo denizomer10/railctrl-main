@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = `SELECT COUNT(*) FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -123,10 +123,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const result = await query<any>(
           `INSERT INTO ${Tables.CALISMA_IZINLERI} (
-        zaman_damgasi, mms_numarasi, calisma_kodu, yapilacak_is, calisanlar, istasyon, bildiren_ad_soyad
-      ) VALUES (NOW(), $1, $2, $3, $4, $5, $6)
+            id, zaman_damgasi, mms_numarasi, calisma_kodu, yapilacak_is, calisanlar, istasyon, bildiren_ad_soyad
+          ) VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7)
       RETURNING *`,
-      [body.mms_numarasi || null, body.calisma_kodu, body.yapilacak_is, body.calisanlar || null, body.istasyon, bildirenAdSoyad]
+      [crypto.randomUUID(), body.mms_numarasi || null, body.calisma_kodu, body.yapilacak_is, body.calisanlar || null, body.istasyon, bildirenAdSoyad]
     );
 
     await createStationNotifications(body.istasyon, 'notify_calisma', {

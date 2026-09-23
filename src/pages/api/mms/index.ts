@@ -51,7 +51,7 @@ export const GET: APIRoute = async ({ url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = `SELECT COUNT(*) FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -136,10 +136,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const acilanBirim = userInfo.rows[0]?.department || null;
 
     const result = await query<any>(
-          `INSERT INTO ${Tables.MMS_RECORDS} (zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
-       VALUES (NOW(), $1, $2, $3, $4, $5, $6, $7, $8, CASE WHEN $4 = 'Onarıldı' THEN CURRENT_TIMESTAMP ELSE NULL END)
+          `INSERT INTO ${Tables.MMS_RECORDS} (id, zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
+       VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, CASE WHEN $5 = 'Onarıldı' THEN CURRENT_TIMESTAMP ELSE NULL END)
        RETURNING *`,
-      [body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id, body.not?.trim() || null]
+      [crypto.randomUUID(), body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id, body.not?.trim() || null]
     );
 
     await createStationNotifications(body.istasyon, 'notify_mms', {

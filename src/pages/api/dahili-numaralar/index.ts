@@ -3,6 +3,7 @@ import { query } from '../../../lib/database';
 import { jsonResponse, parsePagination, requireRole, requireUser } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
+import { ensureAppSchema } from '../../../lib/schema';
 
 export const prerender = false;
 
@@ -13,6 +14,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
   }
 
   try {
+    await ensureAppSchema();
     const { page, limit, offset } = parsePagination(url, { page: 1, limit: 100 }, 300);
     const search = url.searchParams.get('search');
     const birim = url.searchParams.get('birim');
@@ -42,7 +44,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
     const result = await query<any>(queryText, params);
 
-    let countQuery = `SELECT COUNT(*) FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
+    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
     const countParams: any[] = [];
     let countParamIndex = 1;
 
@@ -103,6 +105,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   try {
+    await ensureAppSchema();
     const body = await request.json();
 
     if (!body.dahili_numara || !body.birim) {
@@ -110,10 +113,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const result = await query<any>(
-          `INSERT INTO ${Tables.DAHILI_NUMARALAR} (dahili_numara, birim, aciklama)
-       VALUES ($1, $2, $3)
+          `INSERT INTO ${Tables.DAHILI_NUMARALAR} (id, dahili_numara, dahili_no, ad_soyad, birim, aciklama)
+                 VALUES ($1, $2, $2, '', $3, $4)
        RETURNING *`,
-      [body.dahili_numara, body.birim, body.aciklama || null]
+                [crypto.randomUUID(), body.dahili_numara, body.birim, body.aciklama || null]
     );
 
     await logAudit({

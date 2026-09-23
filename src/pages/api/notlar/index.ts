@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   try {
     await ensureAppSchema();
     await query(
-      `DELETE FROM ${Tables.NOTLAR} 
+      `DELETE FROM ${Tables.NOTLAR}
        WHERE baslik IN ('Tren Saatleri Çizelgesi', 'İdari Ceza Çizelgesi')
        AND created_by = 'system'`
     );
@@ -170,12 +170,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
       : ['user', 'sef', 'gar_mudur', 'admin'];
 
     const result = await query<any>(`
-      INSERT INTO ${Tables.NOTLAR} (baslik, icerik, kategori, istasyon, hedef_roller, created_by, medya, created_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      INSERT INTO ${Tables.NOTLAR} (id, baslik, icerik, kategori, istasyon, hedef_roller, created_by, medya, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING *
     `, [
+      crypto.randomUUID(),
       body.baslik,
-      body.icerik,
+      body.icerik || '',
       body.kategori || null,
       body.istasyon || null,
       JSON.stringify(hedefRoller),
