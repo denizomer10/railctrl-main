@@ -1,6 +1,6 @@
 /**
  * Astro Middleware - Yerel Sunucu Versiyonu
- * JWT tabanlı kimlik doğrulama
+ * Yerel imzalı oturum doğrulaması
  */
 
 import { defineMiddleware, sequence } from 'astro/middleware';
@@ -156,7 +156,7 @@ const authMiddleware = defineMiddleware(async (context, next) => {
 
   // Token varsa doğrula ve kullanıcı bilgisini ekle
   if (accessToken) {
-    const payload = verifyToken(accessToken);
+    const payload = await verifyToken(accessToken);
     
     if (payload && payload.type === 'access') {
       // Kullanıcı bilgisini veritabanından doğrula.

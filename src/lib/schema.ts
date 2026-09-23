@@ -424,6 +424,11 @@ async function bootstrapAppSchema(): Promise<void> {
   await addColumnIfMissing('notlar', 'hedef_roller', "TEXT DEFAULT '[]'");
   await addColumnIfMissing('notlar', 'created_by', 'TEXT');
   await addColumnIfMissing('notlar', 'medya', "TEXT DEFAULT '[]'");
+  await query(
+    `DELETE FROM notlar
+     WHERE baslik IN ('Tren Saatleri Çizelgesi', 'İdari Ceza Çizelgesi')
+     AND created_by = 'system'`
+  );
 
   await addColumnIfMissing('dahili_numaralar', 'dahili_numara', 'TEXT');
   await addColumnIfMissing('dahili_numaralar', 'aciklama', 'TEXT');

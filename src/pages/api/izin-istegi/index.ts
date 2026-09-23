@@ -6,6 +6,7 @@
 
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
+import { parsePagination } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
 import { Tables } from '../../../lib/database';
@@ -114,9 +115,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       });
     }
 
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '20');
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = parsePagination(url, { page: 1, limit: 20 }, 100);
 
     // Şef veya admin ise tüm istekleri görebilir
     let queryText: string;

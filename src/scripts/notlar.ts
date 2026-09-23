@@ -191,6 +191,8 @@
 
       try {
         const params = new URLSearchParams();
+        params.set('page', String(currentPage));
+        params.set('limit', String(limit));
         if (searchInput?.value) params.set('search', searchInput.value);
         if (currentKategori) params.set('kategori', currentKategori);
         if (currentIstasyon) params.set('istasyon', currentIstasyon);
@@ -201,8 +203,8 @@
 
         tableBody!.innerHTML = '';
         allNotes = data.notes || [];
-
-        totalCount!.textContent = allNotes.length.toString();
+        const pagination = data.pagination || {};
+        totalCount!.textContent = String(pagination.totalCount ?? allNotes.length);
 
         if (allNotes.length === 0) {
           noResults!.style.display = 'block';
@@ -210,7 +212,7 @@
           return;
         }
 
-        totalPages = Math.max(1, Math.ceil(allNotes.length / limit));
+        totalPages = Math.max(1, Number(pagination.totalPages) || 1);
         if (currentPage > totalPages) currentPage = totalPages;
         renderRows(allNotes);
         renderPagination();
@@ -251,9 +253,7 @@
 
     function renderRows(notes: any[]) {
       tableBody!.innerHTML = '';
-      const start = (currentPage - 1) * limit;
-      const pageNotes = notes.slice(start, start + limit);
-      pageNotes.forEach(note => {
+      notes.forEach(note => {
         const row = document.createElement('tr');
         
         const tarih = note.created_at ? new Date(note.created_at).toLocaleDateString('tr-TR', {
@@ -291,19 +291,38 @@
         return;
       }
       paginationContainer.style.display = 'flex';
-      for (let page = 1; page <= totalPages; page++) {
+      const previous = document.createElement('button');
+      previous.type = 'button';
+      previous.className = 'page-btn';
+      previous.textContent = '‹';
+      previous.disabled = currentPage <= 1;
+      previous.addEventListener('click', () => changePage(currentPage - 1));
+      paginationContainer.appendChild(previous);
+
+      const startPage = Math.max(1, Math.min(currentPage - 2, totalPages - 4));
+      const endPage = Math.min(totalPages, startPage + 4);
+      for (let page = startPage; page <= endPage; page++) {
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = `page-btn${page === currentPage ? ' active' : ''}`;
         btn.textContent = String(page);
-        btn.addEventListener('click', () => {
-          if (page === currentPage) return;
-          currentPage = page;
-          renderRows(allNotes);
-          renderPagination();
-        });
+        btn.addEventListener('click', () => changePage(page));
         paginationContainer.appendChild(btn);
       }
+
+      const next = document.createElement('button');
+      next.type = 'button';
+      next.className = 'page-btn';
+      next.textContent = '›';
+      next.disabled = currentPage >= totalPages;
+      next.addEventListener('click', () => changePage(currentPage + 1));
+      paginationContainer.appendChild(next);
+    }
+
+    function changePage(page: number) {
+      if (page < 1 || page > totalPages || page === currentPage) return;
+      currentPage = page;
+      loadNotes();
     }
 
     function openViewModal(note: any) {

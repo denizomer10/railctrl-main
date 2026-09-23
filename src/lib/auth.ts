@@ -1,13 +1,13 @@
 /**
- * Kimlik Doğrulama Modülü
- * JWT + bcrypt tabanlı yerel auth sistemi
+ * Yerel oturum doğrulaması ve bcrypt parola işlemleri
  */
 
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import crypto from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { query, transaction, Tables } from './database';
 import { hashString } from './encryption';
-import { getEnvVar } from './runtime-env';
 import { ensureAppSchema } from './schema';
 
 // Tipler
@@ -28,16 +28,12 @@ export interface User {
   updatedAt: Date;
 }
 
-export interface JWTPayload {
+interface SessionTokenPayload {
   userId: string;
-  username: string;
-  email: string;
-  fullName: string;
-  role: UserRole;
   type: 'access' | 'refresh';
 }
 
-export interface AuthTokens {
+interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
@@ -45,19 +41,77 @@ export interface AuthTokens {
 
 // Sabitler
 const SALT_ROUNDS = 12;
-const ACCESS_TOKEN_EXPIRY = '1d';     // 1 gün
-const REFRESH_TOKEN_EXPIRY = '30d';   // 30 gün
-const ACCESS_TOKEN_EXPIRY_SEC = 86400;  // 1 gün (saniye)
+const ACCESS_TOKEN_EXPIRY_SEC = 86400; // 1 gün (saniye)
+const REFRESH_TOKEN_EXPIRY_SEC = 30 * 24 * 60 * 60; // 30 gün (saniye)
+const TOKEN_PREFIX = 'rc1';
 
-/**
- * JWT secret key al
- */
-function getJWTSecret(): string {
-  const secret = getEnvVar('JWT_SECRET');
-  if (!secret || secret.length < 32) {
-    throw new Error('JWT_SECRET en az 32 karakter olmalı');
+let sessionSigningKeyPromise: Promise<Buffer> | null = null;
+
+async function loadOrCreateSessionSigningKey(): Promise<Buffer> {
+  const configuredPath = process.env.RAILCTRL_SESSION_KEY_FILE;
+  const keyPath = configuredPath
+    ? path.resolve(configuredPath)
+    : path.resolve(process.cwd(), '.astro', 'session.key');
+
+  try {
+    const existing = await readFile(keyPath);
+    if (existing.length === 32) return existing;
+    throw new Error(`Oturum anahtar dosyası 32 bayt olmalı: ${keyPath}`);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
   }
-  return secret;
+
+  const key = crypto.randomBytes(32);
+  await mkdir(path.dirname(keyPath), { recursive: true });
+  try {
+    await writeFile(keyPath, key, { flag: 'wx', mode: 0o600 });
+    return key;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+    const existing = await readFile(keyPath);
+    if (existing.length !== 32) throw new Error(`Oturum anahtar dosyası 32 bayt olmalı: ${keyPath}`);
+    return existing;
+  }
+}
+
+function getSessionSigningKey(): Promise<Buffer> {
+  if (!sessionSigningKeyPromise) {
+    sessionSigningKeyPromise = loadOrCreateSessionSigningKey().catch((error) => {
+      sessionSigningKeyPromise = null;
+      throw error;
+    });
+  }
+  return sessionSigningKeyPromise;
+}
+
+async function createSessionToken(userId: string, type: SessionTokenPayload['type'], lifetimeSec: number): Promise<string> {
+  const encodedPayload = Buffer.from(JSON.stringify({ userId, type })).toString('base64url');
+  const nonce = crypto.randomBytes(32).toString('hex');
+  const expiresAt = Math.floor(Date.now() / 1000) + lifetimeSec;
+  const signedValue = `${TOKEN_PREFIX}.${encodedPayload}.${nonce}.${expiresAt}`;
+  const signature = crypto.createHmac('sha256', await getSessionSigningKey()).update(signedValue).digest('hex');
+  return `${signedValue}.${signature}`;
+}
+
+async function verifySessionToken(token: string): Promise<SessionTokenPayload | null> {
+  const [prefix, encodedPayload, nonce, rawExpiresAt, signature, extra] = token.split('.');
+  if (prefix !== TOKEN_PREFIX || !encodedPayload || !nonce || !rawExpiresAt || !signature || extra !== undefined) return null;
+
+  try {
+    const expiresAt = Number(rawExpiresAt);
+    if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return null;
+
+    const signedValue = `${prefix}.${encodedPayload}.${nonce}.${rawExpiresAt}`;
+    const expected = crypto.createHmac('sha256', await getSessionSigningKey()).update(signedValue).digest();
+    const actual = Buffer.from(signature, 'hex');
+    if (actual.length !== expected.length || !crypto.timingSafeEqual(actual, expected)) return null;
+
+    const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8')) as SessionTokenPayload;
+    if (typeof payload.userId !== 'string' || (payload.type !== 'access' && payload.type !== 'refresh')) return null;
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -77,49 +131,22 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 /**
  * Access token oluştur
  */
-export function generateAccessToken(user: User): string {
-  const payload: JWTPayload = {
-    userId: user.id,
-    username: user.username,
-    email: user.email,
-    fullName: user.fullName,
-    role: user.role,
-    type: 'access',
-  };
-  
-  return jwt.sign(payload, getJWTSecret(), {
-    expiresIn: ACCESS_TOKEN_EXPIRY,
-  });
+export function generateAccessToken(user: User): Promise<string> {
+  return createSessionToken(user.id, 'access', ACCESS_TOKEN_EXPIRY_SEC);
 }
 
 /**
  * Refresh token oluştur
  */
-export function generateRefreshToken(user: User): string {
-  const payload: JWTPayload = {
-    userId: user.id,
-    username: user.username,
-    email: user.email,
-    fullName: user.fullName,
-    role: user.role,
-    type: 'refresh',
-  };
-  
-  return jwt.sign(payload, getJWTSecret(), {
-    expiresIn: REFRESH_TOKEN_EXPIRY,
-  });
+export function generateRefreshToken(user: User): Promise<string> {
+  return createSessionToken(user.id, 'refresh', REFRESH_TOKEN_EXPIRY_SEC);
 }
 
 /**
  * Token doğrula
  */
-export function verifyToken(token: string): JWTPayload | null {
-  try {
-    const decoded = jwt.verify(token, getJWTSecret()) as JWTPayload;
-    return decoded;
-  } catch (error) {
-    return null;
-  }
+export function verifyToken(token: string): Promise<SessionTokenPayload | null> {
+  return verifySessionToken(token);
 }
 
 /**
@@ -173,8 +200,10 @@ export async function login(
   };
   
   // Token'ları oluştur
-  const accessToken = generateAccessToken(user);
-  const refreshToken = generateRefreshToken(user);
+  const [accessToken, refreshToken] = await Promise.all([
+    generateAccessToken(user),
+    generateRefreshToken(user),
+  ]);
   
   // Refresh token'ı veritabanına kaydet
   const refreshTokenHash = hashString(refreshToken);
@@ -219,7 +248,7 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens | 
   await ensureAppSchema();
   
   // Token'ı doğrula
-  const payload = verifyToken(refreshToken);
+  const payload = await verifyToken(refreshToken);
   if (!payload || payload.type !== 'refresh') {
     return null;
   }
@@ -260,8 +289,10 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens | 
   );
   
   // Yeni token'lar oluştur
-  const newAccessToken = generateAccessToken(user);
-  const newRefreshToken = generateRefreshToken(user);
+  const [newAccessToken, newRefreshToken] = await Promise.all([
+    generateAccessToken(user),
+    generateRefreshToken(user),
+  ]);
   
   // Yeni refresh token kaydet
   const newTokenHash = hashString(newRefreshToken);
@@ -308,48 +339,6 @@ export async function logout(userId: string, accessToken?: string): Promise<void
 }
 
 /**
- * Kullanıcı oluştur
- */
-export async function createUser(
-  username: string,
-  email: string,
-  password: string,
-  fullName: string,
-  role: UserRole = 'user',
-  department?: string,
-  istasyon?: string,
-  gorevi?: string,
-  phone?: string
-): Promise<User> {
-  await ensureAppSchema();
-  
-  const passwordHash = await hashPassword(password);
-  
-  const result = await query<any>(
-    `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, department, istasyon, gorevi, phone, is_active, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, 1, 1, 1, 1)
-     RETURNING *`,
-    [crypto.randomUUID(), username.toLowerCase(), email.toLowerCase(), passwordHash, fullName, role, department, istasyon || null, gorevi || null, phone || null]
-  );
-  
-  const row = result.rows[0];
-  
-  return {
-    id: row.id,
-    username: row.username,
-    email: row.email,
-    fullName: row.full_name,
-    role: row.role,
-    station: row.istasyon,
-    department: row.department,
-    isActive: row.is_active,
-    lastLogin: row.last_login,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-/**
  * Kullanıcı bilgilerini getir
  */
 export async function getUserById(userId: string): Promise<User | null> {
@@ -380,172 +369,3 @@ export async function getUserById(userId: string): Promise<User | null> {
     updatedAt: row.updated_at,
   };
 }
-
-/**
- * Kullanıcı e-posta ile getir
- */
-export async function getUserByEmail(email: string): Promise<User | null> {
-  await ensureAppSchema();
-  
-  const result = await query<any>(
-    `SELECT * FROM ${Tables.USERS} WHERE email = $1`,
-    [email.toLowerCase()]
-  );
-  
-  if (result.rows.length === 0) {
-    return null;
-  }
-  
-  const row = result.rows[0];
-  
-  return {
-    id: row.id,
-    username: row.username,
-    email: row.email,
-    fullName: row.full_name,
-    role: row.role,
-    station: row.istasyon,
-    department: row.department,
-    isActive: row.is_active,
-    lastLogin: row.last_login,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-/**
- * Kullanıcı username ile getir
- */
-export async function getUserByUsername(username: string): Promise<User | null> {
-  await ensureAppSchema();
-  
-  const result = await query<any>(
-    `SELECT * FROM ${Tables.USERS} WHERE username = $1`,
-    [username.toLowerCase()]
-  );
-  
-  if (result.rows.length === 0) {
-    return null;
-  }
-  
-  const row = result.rows[0];
-  
-  return {
-    id: row.id,
-    username: row.username,
-    email: row.email,
-    fullName: row.full_name,
-    role: row.role,
-    station: row.istasyon,
-    department: row.department,
-    isActive: row.is_active,
-    lastLogin: row.last_login,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-/**
- * Kullanıcı rolünü güncelle (sadece admin)
- */
-export async function updateUserRole(
-  adminId: string,
-  targetUserId: string,
-  newRole: UserRole
-): Promise<{ success: boolean; error?: string }> {
-  // Admin kontrolü
-  const admin = await getUserById(adminId);
-  if (!admin || admin.role !== 'admin') {
-    return { success: false, error: 'Yetkisiz işlem' };
-  }
-  
-  await ensureAppSchema();
-  
-  await query(
-    `UPDATE ${Tables.USERS} SET role = $1 WHERE id = $2`,
-    [newRole, targetUserId]
-  );
-  
-  return { success: true };
-}
-
-/**
- * Şifre değiştir
- */
-export async function changePassword(
-  userId: string,
-  currentPassword: string,
-  newPassword: string
-): Promise<{ success: boolean; error?: string }> {
-  await ensureAppSchema();
-  
-  // Mevcut şifreyi kontrol et
-  const result = await query<any>(
-    `SELECT password_hash FROM ${Tables.USERS} WHERE id = $1`,
-    [userId]
-  );
-  
-  if (result.rows.length === 0) {
-    return { success: false, error: 'Kullanıcı bulunamadı' };
-  }
-  
-  const isValid = await verifyPassword(currentPassword, result.rows[0].password_hash);
-  if (!isValid) {
-    return { success: false, error: 'Mevcut şifre hatalı' };
-  }
-  
-  // Yeni şifreyi kaydet
-  const newHash = await hashPassword(newPassword);
-  await query(
-    `UPDATE ${Tables.USERS} SET password_hash = $1 WHERE id = $2`,
-    [newHash, userId]
-  );
-  
-  // Tüm oturumları kapat (güvenlik için)
-  await logout(userId);
-  
-  return { success: true };
-}
-
-/**
- * Tüm kullanıcıları listele (admin için)
- */
-export async function listUsers(): Promise<User[]> {
-  await ensureAppSchema();
-  
-  const result = await query<any>(
-    `SELECT * FROM ${Tables.USERS} ORDER BY created_at DESC`
-  );
-  
-  return result.rows.map((row: any) => ({
-    id: row.id,
-    username: row.username,
-    email: row.email,
-    fullName: row.full_name,
-    role: row.role,
-    station: row.istasyon,
-    department: row.department,
-    isActive: row.is_active,
-    lastLogin: row.last_login,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
-}
-
-// Default export
-export default {
-  hashPassword,
-  verifyPassword,
-  generateAccessToken,
-  generateRefreshToken,
-  verifyToken,
-  login,
-  refreshTokens,
-  logout,
-  createUser,
-  getUserById,
-  getUserByEmail,
-  updateUserRole,
-  changePassword,
-  listUsers,
-};

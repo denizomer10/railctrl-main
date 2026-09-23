@@ -7,7 +7,7 @@ RailCtrl, Tren saha ve istasyon operasyonlarını tek noktadan yönetmek için g
 - `Astro` (server output)
 - `@astrojs/node` standalone adapter
 - `Astro DB / SQLite` (lokal veritabanı)
-- JWT tabanlı kimlik doğrulama
+- Rastgele anahtarla imzalanan yerel oturum doğrulaması
 - API uçları: `src/pages/api/*`
 
 ## Tam Lokal Çalışma Politikası
@@ -17,6 +17,7 @@ Bu proje artık **tamamen lokal kullanım** hedefiyle yapılandırılmıştır.
 - Cloudflare / tunnel / wrangler bağımlılıkları kaldırılmıştır.
 - Build komutu lokal çalışır: `npm run build`
 - Varsayılan erişim: `http://localhost:3000`
+- Oturum imzalama anahtarı ilk kullanımda `.astro/session.key` dosyasında otomatik oluşturulur; bu dosyayı yedekleyin ve paylaşmayın.
 
 ## Gereksinimler
 
@@ -58,7 +59,7 @@ npm install
 
 # 3. .env dosyasını oluşturun:
 cp .env.example .env  # veya manuel oluşturun
-# JWT_SECRET ve ENCRYPTION_KEY değerlerini güncelleyin
+# ENCRYPTION_KEY değerini güncelleyin
 
 # 4. Geliştirme sunucusunu başlatın:
 npm run dev
@@ -71,7 +72,6 @@ npm run dev
 
 ```env
 # Gerekli
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ENCRYPTION_KEY=your-32-char-encryption-key-1234
 
 # Opsiyonel: geliştirme sunucusu portu (varsayılan: 3000)
@@ -79,7 +79,7 @@ ENCRYPTION_KEY=your-32-char-encryption-key-1234
 # NODE_ENV=development
 ```
 
-`JWT_SECRET` ve `ENCRYPTION_KEY` **mutlaka** değiştirin. Production'da güçlü rastgele anahtarlar kullanın:
+`ENCRYPTION_KEY` **mutlaka** değiştirin. Production'da güçlü rastgele anahtar kullanın. Oturum imzalama anahtarı `.astro/session.key` içinde otomatik oluşturulur; deployment'lar arasında aynı kalması için dosyayı yedekleyin. Farklı bir konum için `RAILCTRL_SESSION_KEY_FILE` ayarlanabilir.
 
 ```bash
 # Rastgele anahtar üretmek için:

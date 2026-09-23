@@ -17,11 +17,9 @@
     "@astrojs/db": "^0.21.3",
     "@astrojs/node": "^11.1.6",
     "astro": "^7.3.4",
-    "bcryptjs": "^3.0.3",
-    "jsonwebtoken": "^9.0.3"
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.10",
     "typescript": "^6.0.3"
   },
   "overrides": {

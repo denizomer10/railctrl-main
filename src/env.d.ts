@@ -3,17 +3,7 @@
 /// <reference types="@astrojs/db" />
 
 interface ImportMetaEnv {
-	// JWT
-	readonly JWT_SECRET: string;
-	readonly JWT_EXPIRES_IN: string;
-	
-	// Şifreleme
-	readonly ENCRYPTION_KEY: string;
-	
-	// Uygulama
-	readonly APP_NAME?: string;
-	readonly APP_URL?: string;
-	readonly NODE_ENV: string;
+	readonly [key: string]: string | boolean | undefined;
 }
 
 interface ImportMeta {
@@ -23,8 +13,6 @@ interface ImportMeta {
 // Extend Astro App.Locals interface
 declare namespace App {
 	interface RuntimeEnv {
-		JWT_SECRET?: string;
-		ENCRYPTION_KEY?: string;
 		[key: string]: unknown;
 	}
 

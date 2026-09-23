@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
+import { parsePagination } from '../../../lib/api';
 import { Tables } from '../../../lib/database';
 
 export const prerender = false;
@@ -43,11 +44,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
   try {
     await ensureAppSchema();
-    await query(
-      `DELETE FROM ${Tables.NOTLAR}
-       WHERE baslik IN ('Tren Saatleri Çizelgesi', 'İdari Ceza Çizelgesi')
-       AND created_by = 'system'`
-    );
+    const { page, limit } = parsePagination(url, { page: 1, limit: 30 }, 100);
     const search = url.searchParams.get('search');
     const kategori = url.searchParams.get('kategori');
     const istasyon = url.searchParams.get('istasyon');
@@ -111,7 +108,16 @@ export const GET: APIRoute = async ({ url, locals }) => {
       paramIndex++;
     }
 
-    queryText += ` ORDER BY created_at DESC`;
+    const countResult = await query<{ count: number }>(
+      queryText.replace(/^SELECT \* /, 'SELECT COUNT(*) AS count ').replace(/\bORDER BY\s+created_at\s+DESC\s*$/i, ''),
+      params
+    );
+    const totalCount = Number(countResult.rows[0]?.count || 0);
+    const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+    const resolvedPage = Math.min(page, totalPages);
+    const resolvedOffset = (resolvedPage - 1) * limit;
+    queryText += ` ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    params.push(limit, resolvedOffset);
 
     const result = await query<any>(queryText, params);
 
@@ -120,7 +126,8 @@ export const GET: APIRoute = async ({ url, locals }) => {
 
     return new Response(JSON.stringify({
       notes: result.rows,
-      kategoriler: kategorilerResult.rows.map((r: any) => r.kategori)
+      kategoriler: kategorilerResult.rows.map((r: any) => r.kategori),
+      pagination: { page: resolvedPage, limit, totalCount, totalPages }
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
