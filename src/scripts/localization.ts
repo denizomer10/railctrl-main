@@ -3,7 +3,7 @@ import { en } from '../i18n/en';
 const translateValue = (value: string): string => {
   if (en[value]) return en[value];
   const key = Object.keys(en).sort((a, b) => b.length - a.length).find((candidate) => value.includes(candidate));
-  return key ? value.replaceAll(key, en[key]) : value;
+  return key ? value.split(key).join(en[key]) : value;
 };
 
 export const applyEnglishDocument = (): void => {

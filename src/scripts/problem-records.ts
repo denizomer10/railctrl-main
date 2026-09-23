@@ -436,14 +436,14 @@ import { escapeHtml } from './api-client';
       if (e.target === reportModal) hideModal(reportModal);
     });
 
-    const normalizeText = (text) => String(text || '')
+    const normalizeText = (text: string | null | undefined): string => String(text || '')
       .toLocaleLowerCase('tr-TR')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/ı/g, 'i')
       .trim();
 
-    const resolveStationForReport = (query) => {
+    const resolveStationForReport = (query: string): string => {
       const normalizedQuery = normalizeText(query);
       if (!normalizedQuery) return '';
       const options = Array.from(reportStation.options || []).map((opt) => String(opt.value || '')).filter(Boolean);
@@ -577,7 +577,7 @@ import { escapeHtml } from './api-client';
 
         const fileName = `MMS_Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
         if (openInNewWindow) {
-          pdfMakeApi.createPdf(docDefinition).getBlob((blob) => {
+          pdfMakeApi.createPdf(docDefinition).getBlob((blob: Blob) => {
             const blobUrl = URL.createObjectURL(blob);
             const opened = window.open(blobUrl, '_blank', 'noopener,noreferrer');
             if (!opened) {

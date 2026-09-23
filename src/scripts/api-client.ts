@@ -5,6 +5,7 @@ export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export type ApiOptions = Omit<RequestInit, 'method' | 'body'> & {
   method?: HttpMethod;
+  body?: BodyInit | null;
   json?: unknown;
 };
 

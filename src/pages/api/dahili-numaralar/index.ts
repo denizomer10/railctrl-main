@@ -103,6 +103,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!auth.ok) {
     return auth.response;
   }
+  const user = auth.user;
 
   try {
     await ensureAppSchema();
@@ -120,7 +121,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
 
     await logAudit({
-      userId: locals.user.id,
+      userId: user.id,
       action: 'dahili_numaralar.create',
       resourceType: 'dahili_numaralar',
       resourceId: result.rows[0].id,

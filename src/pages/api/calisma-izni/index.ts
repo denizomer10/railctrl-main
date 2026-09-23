@@ -103,6 +103,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!auth.ok) {
     return auth.response;
   }
+  const user = auth.user;
 
   try {
     await ensureAppSchema();
@@ -114,11 +115,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const userInfo = await query<any>(
           `SELECT full_name FROM ${Tables.USERS} WHERE id = $1`,
-      [locals.user.id]
+      [user.id]
     );
     const bildirenAdSoyad =
       userInfo.rows[0]?.full_name ||
-      locals.user.displayName ||
+      user.displayName ||
       null;
 
     const result = await query<any>(
@@ -136,11 +137,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       resourceType: 'calisma_izinleri',
       resourceId: result.rows[0].id,
       station: body.istasyon,
-      actorUserId: locals.user.id,
+      actorUserId: user.id,
     });
 
     await logAudit({
-      userId: locals.user.id,
+      userId: user.id,
       action: 'calisma.create',
       resourceType: 'calisma_izinleri',
       resourceId: result.rows[0].id,

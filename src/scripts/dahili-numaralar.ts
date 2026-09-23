@@ -333,14 +333,14 @@
     closeReportModal?.addEventListener('click', () => hideModal(reportModal));
     reportModal?.addEventListener('click', (e) => { if (e.target === reportModal) hideModal(reportModal); });
 
-    const normalizeText = (text) => String(text || '')
+    const normalizeText = (text: string | null | undefined): string => String(text || '')
       .toLocaleLowerCase('tr-TR')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/ı/g, 'i')
       .trim();
 
-    const resolveBirimForReport = (query) => {
+    const resolveBirimForReport = (query: string): string => {
       const normalizedQuery = normalizeText(query);
       if (!normalizedQuery) return '';
       const options = Array.from(reportBirim.options || []).map((opt) => String(opt.value || '')).filter(Boolean);
@@ -456,7 +456,7 @@
 
         const fileName = `Dahili_Numaralar_Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
         if (openInNewWindow) {
-          pdfMakeApi.createPdf(docDefinition).getBlob((blob) => {
+          pdfMakeApi.createPdf(docDefinition).getBlob((blob: Blob) => {
             const blobUrl = URL.createObjectURL(blob);
             const opened = window.open(blobUrl, '_blank', 'noopener,noreferrer');
             if (!opened) pdfMakeApi.createPdf(docDefinition).download(fileName);

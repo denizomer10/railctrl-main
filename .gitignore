@@ -21,5 +21,8 @@ pnpm-debug.log*
 *.swp
 .DS_Store
 
-# Cloudflare / secrets
+# Environment files and secrets
+.env
+.env.*
+!.env.example
 .dev.vars

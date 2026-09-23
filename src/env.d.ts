@@ -1,5 +1,6 @@
 /// <reference path="../.astro/types.d.ts" />
 /// <reference types="astro/client" />
+/// <reference types="@astrojs/db" />
 
 interface ImportMetaEnv {
 	// JWT
@@ -38,6 +39,9 @@ declare namespace App {
 			displayName: string;
 			role: 'admin' | 'sef' | 'gar_mudur' | 'user';
 			station?: string | null;
+			sicilNo?: string | null;
+			kkyNo?: string | null;
+			bagliBirim?: string | null;
 		};
 	}
 }

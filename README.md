@@ -74,7 +74,7 @@ npm run dev
 JWT_SECRET=your-super-secret-jwt-key-min-32-chars
 ENCRYPTION_KEY=your-32-char-encryption-key-1234
 
-# Opsiyonel
+# Opsiyonel: geliştirme sunucusu portu (varsayılan: 3000)
 # PORT=3000
 # NODE_ENV=development
 ```
@@ -133,7 +133,7 @@ npm run dev
 |-------|-------|
 | `Node.js v20 is not supported` | `nvm install 22 && nvm use 22` |
 | `ENOENT: no such file .env` | `.env.example` kopyalayıp `.env` oluşturun |
-| Port 3000 kullanımda | `PORT=3001 npm run dev` veya `.env` dosyasında `PORT` değiştirin |
+| Port 3000 kullanımda | `PORT=3001 npm run dev` (veya `.env` içinde `PORT=3001`) |
 | DB kilitli / hata veriyor | `rm -rf .astro/content.db && npm run dev` |
 | Modül bulunamıyor | `rm -rf node_modules package-lock.json && npm install` |
 

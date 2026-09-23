@@ -135,7 +135,6 @@ export async function login(
 ): Promise<{ user: User; tokens: AuthTokens } | null> {
   // Şema başlatılmamışsa başlat
   await ensureAppSchema();
-  await seedAdminIfMissing();
   
   // identifier'ı normalize et (kurum alan adı dayatması yok)
   const normalizedIdentifier = identifier.toLowerCase().trim();
@@ -550,13 +549,3 @@ export default {
   changePassword,
   listUsers,
 };
-
-// Admin seed (DB silindiğinde otomatik ekle)
-export async function seedAdminIfMissing() {
-  await ensureAppSchema();
-  const existing = await query<any>(`SELECT * FROM ${Tables.USERS} WHERE username = 'admin'`);
-  if (existing.rows.length === 0) {
-    const hashed = await bcrypt.hash('admin123', 10);
-    await query(`INSERT INTO ${Tables.USERS} (id, username, email, full_name, role, password_hash, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)`, ['admin-id', 'admin', 'admin@tren.gov.tr', 'Admin User', 'admin', hashed, true]);
-  }
-}

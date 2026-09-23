@@ -1,25 +1,56 @@
 // vardiya istemcisi. vardiya.astro tarafından bundled <script> ile çağrılır.
+import type { PersonnelModel, WeekShiftModel, ShiftType, WeekKey, OffDay } from '../lib/vardiya';
+
+type SchedulePerson = { fullName?: string; offDay?: string; week_shifts?: Partial<WeekShiftModel>; izinler?: LeaveEntry[] };
+type ScheduleDay = { date: string; dayName: string; week: number; shift: ShiftType };
+type ScheduleRecord = {
+  id: string | number;
+  istasyon: string;
+  yil: number;
+  ay: number;
+  week_shifts: WeekShiftModel;
+  personel: SchedulePerson[];
+  takvim?: ScheduleDay[];
+};
+type LeaveEntry = { date: string; code: string };
+type PdfMakeApi = { createPdf: (definition: unknown) => { download: (filename: string) => void } };
+type ExcelJsApi = { Workbook: new () => any };
+
+function requiredElement<T extends HTMLElement>(id: string): T {
+  const element = document.getElementById(id);
+  if (!element) throw new Error(`Required element #${id} was not found`);
+  return element as T;
+}
+
+declare global {
+  interface Window {
+    pdfMake?: PdfMakeApi;
+    ExcelJS?: ExcelJsApi;
+  }
+}
+
 const vardiyaRoot = document.getElementById("vardiya-root");
   const isManager = vardiyaRoot?.dataset.isManager === "1";
   const userStation = vardiyaRoot?.dataset.userStation || null;
-  const monthFilter = document.getElementById('monthFilter');
-  const stationFilter = document.getElementById('stationFilter');
-  const currentCard = document.getElementById('currentCard');
-  const cardTitle = document.getElementById('cardTitle');
-  const weekSummary = document.getElementById('weekSummary');
-  const matrixSvgWrap = document.getElementById('matrixSvgWrap');
-  const message = document.getElementById('message');
-  const printBtn = document.getElementById('printBtn');
-  const excelBtn = document.getElementById('excelBtn');
-  const editBtn = document.getElementById('editBtn');
-  const deleteBtn = document.getElementById('deleteBtn');
+  const monthFilter = document.getElementById('monthFilter') as HTMLSelectElement | null;
+  const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement | null;
+  const currentCard = document.getElementById('currentCard') as HTMLElement | null;
+  const cardTitle = document.getElementById('cardTitle') as HTMLElement | null;
+  const weekSummary = document.getElementById('weekSummary') as HTMLElement | null;
+  const matrixSvgWrap = document.getElementById('matrixSvgWrap') as HTMLElement | null;
+  const message = document.getElementById('message') as HTMLElement | null;
+  const printBtn = document.getElementById('printBtn') as HTMLButtonElement | null;
+  const excelBtn = document.getElementById('excelBtn') as HTMLButtonElement | null;
+  const editBtn = document.getElementById('editBtn') as HTMLButtonElement | null;
+  const deleteBtn = document.getElementById('deleteBtn') as HTMLButtonElement | null;
   const currentYear = new Date().getFullYear();
   const pageParams = new URLSearchParams(window.location.search);
   const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
+  let openPlanModalForEdit: (() => void) | null = null;
 
-  let currentRecord = null;
+  let currentRecord: ScheduleRecord | null = null;
   const monthNames = ['Ocak', 'Subat', 'Mart', 'Nisan', 'Mayis', 'Haziran', 'Temmuz', 'Agustos', 'Eylul', 'Ekim', 'Kasim', 'Aralik'];
-  const dayShort = {
+  const dayShort: Record<string, string> = {
     Pazartesi: 'PT',
     Salı: 'SA',
     Çarşamba: 'CA',
@@ -28,7 +59,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     Cumartesi: 'CT',
     Pazar: 'PZ',
   };
-  const dayByIndex = {
+  const dayByIndex: Record<number, string> = {
     1: 'Pazartesi',
     2: 'Salı',
     3: 'Çarşamba',
@@ -37,7 +68,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     6: 'Cumartesi',
     0: 'Pazar',
   };
-  const leaveTypeLabels = {
+  const leaveTypeLabels: Record<string, string> = {
     YI: 'Yıllık İzin',
     MI: 'Mazeret İzni',
     UOG: 'Ücretsiz İzin',
@@ -50,7 +81,8 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     IDR: 'İdari İzin',
   };
 
-  function showMessage(text, type = 'ok') {
+  function showMessage(text: string, type: 'ok' | 'err' | 'warn' = 'ok') {
+    if (!message) return;
     message.textContent = text;
     message.className = `message ${type}`;
     message.style.display = 'block';
@@ -61,27 +93,27 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     }
   }
 
-  function shiftLabel(shift) {
+  function shiftLabel(shift: string | null | undefined) {
     if (shift === 'sabah') return 'Sabah (08:00-16:00)';
     if (shift === 'ara') return 'Ara (16:00-00:00)';
     if (shift === 'gece') return 'Gece (00:00-08:00)';
     return '-';
   }
 
-  function shiftMeta(shift) {
+  function shiftMeta(shift: string | null | undefined) {
     if (shift === 'sabah') return { start: '08:00', end: '16:00', code: '3-1' };
     if (shift === 'ara') return { start: '16:00', end: '24:00', code: '3-2' };
     if (shift === 'gece') return { start: '00:00', end: '08:00', code: '3-3' };
     return { start: '', end: '', code: '' };
   }
 
-  function formatMonthYear(month, year) {
+  function formatMonthYear(month: number | string, year: number | string) {
     const monthIndex = Math.max(1, Math.min(12, Number(month) || 1)) - 1;
     const monthLabel = monthNames[monthIndex] || String(month);
     return `${monthLabel} ${year}`;
   }
 
-  function shiftByWeekIndex(weekShifts, index) {
+  function shiftByWeekIndex(weekShifts: Partial<WeekShiftModel> | null | undefined, index: number): ShiftType {
     const safeIndex = Math.max(1, Math.min(5, Number(index) || 1));
     if (safeIndex === 1) return weekShifts?.hafta1 || 'sabah';
     if (safeIndex === 2) return weekShifts?.hafta2 || 'sabah';
@@ -90,7 +122,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     return weekShifts?.hafta5 || 'sabah';
   }
 
-  function normalizeWeekShiftsClient(weekShifts) {
+  function normalizeWeekShiftsClient(weekShifts: Partial<WeekShiftModel> | null | undefined): WeekShiftModel {
     return {
       hafta1: shiftByWeekIndex(weekShifts, 1),
       hafta2: shiftByWeekIndex(weekShifts, 2),
@@ -100,9 +132,9 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     };
   }
 
-  function buildPersonShiftRows(days, person, fallbackWeekShifts) {
+  function buildPersonShiftRows(days: ScheduleDay[], person: SchedulePerson, fallbackWeekShifts: Partial<WeekShiftModel>): Array<{ off: boolean; shift: ShiftType | null; leaveCode: string | null }> {
     const personWeekShifts = normalizeWeekShiftsClient(person?.week_shifts || fallbackWeekShifts || {});
-    const izinMap = {};
+    const izinMap: Record<string, string> = {};
     if (Array.isArray(person?.izinler)) {
       person.izinler.forEach((entry) => {
         if (entry?.date && entry?.code) izinMap[String(entry.date)] = String(entry.code);
@@ -124,7 +156,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     });
   }
 
-  function getWeekIndexByDay(dayNumber) {
+  function getWeekIndexByDay(dayNumber: number): number {
     if (dayNumber <= 7) return 1;
     if (dayNumber <= 14) return 2;
     if (dayNumber <= 21) return 3;
@@ -132,7 +164,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     return 5;
   }
 
-  function buildDaysBySelectedPeriod(record) {
+  function buildDaysBySelectedPeriod(record: ScheduleRecord): ScheduleDay[] {
     const selectedYear = Number(record?.yil || currentYear);
     const selectedMonth = Number(monthFilter?.value || record?.ay || new Date().getMonth() + 1);
     if (!Number.isFinite(selectedYear) || !Number.isFinite(selectedMonth) || selectedMonth < 1 || selectedMonth > 12) {
@@ -155,7 +187,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     return rows;
   }
 
-  function safeJsonParse(text) {
+  function safeJsonParse(text: string): any {
     if (!text) return {};
     try {
       return JSON.parse(text);
@@ -172,9 +204,9 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
   }
 
-  function loadScriptOnce(src) {
+  function loadScriptOnce(src: string): Promise<boolean> {
     return new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[data-src="${src}"]`);
+      const existing = document.querySelector<HTMLScriptElement>(`script[data-src="${src}"]`);
       if (existing) {
         if (existing.dataset.loaded === 'true') {
           resolve(true);
@@ -197,12 +229,13 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     });
   }
 
-  function getDayNumber(dateText) {
+  function getDayNumber(dateText: string): number {
     const parts = String(dateText || '').split('-');
     return Number(parts[2] || 0);
   }
 
-  function buildMatrix(record) {
+  function buildMatrix(record: ScheduleRecord): void {
+    if (!matrixSvgWrap) return;
     const days = buildDaysBySelectedPeriod(record);
     const personnel = Array.isArray(record.personel) ? record.personel.slice(0, 4) : [];
 
@@ -311,7 +344,8 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     }
   }
 
-  function renderRecord(record) {
+  function renderRecord(record: ScheduleRecord): void {
+    if (!currentCard || !cardTitle || !weekSummary || !message) return;
     currentRecord = record;
     message.style.display = 'none';
     currentCard.style.display = 'block';
@@ -354,6 +388,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
 
   async function loadRecord() {
     try {
+      if (!monthFilter || !currentCard || !matrixSvgWrap) return;
       const month = monthFilter.value;
       const station = isManager ? stationFilter?.value : userStation;
 
@@ -398,8 +433,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       if (stationFilter && record?.istasyon) stationFilter.value = String(record.istasyon);
       if (monthFilter && record?.ay) monthFilter.value = String(record.ay);
       renderRecord(record);
-      openModal(true);
-      fillModalFromCurrent();
+      openPlanModalForEdit?.();
     } catch (error) {
       console.error('tryOpenEditFromQuery error:', error);
       showMessage('Düzenleme penceresi açılamadı', 'err');
@@ -408,6 +442,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
 
   async function createPdfFromSchedule() {
     try {
+      if (!printBtn) return;
       if (!currentRecord) {
         showMessage('PDF olusturmak icin once vardiya secilmeli', 'warn');
         return;
@@ -592,6 +627,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
 
   async function createExcelFromSchedule() {
     try {
+      if (!excelBtn) return;
       if (!currentRecord) {
         showMessage('Excel olusturmak icin once vardiya secilmeli', 'warn');
         return;
@@ -609,7 +645,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       const ExcelJS = window.ExcelJS;
       if (!ExcelJS) throw new Error('Excel kutuphanesi baslatilamadi');
 
-      const toColName = (colNum) => {
+      const toColName = (colNum: number): string => {
         let n = colNum;
         let result = '';
         while (n > 0) {
@@ -790,7 +826,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
   });
 
   if (isManager) {
-    const modal = document.getElementById('planModal');
+    const modal = requiredElement<HTMLElement>('planModal');
     // Render modal at document root so it is not constrained by page containers.
     if (modal && modal.parentElement !== document.body) {
       document.body.appendChild(modal);
@@ -798,50 +834,50 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     const newPlanBtn = document.getElementById('newPlanBtn');
     const closeModal = document.getElementById('closeModal');
     const cancelModal = document.getElementById('cancelModal');
-    const planForm = document.getElementById('planForm');
-    const modalTitle = document.getElementById('modalTitle');
-    const saveBtn = document.getElementById('saveBtn');
-    const saveMessage = document.getElementById('saveMessage');
+    const planForm = requiredElement<HTMLFormElement>('planForm');
+    const modalTitle = requiredElement<HTMLElement>('modalTitle');
+    const saveBtn = requiredElement<HTMLButtonElement>('saveBtn');
+    const saveMessage = requiredElement<HTMLElement>('saveMessage');
 
-    const planId = document.getElementById('planId');
-    const planStation = document.getElementById('planStation');
-    const planMonth = document.getElementById('planMonth');
-    const personWeekTarget = document.getElementById('personWeekTarget');
-    const izinPersonTarget = document.getElementById('izinPersonTarget');
-    const izinDay = document.getElementById('izinDay');
-    const izinStartDay = document.getElementById('izinStartDay');
-    const izinEndDay = document.getElementById('izinEndDay');
-    const izinType = document.getElementById('izinType');
-    const addIzinBtn = document.getElementById('addIzinBtn');
-    const addRangeIzinBtn = document.getElementById('addRangeIzinBtn');
-    const izinList = document.getElementById('izinList');
+    const planId = requiredElement<HTMLInputElement>('planId');
+    const planStation = requiredElement<HTMLSelectElement>('planStation');
+    const planMonth = requiredElement<HTMLSelectElement>('planMonth');
+    const personWeekTarget = document.getElementById('personWeekTarget') as HTMLSelectElement | null;
+    const izinPersonTarget = document.getElementById('izinPersonTarget') as HTMLSelectElement | null;
+    const izinDay = document.getElementById('izinDay') as HTMLInputElement | null;
+    const izinStartDay = document.getElementById('izinStartDay') as HTMLInputElement | null;
+    const izinEndDay = document.getElementById('izinEndDay') as HTMLInputElement | null;
+    const izinType = document.getElementById('izinType') as HTMLSelectElement | null;
+    const addIzinBtn = document.getElementById('addIzinBtn') as HTMLButtonElement | null;
+    const addRangeIzinBtn = document.getElementById('addRangeIzinBtn') as HTMLButtonElement | null;
+    const izinList = document.getElementById('izinList') as HTMLElement | null;
     const lockBodyScroll = () => document.body.classList.add('modal-open');
     const unlockBodyScroll = () => document.body.classList.remove('modal-open');
-    const weekInputKeys = ['hafta1', 'hafta2', 'hafta3', 'hafta4', 'hafta5'];
-    const defaultWeekShifts = { hafta1: 'sabah', hafta2: 'sabah', hafta3: 'sabah', hafta4: 'sabah', hafta5: 'sabah' };
-    let personWeekShiftsByIndex = { 1: { ...defaultWeekShifts }, 2: { ...defaultWeekShifts }, 3: { ...defaultWeekShifts }, 4: { ...defaultWeekShifts } };
-    let personLeavesByIndex = { 1: [], 2: [], 3: [], 4: [] };
+    const weekInputKeys: WeekKey[] = ['hafta1', 'hafta2', 'hafta3', 'hafta4', 'hafta5'];
+    const defaultWeekShifts: WeekShiftModel = { hafta1: 'sabah', hafta2: 'sabah', hafta3: 'sabah', hafta4: 'sabah', hafta5: 'sabah' };
+    let personWeekShiftsByIndex: Record<number, WeekShiftModel> = { 1: { ...defaultWeekShifts }, 2: { ...defaultWeekShifts }, 3: { ...defaultWeekShifts }, 4: { ...defaultWeekShifts } };
+    let personLeavesByIndex: Record<number, LeaveEntry[]> = { 1: [], 2: [], 3: [], 4: [] };
     let selectedPersonIndex = 1;
     let selectedLeavePersonIndex = 1;
 
-    function getDaysInSelectedMonth() {
+    function getDaysInSelectedMonth(): number {
       const monthValue = Math.max(1, Math.min(12, Number(planMonth?.value || new Date().getMonth() + 1)));
       return new Date(currentYear, monthValue, 0).getDate();
     }
 
-    function getDateStringByDay(day) {
+    function getDateStringByDay(day: number): string {
       const monthValue = Math.max(1, Math.min(12, Number(planMonth?.value || new Date().getMonth() + 1)));
       return `${currentYear}-${String(monthValue).padStart(2, '0')}-${String(Number(day)).padStart(2, '0')}`;
     }
 
-    function getMonthDateBounds() {
+    function getMonthDateBounds(): { first: string; last: string } {
       const monthValue = Math.max(1, Math.min(12, Number(planMonth?.value || new Date().getMonth() + 1)));
       const first = `${currentYear}-${String(monthValue).padStart(2, '0')}-01`;
       const last = `${currentYear}-${String(monthValue).padStart(2, '0')}-${String(getDaysInSelectedMonth()).padStart(2, '0')}`;
       return { first, last };
     }
 
-    function refreshLeaveDayOptions() {
+    function refreshLeaveDayOptions(): void {
       if (!izinDay || !izinStartDay || !izinEndDay) return;
       const { first, last } = getMonthDateBounds();
       [izinDay, izinStartDay, izinEndDay].forEach((input) => {
@@ -852,7 +888,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       if (izinEndDay.value < izinStartDay.value) izinEndDay.value = izinStartDay.value;
     }
 
-    function parseDayFromDate(value) {
+    function parseDayFromDate(value: string | null | undefined): number | null {
       const raw = String(value || '').trim();
       if (!raw) return null;
       const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -869,11 +905,11 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       return d;
     }
 
-    function ensureLeaveTargetEnabled() {
+    function ensureLeaveTargetEnabled(): void {
       if (!izinPersonTarget) return;
       const active = [];
       for (let i = 1; i <= 4; i += 1) {
-        const name = document.getElementById(`person_name_${i}`)?.value?.trim() || '';
+        const name = (document.getElementById(`person_name_${i}`) as HTMLInputElement | null)?.value.trim() || '';
         if (name) active.push({ index: i, name });
       }
 
@@ -893,7 +929,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       renderLeaveList();
     }
 
-    function renderLeaveList() {
+    function renderLeaveList(): void {
       if (!izinList) return;
       const leaves = Array.isArray(personLeavesByIndex[selectedLeavePersonIndex]) ? personLeavesByIndex[selectedLeavePersonIndex] : [];
       if (leaves.length === 0) {
@@ -916,8 +952,8 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       izinList.innerHTML = sorted;
     }
 
-    function updateShiftOptionLabels() {
-      const countsByWeek = {
+    function updateShiftOptionLabels(): void {
+      const countsByWeek: Record<WeekKey, Record<ShiftType, number>> = {
         hafta1: { sabah: 0, ara: 0, gece: 0 },
         hafta2: { sabah: 0, ara: 0, gece: 0 },
         hafta3: { sabah: 0, ara: 0, gece: 0 },
@@ -928,58 +964,58 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       sourcePeople.forEach((person) => {
         const weekly = normalizeWeekShiftsClient(person?.week_shifts || currentRecord?.week_shifts || {});
         weekInputKeys.forEach((weekKey) => {
-          const val = String(weekly?.[weekKey] || '');
-          if (val === 'sabah' || val === 'ara' || val === 'gece') countsByWeek[weekKey][val] += 1;
+          const val = weekly[weekKey];
+          countsByWeek[weekKey][val] += 1;
         });
       });
       weekInputKeys.forEach((key) => {
-        const selectEl = document.getElementById(key);
+        const selectEl = document.getElementById(key) as HTMLSelectElement | null;
         if (!selectEl) return;
         const selectedValue = selectEl.value;
-        const weekCounts = countsByWeek[key] || { sabah: 0, ara: 0, gece: 0 };
-        const labels = {
+        const weekCounts = countsByWeek[key];
+        const labels: Record<ShiftType, string> = {
           sabah: `Sabah (08:00 - 16:00)${weekCounts.sabah > 0 ? ` (bu hafta ${weekCounts.sabah} personel)` : ''}`,
           ara: `Ara (16:00 - 00:00)${weekCounts.ara > 0 ? ` (bu hafta ${weekCounts.ara} personel)` : ''}`,
           gece: `Gece (00:00 - 08:00)${weekCounts.gece > 0 ? ` (bu hafta ${weekCounts.gece} personel)` : ''}`,
         };
         Array.from(selectEl.options).forEach((opt) => {
-          const value = String(opt.value || '');
-          if (labels[value]) opt.textContent = labels[value];
+          const value = opt.value as ShiftType;
+          if (value in labels) opt.textContent = labels[value];
         });
         selectEl.value = selectedValue;
       });
     }
 
-    function readWeekInputs() {
+    function readWeekInputs(): WeekShiftModel {
       return {
-        hafta1: document.getElementById('hafta1').value,
-        hafta2: document.getElementById('hafta2').value,
-        hafta3: document.getElementById('hafta3').value,
-        hafta4: document.getElementById('hafta4').value,
-        hafta5: document.getElementById('hafta5').value,
+        hafta1: (document.getElementById('hafta1') as HTMLSelectElement).value as ShiftType,
+        hafta2: (document.getElementById('hafta2') as HTMLSelectElement).value as ShiftType,
+        hafta3: (document.getElementById('hafta3') as HTMLSelectElement).value as ShiftType,
+        hafta4: (document.getElementById('hafta4') as HTMLSelectElement).value as ShiftType,
+        hafta5: (document.getElementById('hafta5') as HTMLSelectElement).value as ShiftType,
       };
     }
 
-    function applyWeekInputs(weekShifts) {
+    function applyWeekInputs(weekShifts: Partial<WeekShiftModel>): void {
       const weekly = normalizeWeekShiftsClient(weekShifts || {});
       weekInputKeys.forEach((key) => {
-        document.getElementById(key).value = weekly[key];
+        (document.getElementById(key) as HTMLSelectElement).value = weekly[key];
       });
     }
 
-    function setWeekInputsDisabled(disabled) {
+    function setWeekInputsDisabled(disabled: boolean): void {
       weekInputKeys.forEach((key) => {
-        const input = document.getElementById(key);
+        const input = document.getElementById(key) as HTMLSelectElement | null;
         if (input) input.disabled = disabled;
       });
     }
 
-    function renderPersonWeekTargetOptions(preferredIndex = null) {
+    function renderPersonWeekTargetOptions(preferredIndex: number | null = null): void {
       if (!personWeekTarget) return;
 
       const active = [];
       for (let i = 1; i <= 4; i += 1) {
-        const name = document.getElementById(`person_name_${i}`)?.value?.trim() || '';
+        const name = (document.getElementById(`person_name_${i}`) as HTMLInputElement | null)?.value.trim() || '';
         if (name) active.push({ index: i, name });
       }
 
@@ -1016,7 +1052,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       applyWeekInputs(personWeekShiftsByIndex[selectedPersonIndex]);
     }
 
-    function resetPersonWeekShifts(baseWeekShifts = defaultWeekShifts) {
+    function resetPersonWeekShifts(baseWeekShifts: Partial<WeekShiftModel> = defaultWeekShifts): void {
       const weekly = normalizeWeekShiftsClient(baseWeekShifts);
       personWeekShiftsByIndex = {
         1: { ...weekly },
@@ -1064,8 +1100,8 @@ const vardiyaRoot = document.getElementById("vardiya-root");
 
       for (let i = 1; i <= 4; i++) {
         const p = currentRecord.personel?.[i - 1];
-        document.getElementById(`person_name_${i}`).value = p?.fullName || '';
-        document.getElementById(`person_off_${i}`).value = p?.offDay || 'Pazar';
+        (document.getElementById(`person_name_${i}`) as HTMLInputElement).value = p?.fullName || '';
+        (document.getElementById(`person_off_${i}`) as HTMLSelectElement).value = p?.offDay || 'Pazar';
         personWeekShiftsByIndex[i] = normalizeWeekShiftsClient(p?.week_shifts || currentRecord.week_shifts || defaultWeekShifts);
         personLeavesByIndex[i] = Array.isArray(p?.izinler) ? p.izinler : [];
       }
@@ -1079,8 +1115,8 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       persistSelectedPersonWeeks();
       const personel = [];
       for (let i = 1; i <= 4; i++) {
-        const fullName = document.getElementById(`person_name_${i}`).value.trim();
-        const offDay = document.getElementById(`person_off_${i}`).value;
+        const fullName = (document.getElementById(`person_name_${i}`) as HTMLInputElement).value.trim();
+        const offDay = (document.getElementById(`person_off_${i}`) as HTMLSelectElement).value as OffDay;
         if (fullName) {
           personel.push({
             fullName,
@@ -1101,7 +1137,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       };
     }
 
-    async function savePlan(event) {
+    async function savePlan(event: SubmitEvent): Promise<void> {
       event.preventDefault();
       const editing = Boolean(planId.value);
       const url = editing ? `/api/vardiya/${planId.value}` : '/api/vardiya';
@@ -1167,7 +1203,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
         }
 
         showMessage('Vardiya kaldirildi', 'ok');
-        currentCard.style.display = 'none';
+        if (currentCard) currentCard.style.display = 'none';
         currentRecord = null;
       } catch (error) {
         console.error('removeCurrent error:', error);
@@ -1178,7 +1214,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     newPlanBtn?.addEventListener('click', () => {
       openModal(false);
       if (stationFilter?.value) planStation.value = stationFilter.value;
-      planMonth.value = monthFilter.value;
+      planMonth.value = monthFilter?.value || String(new Date().getMonth() + 1);
       resetPersonWeekShifts(defaultWeekShifts);
     });
 
@@ -1191,7 +1227,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     deleteBtn?.addEventListener('click', removeCurrent);
     closeModal?.addEventListener('click', closePlanModal);
     cancelModal?.addEventListener('click', closePlanModal);
-    modal?.addEventListener('click', (event) => {
+    modal.addEventListener('click', (event: MouseEvent) => {
       if (event.target === modal) closePlanModal();
     });
     document.addEventListener('keydown', (event) => {

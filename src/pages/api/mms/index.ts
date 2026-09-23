@@ -122,6 +122,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
   if (!auth.ok) {
     return auth.response;
   }
+  const user = auth.user;
 
   try {
     await ensureAppSchema();
@@ -131,15 +132,15 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return jsonResponse({ error: 'MMS numarası, arıza tanımı ve istasyon zorunludur' }, 400);
     }
 
-    const userInfo = await query<any>(`SELECT full_name, department FROM ${Tables.USERS} WHERE id = $1`, [locals.user.id]);
-    const acanAdSoyad = userInfo.rows[0]?.full_name || locals.user.displayName || null;
+    const userInfo = await query<any>(`SELECT full_name, department FROM ${Tables.USERS} WHERE id = $1`, [user.id]);
+    const acanAdSoyad = userInfo.rows[0]?.full_name || user.displayName || null;
     const acilanBirim = userInfo.rows[0]?.department || null;
 
     const result = await query<any>(
           `INSERT INTO ${Tables.MMS_RECORDS} (id, zaman_damgasi, mms_numarasi, ariza_tanimi, istasyon, durum, acan_ad_soyad, acilan_birim, created_by, "not", onarilma_tarihi)
        VALUES ($1, NOW(), $2, $3, $4, $5, $6, $7, $8, $9, CASE WHEN $5 = 'Onarıldı' THEN CURRENT_TIMESTAMP ELSE NULL END)
        RETURNING *`,
-      [crypto.randomUUID(), body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, locals.user.id, body.not?.trim() || null]
+      [crypto.randomUUID(), body.mms_numarasi, body.ariza_tanimi, body.istasyon, body.durum || 'Beklemede', acanAdSoyad, acilanBirim, user.id, body.not?.trim() || null]
     );
 
     await createStationNotifications(body.istasyon, 'notify_mms', {
@@ -149,11 +150,11 @@ export const POST: APIRoute = async ({ request, locals }) => {
       resourceType: 'mms_records',
       resourceId: result.rows[0].id,
       station: body.istasyon,
-      actorUserId: locals.user.id,
+      actorUserId: user.id,
     });
 
     await logAudit({
-      userId: locals.user.id,
+      userId: user.id,
       action: 'mms.create',
       resourceType: 'mms_records',
       resourceId: result.rows[0].id,

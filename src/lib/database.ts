@@ -15,8 +15,7 @@ function normalizeResult<T = any>(result: any): DBQueryResult<T> {
   }
 
   if (Array.isArray(result)) {
-    const count = typeof result.count === 'number' ? result.count : result.length;
-    return { rows: result as T[], rowCount: count };
+    return { rows: result as T[], rowCount: result.length };
   }
 
   if ('rows' in result) {

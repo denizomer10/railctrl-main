@@ -757,7 +757,7 @@
       const cmd = target.dataset.cmd;
       const value = target.dataset.value || null;
       if (!cmd) return;
-      document.execCommand(cmd, false, value);
+      document.execCommand(cmd, false, value ?? undefined);
       syncEditorToTextarea();
     });
 

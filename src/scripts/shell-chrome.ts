@@ -60,7 +60,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   let prevUnread = 0;
   let latestNotificationId: string | number | null = null;
 
-  const staticPages = [
+  const staticPages: StaticPage[] = [
     { title: 'Güzergahlar', subtitle: 'Tren güzergahları ve ulaşım bilgileri', href: '/guzergah', type: 'Sayfa', keywords: 'guzergah harita ulaşım tren route maps' },
     { title: 'Vardiya', subtitle: 'Aylık vardiya planlama ekranı', href: '/vardiya', type: 'Sayfa', keywords: 'vardiya planlama istasyon ay hafta' },
     { title: 'Arıza Kayıtları', subtitle: 'Arıza kayıtları', href: '/problem-records', type: 'Sayfa', keywords: 'arıza kayıt problem records bakım', passSearch: true },
@@ -86,11 +86,11 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
   window.addEventListener('pageshow', resetTransientUi);
 
   const escapeHtml = (value: unknown): string => String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
   const renderNotifications = (items: NotificationItem[] = []): void => {
     if (!notifyList) return;
@@ -426,7 +426,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     ];
 
     const [mms, izin, notlar, kayip, dahili, vardiya] = await Promise.all(requests);
-    const items = [];
+    const items: SearchResultItem[] = [];
 
     if ((normalizedQuery.includes('ariza') && normalizedQuery.includes('kaydi') && (normalizedQuery.includes('olustur') || normalizedQuery.includes('ekle'))) || normalizedQuery.includes('ariza kaydi olustur')) {
       pushUnique({
@@ -520,28 +520,29 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
       pushUnique({
         title: 'İstasyon Şeması',
         subtitle: `${query.trim()} için istasyon şemasını aç`,
+        href: `/istasyon-semalari/${matchedStationSlug}`,
         type: 'Hızlı İşlem',
         searchValue: ''
       });
     }
 
-    (mms?.records || []).slice(0, 5).forEach((r) => {
+    (mms?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
       pushUnique({ title: `MMS #${r.mms_numarasi || '-'}`, subtitle: `${clipText(r.ariza_tanimi || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/problem-records?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'MMS', searchValue: query });
     });
-    (izin?.records || []).slice(0, 5).forEach((r) => {
+    (izin?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
       pushUnique({ title: `Çalışma ${r.calisma_kodu || '-'}`, subtitle: `${clipText(r.yapilacak_is || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/calisma-izni?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'Çalışma', searchValue: query });
     });
-    (notlar?.notes || []).slice(0, 5).forEach((n) => {
+    (notlar?.notes || []).slice(0, 5).forEach((n: Record<string, any>) => {
       pushUnique({ title: clipText(n.baslik || 'İsimsiz Not', 46), subtitle: `${clipText(n.kategori || 'Genel', 16)} • ${clipText(n.icerik || '', 52)}`, href: `/notlar?viewId=${encodeURIComponent(String(n.id || ''))}`, type: 'Not', searchValue: query });
     });
-    (kayip?.records || []).slice(0, 5).forEach((r) => {
+    (kayip?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
       pushUnique({ title: `Belge ${r.belge_no || '-'}`, subtitle: `${clipText(r.esya_tanimi || '', 46)} • ${clipText(r.esya_sahibi_ad_soyad || '-', 20)}`, href: `/kayip-esya?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'Kayıp Eşya', searchValue: query });
     });
-    (dahili?.records || []).slice(0, 5).forEach((r) => {
+    (dahili?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
       pushUnique({ title: `${clipText(r.dahili_numara || '-', 10)} • ${clipText(r.birim || '-', 24)}`, subtitle: clipText(r.aciklama || 'Dahili numara kaydı', 56), href: '/dahili-numaralar', type: 'Dahili', searchValue: query });
     });
 
-    (vardiya?.records || []).forEach((r) => {
+    (vardiya?.records || []).forEach((r: Record<string, any>) => {
       const personNames = Array.isArray(r.personel)
         ? r.personel.map((p) => String(p?.fullName || '').trim()).filter(Boolean).slice(0, 3)
         : [];

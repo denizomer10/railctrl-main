@@ -8,7 +8,7 @@ async function hasColumn(table: string, column: string): Promise<boolean> {
 }
 
 async function addColumnIfMissing(table: string, column: string, definition: string): Promise<void> {
-  if (await hasColumn(table, column.replaceAll('"', ''))) return;
+  if (await hasColumn(table, column.replace(/"/g, ''))) return;
   await query(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
 }
 
