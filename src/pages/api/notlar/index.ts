@@ -8,7 +8,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
-import { parsePagination } from '../../../lib/api';
+import { parsePagination, requireRole } from '../../../lib/api';
 import { Tables } from '../../../lib/database';
 
 export const prerender = false;
@@ -49,7 +49,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const kategori = url.searchParams.get('kategori');
     const istasyon = url.searchParams.get('istasyon');
     const userRole = locals.user.role;
-    const isPrivileged = userRole === 'admin' || userRole === 'sef' || userRole === 'gar_mudur';
+    const isPrivileged = userRole === 'yonetici';
     const userStationResult = await query<any>(`SELECT istasyon FROM ${Tables.USERS} WHERE id = $1`, [locals.user.id]);
     const userStation = userStationResult.rows[0]?.istasyon || null;
 
@@ -142,7 +142,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
   }
 };
 
-// Yeni not oluştur (sef veya admin)
+// Yeni not oluştur (yönetici)
 export const POST: APIRoute = async ({ request, locals }) => {
   // Yetki kontrolü
   if (!locals.user) {
@@ -152,7 +152,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef' && locals.user.role !== 'gar_mudur') {
+  if (locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -172,9 +172,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const hedefRoller = Array.isArray(body.hedef_roller) && body.hedef_roller.length > 0
-      ? body.hedef_roller
-      : ['user', 'sef', 'gar_mudur', 'admin'];
+    const hedefRoller = body.kategori === 'Özel'
+      ? ['yonetici']
+      : ['personel', 'yonetici'];
 
     const result = await query<any>(`
       INSERT INTO ${Tables.NOTLAR} (id, baslik, icerik, kategori, istasyon, hedef_roller, created_by, medya, created_at)

@@ -1,5 +1,7 @@
 import { en } from '../i18n/en';
 
+const TRANSLATED_MARKER = 'data-i18n-original';
+
 const translateValue = (value: string): string => {
   if (en[value]) return en[value];
   const key = Object.keys(en).sort((a, b) => b.length - a.length).find((candidate) => value.includes(candidate));
@@ -22,19 +24,36 @@ export const applyEnglishDocument = (): void => {
   }
   for (const node of nodes) {
     const trimmed = node.data.trim();
-    const translated = translateValue(trimmed);
-    if (translated !== trimmed) node.data = node.data.replace(trimmed, translated);
+    const original = node.parentElement?.getAttribute(TRANSLATED_MARKER) ?? trimmed;
+    const translated = translateValue(original);
+    if (translated !== original) {
+      node.parentElement?.setAttribute(TRANSLATED_MARKER, original);
+      node.data = node.data.replace(trimmed, translated);
+    }
   }
 
-  document.title = translateValue(document.title);
+  const title = document.querySelector('title');
+  if (title) {
+    const original = title.getAttribute(TRANSLATED_MARKER) ?? title.textContent ?? '';
+    const translated = translateValue(original);
+    if (translated !== original) {
+      title.setAttribute(TRANSLATED_MARKER, original);
+      title.textContent = translated;
+    }
+  }
   document.querySelectorAll<HTMLElement>('[placeholder], [aria-label], [title], [alt]').forEach((element) => {
     for (const attribute of ['placeholder', 'aria-label', 'title', 'alt']) {
       const value = element.getAttribute(attribute);
-      if (value) element.setAttribute(attribute, translateValue(value));
+      const marker = `${TRANSLATED_MARKER}-${attribute}`;
+      const original = element.getAttribute(marker) ?? value;
+      if (original) {
+        const translated = translateValue(original);
+        if (translated !== original) {
+          element.setAttribute(marker, original);
+          element.setAttribute(attribute, translated);
+        }
+      }
     }
-  });
-  document.querySelectorAll<HTMLInputElement>('input[placeholder="kullanici_adi"]').forEach((input) => {
-    input.placeholder = 'username';
   });
 };
 
@@ -48,8 +67,9 @@ export const getPreferredLanguage = (): 'tr' | 'en' => {
 export const initLocalization = (): void => {
   const language = getPreferredLanguage();
   document.documentElement.lang = language;
-  if (language !== 'en') return;
-
-  applyEnglishDocument();
-  new MutationObserver(applyEnglishDocument).observe(document.body, { childList: true, subtree: true });
+  const applyLanguage = (): void => {
+    if (document.documentElement.lang === 'en') applyEnglishDocument();
+  };
+  applyLanguage();
+  new MutationObserver(applyLanguage).observe(document.body, { childList: true, subtree: true });
 };

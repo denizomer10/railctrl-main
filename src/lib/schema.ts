@@ -2,6 +2,14 @@ import { query } from './database';
 
 let bootstrapPromise: Promise<void> | null = null;
 
+async function runMigrationOnce(key: string, migrate: () => Promise<void>): Promise<void> {
+  await query(`CREATE TABLE IF NOT EXISTS app_schema_migrations (key TEXT PRIMARY KEY, applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)`);
+  const applied = await query(`SELECT key FROM app_schema_migrations WHERE key = $1`, [key]);
+  if (applied.rows.length) return;
+  await migrate();
+  await query(`INSERT OR IGNORE INTO app_schema_migrations (key) VALUES ($1)`, [key]);
+}
+
 async function hasColumn(table: string, column: string): Promise<boolean> {
   const result = await query<{ name: string }>(`PRAGMA table_info(${table})`);
   return result.rows.some((row) => row.name === column);
@@ -55,7 +63,7 @@ async function bootstrapAppSchema(): Promise<void> {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       full_name TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'user',
+      role TEXT NOT NULL DEFAULT 'personel',
       department TEXT,
       istasyon TEXT,
       gorevi TEXT,
@@ -380,18 +388,25 @@ async function bootstrapAppSchema(): Promise<void> {
   // Now add missing columns to existing tables (for migrations)
   await addColumnIfMissing('users', 'istasyon', 'TEXT');
   await addColumnIfMissing('users', 'gorevi', 'TEXT');
-  await query(`
-    UPDATE users
-    SET role = CASE role
-      WHEN 'Personel' THEN 'user'
-      WHEN 'Şef' THEN 'sef'
-      WHEN 'Gar Müdürü' THEN 'gar_mudur'
-      WHEN 'Admin' THEN 'admin'
-      ELSE role
-    END
-    WHERE role IN ('Personel', 'Şef', 'Gar Müdürü', 'Admin')
-  `);
-  await query(`UPDATE users SET gorevi = 'İstasyon Operasyon İşçisi' WHERE gorevi = 'İstasyon Operasyon Sorumlusu'`);
+  await runMigrationOnce('20260924_two_user_roles', async () => {
+    await query(`
+      UPDATE users
+      SET role = CASE role
+        WHEN 'Personel' THEN 'personel'
+        WHEN 'user' THEN 'personel'
+        WHEN 'Şef' THEN 'yonetici'
+        WHEN 'sef' THEN 'yonetici'
+        WHEN 'Gar Müdürü' THEN 'yonetici'
+        WHEN 'gar_mudur' THEN 'yonetici'
+        WHEN 'Admin' THEN 'yonetici'
+        WHEN 'admin' THEN 'yonetici'
+        ELSE 'personel'
+      END
+      WHERE role NOT IN ('personel', 'yonetici')
+    `);
+    await query(`UPDATE users SET gorevi = role`);
+    await query(`UPDATE users SET istasyon = NULL`);
+  });
   await addColumnIfMissing('users', 'notify_mms', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_calisma', 'INTEGER NOT NULL DEFAULT 1');
   await addColumnIfMissing('users', 'notify_vardiya', 'INTEGER NOT NULL DEFAULT 1');

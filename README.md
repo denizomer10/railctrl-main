@@ -139,10 +139,10 @@ npm run dev
 
 ## Yetki Modeli
 
-- `user`: günlük operasyon işlemleri
-- `sef`: ekip/operasyon yönetimi
-- `gar_mudur`: üst operasyon yönetimi
-- `admin`: tam yetki
+- `personel`: standart operasyon kullanıcıları
+- `yonetici`: kullanıcı yönetimi ve yönetici işlemleri
+
+Eski `user` rolü Personel'e; eski Şef, Gar Müdürü ve Admin rollerinin tümü Yönetici'ye dönüştürülür. Kullanıcı istasyon atamaları ilk şema geçişinde sıfırlanır ve yönetici ekranında sabit istasyon listesi bulunmaz. `users.istasyon` alanı ileride uygulama geliştiricisi tarafından yeniden kullanılabilir.
 
 ## Proje Yapısı
 

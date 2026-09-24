@@ -33,7 +33,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
   const isManager = vardiyaRoot?.dataset.isManager === "1";
   const userStation = vardiyaRoot?.dataset.userStation || null;
   const monthFilter = document.getElementById('monthFilter') as HTMLSelectElement | null;
-  const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement | null;
+  const stationFilter = document.getElementById('stationFilter') as HTMLInputElement | null;
   const currentCard = document.getElementById('currentCard') as HTMLElement | null;
   const cardTitle = document.getElementById('cardTitle') as HTMLElement | null;
   const weekSummary = document.getElementById('weekSummary') as HTMLElement | null;
@@ -820,7 +820,10 @@ const vardiyaRoot = document.getElementById("vardiya-root");
   if (monthFilter) monthFilter.value = String(new Date().getMonth() + 1);
   if (stationFilter && userStation) stationFilter.value = userStation;
   monthFilter?.addEventListener('change', loadRecord);
-  stationFilter?.addEventListener('change', loadRecord);
+  stationFilter?.addEventListener('input', () => {
+    window.clearTimeout(Number(stationFilter.dataset.searchTimer));
+    stationFilter.dataset.searchTimer = String(window.setTimeout(loadRecord, 250));
+  });
   loadRecord().finally(() => {
     tryOpenEditFromQuery();
   });
@@ -840,7 +843,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
     const saveMessage = requiredElement<HTMLElement>('saveMessage');
 
     const planId = requiredElement<HTMLInputElement>('planId');
-    const planStation = requiredElement<HTMLSelectElement>('planStation');
+    const planStation = requiredElement<HTMLInputElement>('planStation');
     const planMonth = requiredElement<HTMLSelectElement>('planMonth');
     const personWeekTarget = document.getElementById('personWeekTarget') as HTMLSelectElement | null;
     const izinPersonTarget = document.getElementById('izinPersonTarget') as HTMLSelectElement | null;

@@ -1,9 +1,8 @@
 ---
 const user = Astro.locals.user;
-if (!user || user.role !== 'admin') {
+if (!user || user.role !== 'yonetici') {
   return Astro.redirect('/403');
 }
-import { MARMARAY_ISTASYONLARI } from '../lib/stations';
 const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
 ---
 
@@ -26,13 +25,22 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
     <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
     <script is:inline>
       try {
+        var __savedLanguage = localStorage.getItem('lang');
+        var __systemLanguage = navigator.languages?.[0] || navigator.language || 'en';
+        document.documentElement.lang = __savedLanguage === 'tr' || __savedLanguage === 'en'
+          ? __savedLanguage
+          : (__systemLanguage.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+      } catch (e) { document.documentElement.lang = 'en'; }
+      try {
         var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
         document.documentElement.setAttribute('data-theme', __t);
       } catch (e) {}
     </script>
     <script>
       import { initShell } from '../scripts/app-shell';
+      import { initLocalization } from '../scripts/localization';
       initShell({ assetVersion: document.documentElement.dataset.assetVersion });
+      initLocalization();
     </script>
     <style is:global>
       :root {
@@ -777,10 +785,8 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
                 <thead>
                   <tr>
                     <th>Ad Soyad</th>
-                    <th>Email</th>
+                    <th>Nickname</th>
                     <th>Rol</th>
-                    <th>G&ouml;revi</th>
-                    <th>&Idot;stasyon</th>
                     <th>Durum</th>
                     <th>Son Giri&#351;</th>
                     <th>&Idot;&#351;lem</th>
@@ -882,8 +888,8 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
               <input id="new-user-name" placeholder="Ad Soyad" />
             </div>
             <div class="edit-user-field">
-              <label for="new-user-email">E-posta</label>
-              <input id="new-user-email" type="email" placeholder="E-posta" />
+              <label for="new-user-nickname">Nickname</label>
+              <input id="new-user-nickname" type="text" placeholder="Nickname" autocomplete="username" />
             </div>
             <div class="edit-user-field">
               <label for="new-user-password">&#350;ifre</label>
@@ -892,26 +898,15 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
             <div class="edit-user-field">
               <label for="new-user-role">Rol</label>
               <select id="new-user-role">
-                <option value="user">Personel</option>
-                <option value="sef">&#350;ef</option>
-                <option value="gar_mudur">Gar M&uuml;d&uuml;r&uuml;</option>
-                <option value="admin">Admin</option>
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
               </select>
             </div>
             <div class="edit-user-field">
-              <label for="new-user-job">G&ouml;revi</label>
+              <label for="new-user-job">Görevi</label>
               <select id="new-user-job">
-                <option value="&#350;ef">&#350;ef</option>
-                <option value="&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi">&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi</option>
-                <option value="Gar M&uuml;d&uuml;r&uuml;">Gar M&uuml;d&uuml;r&uuml;</option>
-                <option value="Personel" selected>Personel</option>
-              </select>
-            </div>
-            <div class="edit-user-field">
-              <label for="new-user-station">&Idot;stasyon</label>
-              <select id="new-user-station">
-                <option value="">&Idot;stasyon</option>
-                {MARMARAY_ISTASYONLARI.map((s) => (<option value={s}>{s}</option>))}
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
               </select>
             </div>
           </div>
@@ -934,32 +929,21 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
               <input id="edit-user-name" placeholder="Ad Soyad" />
             </div>
             <div class="edit-user-field">
-              <label for="edit-user-email">E-posta</label>
-              <input id="edit-user-email" type="email" placeholder="E-posta" />
+              <label for="edit-user-nickname">Nickname</label>
+              <input id="edit-user-nickname" type="text" placeholder="Nickname" autocomplete="username" />
             </div>
             <div class="edit-user-field">
               <label for="edit-user-role">Rol</label>
               <select id="edit-user-role">
-                <option value="user">Personel</option>
-                <option value="sef">&#350;ef</option>
-                <option value="gar_mudur">Gar M&uuml;d&uuml;r&uuml;</option>
-                <option value="admin">Admin</option>
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
               </select>
             </div>
             <div class="edit-user-field">
-              <label for="edit-user-job">G&ouml;revi</label>
+              <label for="edit-user-job">Görevi</label>
               <select id="edit-user-job">
-                <option value="&#350;ef">&#350;ef</option>
-                <option value="&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi">&#304;stasyon Operasyon &Idot;&#351;&ccedil;isi</option>
-                <option value="Gar M&uuml;d&uuml;r&uuml;">Gar M&uuml;d&uuml;r&uuml;</option>
-                <option value="Personel">Personel</option>
-              </select>
-            </div>
-            <div class="edit-user-field">
-              <label for="edit-user-station">&Idot;stasyon</label>
-              <select id="edit-user-station">
-                <option value="">&Idot;stasyon</option>
-                {MARMARAY_ISTASYONLARI.map((s) => (<option value={s}>{s}</option>))}
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
               </select>
             </div>
             <div class="edit-user-field">
@@ -975,11 +959,25 @@ const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID
       </div>
 
       <div class="toast" id="toast" hidden></div>
+      <button id="adminLanguageToggle" type="button" class="btn soft" style="position:fixed;right:1rem;bottom:1rem;z-index:1000">EN</button>
     </div>
 
     <script>
       import { finalizeShell } from '../scripts/app-shell';
+      import { getPreferredLanguage, initLocalization } from '../scripts/localization';
       finalizeShell({ enablePwa: true, responsiveTables: true });
+      initLocalization();
+      const languageToggle = document.getElementById('adminLanguageToggle');
+      const updateLanguageToggle = () => {
+        const language = getPreferredLanguage();
+        languageToggle!.textContent = language === 'tr' ? 'EN' : 'TR';
+        languageToggle!.setAttribute('aria-label', language === 'tr' ? 'Switch to English' : 'Türkçeye geç');
+      };
+      updateLanguageToggle();
+      languageToggle?.addEventListener('click', () => {
+        localStorage.setItem('lang', getPreferredLanguage() === 'tr' ? 'en' : 'tr');
+        window.location.reload();
+      });
     </script>
 
     <script>

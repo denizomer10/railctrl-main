@@ -4,10 +4,9 @@ import { api as apiClient } from './api-client';
 type AdminUser = {
   id: string;
   name: string;
-  email: string;
+  nickname: string;
   role: string;
   gorevi?: string | null;
-  istasyon?: string | null;
   is_active: boolean;
   last_login?: string | null;
   created_at?: string | null;
@@ -16,7 +15,7 @@ type AuditLog = {
   id: string;
   created_at?: string | null;
   user_name?: string | null;
-  user_email?: string | null;
+  user_nickname?: string | null;
   action: string;
   resource_type?: string | null;
   resource_id?: string | null;
@@ -91,10 +90,8 @@ function fmtDate(value: unknown): string {
 
 function roleLabel(role: unknown): string {
   const labels: Record<string, string> = {
-    user: 'Personel',
-    sef: 'Şef',
-    gar_mudur: 'Gar Müdürü',
-    admin: 'Admin',
+    personel: 'Personel',
+    yonetici: 'Yönetici',
   };
   return labels[String(role ?? '')] ?? String(role ?? '-') ?? '-';
 }
@@ -252,7 +249,7 @@ function renderRecentAudit(): void {
   body.innerHTML = rows
     .map(
       (l) =>
-        `<tr><td>${esc(fmtDate(l.created_at))}</td><td>${esc(l.user_name || l.user_email || '-')}</td><td>${esc(l.action)}</td></tr>`
+        `<tr><td>${esc(fmtDate(l.created_at))}</td><td>${esc(l.user_name || l.user_nickname || '-')}</td><td>${esc(l.action)}</td></tr>`
     )
     .join('');
 }
@@ -270,10 +267,8 @@ function renderUsers(): void {
     .map(
       (u) => `<tr>
         <td>${esc(u.name)}</td>
-        <td>${esc(u.email)}</td>
+        <td>${esc(u.nickname)}</td>
         <td><span class="tag role">${esc(roleLabel(u.role))}</span></td>
-        <td>${esc(u.gorevi || '-')}</td>
-        <td>${esc(u.istasyon || '-')}</td>
         <td><span class="tag ${u.is_active ? 'active' : 'passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></td>
         <td>${esc(fmtDate(u.last_login))}</td>
         <td><div class="actions">
@@ -288,10 +283,8 @@ function renderUsers(): void {
     .map(
       (u) => `<div class="user-mobile-card">
         <div class="user-mobile-row"><div class="user-mobile-k">Ad Soyad</div><div class="user-mobile-v">${esc(u.name)}</div></div>
-        <div class="user-mobile-row"><div class="user-mobile-k">E-posta</div><div class="user-mobile-v">${esc(u.email)}</div></div>
+        <div class="user-mobile-row"><div class="user-mobile-k">Nickname</div><div class="user-mobile-v">${esc(u.nickname)}</div></div>
         <div class="user-mobile-row"><div class="user-mobile-k">Rol</div><div class="user-mobile-v"><span class="tag role">${esc(roleLabel(u.role))}</span></div></div>
-        <div class="user-mobile-row"><div class="user-mobile-k">Görevi</div><div class="user-mobile-v">${esc(u.gorevi || '-')}</div></div>
-        <div class="user-mobile-row"><div class="user-mobile-k">İstasyon</div><div class="user-mobile-v">${esc(u.istasyon || '-')}</div></div>
         <div class="user-mobile-row"><div class="user-mobile-k">Durum</div><div class="user-mobile-v"><span class="tag ${u.is_active ? 'active' : 'passive'}">${u.is_active ? 'Aktif' : 'Pasif'}</span></div></div>
         <div class="user-mobile-row"><div class="user-mobile-k">Son Giriş</div><div class="user-mobile-v">${esc(fmtDate(u.last_login))}</div></div>
         <div class="user-mobile-actions">
@@ -434,7 +427,7 @@ function renderAudit(): void {
     .map(
       (l) => `<tr>
         <td>${esc(fmtDate(l.created_at))}</td>
-        <td>${esc(l.user_name || l.user_email || '-')}</td>
+        <td>${esc(l.user_name || l.user_nickname || '-')}</td>
         <td>${esc(l.action)}</td>
         <td>${esc(l.resource_type || '-')} #${esc(l.resource_id || '-')}</td>
         <td>${esc(l.ip_address || '-')}</td>
@@ -548,11 +541,9 @@ function recordsBaseParams(): URLSearchParams {
 
 function openCreate(): void {
   (el<HTMLInputElement>('new-user-name') as HTMLInputElement).value = '';
-  (el<HTMLInputElement>('new-user-email') as HTMLInputElement).value = '';
+  (el<HTMLInputElement>('new-user-nickname') as HTMLInputElement).value = '';
   (el<HTMLInputElement>('new-user-password') as HTMLInputElement).value = '';
-  (el<HTMLSelectElement>('new-user-role') as HTMLSelectElement).value = 'user';
-  (el<HTMLSelectElement>('new-user-job') as HTMLSelectElement).value = 'Personel';
-  (el<HTMLSelectElement>('new-user-station') as HTMLSelectElement).value = '';
+  (el<HTMLSelectElement>('new-user-role') as HTMLSelectElement).value = 'personel';
   const m = el<HTMLElement>('createModal');
   if (m) m.hidden = false;
 }
@@ -564,19 +555,17 @@ function closeCreate(): void {
 
 async function createUser(): Promise<void> {
   const name = (el<HTMLInputElement>('new-user-name') as HTMLInputElement).value.trim();
-  const email = (el<HTMLInputElement>('new-user-email') as HTMLInputElement).value.trim();
+  const nickname = (el<HTMLInputElement>('new-user-nickname') as HTMLInputElement).value.trim();
   const password = (el<HTMLInputElement>('new-user-password') as HTMLInputElement).value;
   const role = (el<HTMLSelectElement>('new-user-role') as HTMLSelectElement).value;
-  const gorevi = (el<HTMLSelectElement>('new-user-job') as HTMLSelectElement).value;
-  const istasyon = (el<HTMLSelectElement>('new-user-station') as HTMLSelectElement).value;
-  if (!name || !email || !password) {
-    notify('Ad, email ve şifre zorunlu');
+  if (!name || !nickname || !password) {
+    notify('Ad, nickname ve şifre zorunlu');
     return;
   }
   try {
     await api('/api/admin/users', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password, role, gorevi, istasyon }),
+      body: JSON.stringify({ name, nickname, password, role }),
     });
     closeCreate();
     notify('Personel eklendi');
@@ -591,10 +580,8 @@ function openEdit(id: string): void {
   if (!u) return;
   state.editUserId = u.id;
   (el<HTMLInputElement>('edit-user-name') as HTMLInputElement).value = u.name || '';
-  (el<HTMLInputElement>('edit-user-email') as HTMLInputElement).value = u.email || '';
-  (el<HTMLSelectElement>('edit-user-role') as HTMLSelectElement).value = u.role || 'user';
-  (el<HTMLSelectElement>('edit-user-job') as HTMLSelectElement).value = u.gorevi || 'Personel';
-  (el<HTMLSelectElement>('edit-user-station') as HTMLSelectElement).value = u.istasyon || '';
+  (el<HTMLInputElement>('edit-user-nickname') as HTMLInputElement).value = u.nickname || '';
+  (el<HTMLSelectElement>('edit-user-role') as HTMLSelectElement).value = u.role || 'personel';
   (el<HTMLInputElement>('edit-user-password') as HTMLInputElement).value = '';
   const m = el<HTMLElement>('editModal');
   if (m) m.hidden = false;
@@ -612,10 +599,8 @@ async function saveEdit(): Promise<void> {
     const password = (el<HTMLInputElement>('edit-user-password') as HTMLInputElement).value;
     const payload: Record<string, unknown> = {
       name: (el<HTMLInputElement>('edit-user-name') as HTMLInputElement).value,
-      email: (el<HTMLInputElement>('edit-user-email') as HTMLInputElement).value,
+      nickname: (el<HTMLInputElement>('edit-user-nickname') as HTMLInputElement).value,
       role: (el<HTMLSelectElement>('edit-user-role') as HTMLSelectElement).value,
-      gorevi: (el<HTMLSelectElement>('edit-user-job') as HTMLSelectElement).value,
-      istasyon: (el<HTMLSelectElement>('edit-user-station') as HTMLSelectElement).value,
     };
     if (password) payload.password = password;
     await api('/api/admin/users/' + state.editUserId, {

@@ -38,8 +38,6 @@ const adminOnlyApiRoutes = [
   '/api/admin/',
 ];
 
-// Şef veya admin gerektiren sayfalar
-const sefOnlyPages: string[] = [];
 
 /**
  * Güvenlik başlıkları middleware
@@ -164,11 +162,11 @@ const authMiddleware = defineMiddleware(async (context, next) => {
       if (user && user.isActive) {
         context.locals.user = {
           id: user.id,
-          username: user.username,
-          email: user.email,
+          nickname: user.username,
           displayName: user.fullName,
           role: user.role,
           station: user.station || null,
+          gorevi: user.gorevi || null,
         };
       } else {
         cookies.delete('access-token', { path: '/' });
@@ -212,18 +210,9 @@ const authMiddleware = defineMiddleware(async (context, next) => {
     return redirect('/login');
   }
 
-  // Şef sayfaları kontrolü
-  if (sefOnlyPages.some(p => pathname === p || pathname.startsWith(p + '/'))) {
-    const role = context.locals.user.role;
-    if (role !== 'sef' && role !== 'gar_mudur' && role !== 'admin') {
-      console.warn(`Yetkisiz erişim denemesi: ${pathname}, rol: ${role}`);
-      return redirect('/403');
-    }
-  }
-
   // Admin API rotaları kontrolü
   if (adminOnlyApiRoutes.some(route => pathname.startsWith(route))) {
-    if (context.locals.user.role !== 'admin') {
+    if (context.locals.user.role !== 'yonetici') {
       return new Response(JSON.stringify({ error: 'Admin yetkisi gerekli' }), {
         status: 403,
         headers: { 'Content-Type': 'application/json' },

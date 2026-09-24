@@ -13,7 +13,7 @@ type SystemRecordRow = {
   location: string | null;
   created_at: string;
   creator_name: string | null;
-  creator_email: string | null;
+  creator_nickname: string | null;
   details: Record<string, unknown> | null;
 };
 
@@ -48,7 +48,7 @@ function xmlCell(value: unknown): string {
 }
 
 export const GET: APIRoute = async ({ locals, url }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },
@@ -76,7 +76,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         record_title ILIKE $${idx}
         OR COALESCE(location, '') ILIKE $${idx}
         OR COALESCE(creator_name, '') ILIKE $${idx}
-        OR COALESCE(creator_email, '') ILIKE $${idx}
+        OR COALESCE(creator_nickname, '') ILIKE $${idx}
       )`;
       params.push(`%${search}%`);
       idx++;
@@ -108,7 +108,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           m.istasyon AS location,
           COALESCE(m.created_at, m.zaman_damgasi) AS created_at,
           COALESCE(u1.full_name, m.acan_ad_soyad, u2.full_name) AS creator_name,
-          COALESCE(u1.email, u2.email) AS creator_email,
+          COALESCE(u1.username, u2.username) AS creator_nickname,
           jsonb_build_object(
             'mms_numarasi', m.mms_numarasi,
             'ariza_tanimi', m.ariza_tanimi,
@@ -131,7 +131,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           c.istasyon AS location,
           COALESCE(c.created_at, c.zaman_damgasi) AS created_at,
           u.full_name AS creator_name,
-          u.email AS creator_email,
+          u.username AS creator_nickname,
           jsonb_build_object(
             'mms_numarasi', c.mms_numarasi,
             'calisma_kodu', c.calisma_kodu,
@@ -153,7 +153,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           d.birim AS location,
           d.created_at AS created_at,
           u.full_name AS creator_name,
-          u.email AS creator_email,
+          u.username AS creator_nickname,
           jsonb_build_object(
             'dahili_numara', d.dahili_numara,
             'birim', d.birim,
@@ -173,7 +173,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           v.istasyon AS location,
           v.created_at AS created_at,
           u.full_name AS creator_name,
-          u.email AS creator_email,
+          u.username AS creator_nickname,
           jsonb_build_object(
             'istasyon', v.istasyon,
             'yil', v.yil,
@@ -194,7 +194,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           COALESCE(k.teslim_alan, k.buroya_teslim_eden) AS location,
           COALESCE(k.created_at, k.tarih::timestamp) AS created_at,
           u.full_name AS creator_name,
-          u.email AS creator_email,
+          u.username AS creator_nickname,
           jsonb_build_object(
             'belge_no', k.belge_no,
             'esya_tanimi', k.esya_tanimi,
@@ -210,7 +210,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
     const listQuery = `
       ${baseCte}
-      SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_email, details
+      SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_nickname, details
       FROM all_records
       ${where}
       ORDER BY created_at DESC NULLS LAST
@@ -245,7 +245,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       const exportParamIndex = filterParams.length + 1;
       const exportQuery = `
         ${baseCte}
-        SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_email, details
+        SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_nickname, details
         FROM all_records
         ${where}
         ORDER BY created_at DESC NULLS LAST
@@ -261,7 +261,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       }));
 
       if (format === 'csv') {
-        const header = ['module_key', 'module_label', 'record_id', 'record_title', 'location', 'created_at', 'creator_name', 'creator_email', 'details'];
+        const header = ['module_key', 'module_label', 'record_id', 'record_title', 'location', 'created_at', 'creator_name', 'creator_nickname', 'details'];
         const lines = [header.join(',')];
         for (const row of exportRows) {
           lines.push([
@@ -272,7 +272,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
             csvCell(row.location),
             csvCell(row.created_at),
             csvCell(row.creator_name),
-            csvCell(row.creator_email),
+            csvCell(row.creator_nickname),
             csvCell(row.details ? JSON.stringify(row.details) : ''),
           ].join(','));
         }
@@ -295,7 +295,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           <Cell><Data ss:Type="String">${xmlCell(row.location)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.created_at)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.creator_name)}</Data></Cell>
-          <Cell><Data ss:Type="String">${xmlCell(row.creator_email)}</Data></Cell>
+          <Cell><Data ss:Type="String">${xmlCell(row.creator_nickname)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.details ? JSON.stringify(row.details) : '')}</Data></Cell>
         </Row>
       `).join('');
@@ -315,7 +315,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         <Cell><Data ss:Type="String">location</Data></Cell>
         <Cell><Data ss:Type="String">created_at</Data></Cell>
         <Cell><Data ss:Type="String">creator_name</Data></Cell>
-        <Cell><Data ss:Type="String">creator_email</Data></Cell>
+        <Cell><Data ss:Type="String">creator_nickname</Data></Cell>
         <Cell><Data ss:Type="String">details</Data></Cell>
       </Row>
       ${xmlRows}

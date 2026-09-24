@@ -73,11 +73,11 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
           headers: { 'Content-Type': 'application/json' },
         });
       }
-      identifier = body.username || body.email;
+      identifier = body.nickname || body.username;
       password = body.password;
     } else {
       const formData = await request.formData();
-      identifier = (formData.get('username') as string) || (formData.get('email') as string);
+      identifier = (formData.get('nickname') as string) || (formData.get('username') as string);
       password = formData.get('password') as string;
     }
 
@@ -85,7 +85,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
       return new Response(
         JSON.stringify({
           code: 'missing_fields',
-          error: 'Kullanici adi ve sifre gerekli',
+          error: 'Nickname ve şifre gerekli',
         }),
         {
           status: 400,
@@ -105,7 +105,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
       return new Response(
         JSON.stringify({
           code: 'invalid_credentials',
-          error: 'Sifre hatali veya kullanici bulunamadi',
+          error: 'Nickname veya şifre hatalı',
         }),
         {
           status: 401,
@@ -141,8 +141,7 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
         JSON.stringify({
           user: {
             id: result.user.id,
-            username: result.user.username,
-            email: result.user.email,
+            nickname: result.user.username,
             fullName: result.user.fullName,
             role: result.user.role,
           },

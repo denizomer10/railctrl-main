@@ -6,7 +6,7 @@ import { logAudit } from '../../../lib/audit';
 export const prerender = false;
 
 function ensureAdmin(locals: App.Locals): Response | null {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Bu işlem için admin yetkisi gerekli' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },

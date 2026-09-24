@@ -1,9 +1,8 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import { MARMARAY_ISTASYONLARI } from '../lib/stations';
 
 const user = Astro.locals.user;
-const canSeePrivate = user?.role === 'admin' || user?.role === 'sef' || user?.role === 'gar_mudur';
+const canSeePrivate = user?.role === 'yonetici';
 ---
 
 <PageLayout title="Notlar">
@@ -45,12 +44,7 @@ const canSeePrivate = user?.role === 'admin' || user?.role === 'sef' || user?.ro
         <button class="chip" data-kategori="Genel">📌 Genel</button>
         {canSeePrivate && <button class="chip" data-kategori="Özel">🔒 Özel</button>}
       </div>
-      <select id="stationFilter" class="station-filter">
-        <option value="">Tüm İstasyonlar</option>
-        {MARMARAY_ISTASYONLARI.map((istasyon) => (
-          <option value={istasyon}>{istasyon}</option>
-        ))}
-      </select>
+      <input id="stationFilter" class="station-filter" type="text" placeholder="İstasyon ara" />
     </div>
 
     <!-- Stats Bar -->
@@ -125,12 +119,7 @@ const canSeePrivate = user?.role === 'admin' || user?.role === 'sef' || user?.ro
 
         <div class="form-group">
           <label for="noteIstasyon">İstasyon (opsiyonel)</label>
-          <select id="noteIstasyon" name="istasyon">
-            <option value="">Tüm İstasyonlar</option>
-            {MARMARAY_ISTASYONLARI.map((istasyon) => (
-              <option value={istasyon}>{istasyon}</option>
-            ))}
-          </select>
+          <input type="text" id="noteIstasyon" name="istasyon" placeholder="İstasyon (opsiyonel)" />
         </div>
 
         <div class="form-group">

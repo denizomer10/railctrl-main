@@ -49,7 +49,7 @@
     let totalPages = 1;
     const limit = 30;
     let editingId: number | null = null;
-    let currentUserRole = 'user';
+    let currentUserRole = 'personel';
     const pageParams = new URLSearchParams(window.location.search);
     const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
 
@@ -61,17 +61,21 @@
       window.history.replaceState({}, '', `${window.location.pathname}${qs ? `?${qs}` : ''}`);
     }
 
-    function canManageDahili() {
-      return currentUserRole === 'sef' || currentUserRole === 'admin';
+    function canEditDahili() {
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
+    }
+
+    function canDeleteDahili() {
+      return currentUserRole === 'yonetici';
     }
 
     async function getUserRole() {
       try {
         const res = await fetch('/api/auth/me');
-        if (res.ok) { const data = await res.json(); currentUserRole = data.user?.role || 'user'; }
-      } catch (e) { currentUserRole = 'user'; }
+        if (res.ok) { const data = await res.json(); currentUserRole = data.user?.role || 'personel'; }
+      } catch (e) { currentUserRole = 'personel'; }
       if (newRecordBtn) {
-        newRecordBtn.style.display = canManageDahili() ? 'inline-flex' : 'none';
+        newRecordBtn.style.display = canEditDahili() ? 'inline-flex' : 'none';
       }
     }
 
@@ -210,7 +214,7 @@
             <td data-label="Dahili Numara"><span class="numara-badge">${r.dahili_numara || '-'}</span></td>
             <td class="birim-cell" data-label="Birim">${r.birim || '-'}</td>
             <td class="aciklama-cell" data-label="Açıklama">${r.aciklama || ''}</td>
-            <td data-label="İşlem">${canManageDahili() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
+            <td data-label="İşlem">${canEditDahili() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
           `;
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
           tableBody.appendChild(row);
@@ -225,7 +229,7 @@
     }
 
     function openEditModal(record: any) {
-      if (!canManageDahili()) return;
+      if (!canEditDahili()) return;
       editingId = record.id;
       modalTitle.textContent = 'Numarayı Düzenle';
       (document.getElementById('recordId') as HTMLInputElement).value = record.id;
@@ -233,18 +237,18 @@
       (document.getElementById('birim') as HTMLInputElement).value = record.birim || '';
       (document.getElementById('aciklama') as HTMLTextAreaElement).value = record.aciklama || '';
       
-      const canEditAll = currentUserRole === 'sef' || currentUserRole === 'admin';
+      const canEditAll = currentUserRole === 'personel' || currentUserRole === 'yonetici';
       (document.getElementById('dahili_numara') as HTMLInputElement).disabled = !canEditAll;
       (document.getElementById('birim') as HTMLInputElement).disabled = !canEditAll;
       (document.getElementById('aciklama') as HTMLTextAreaElement).disabled = !canEditAll;
       
-      deleteRecordBtn.style.display = canEditAll ? 'block' : 'none';
+      deleteRecordBtn.style.display = canDeleteDahili() ? 'block' : 'none';
       formMessage.style.display = 'none';
       showModal(modal);
     }
 
     newRecordBtn?.addEventListener('click', () => {
-      if (!canManageDahili()) return;
+      if (!canEditDahili()) return;
       editingId = null;
       modalTitle.textContent = 'Yeni Dahili Numara';
       recordForm.reset();
@@ -264,7 +268,7 @@
 
     recordForm?.addEventListener('submit', async (e) => {
       e.preventDefault();
-      if (!canManageDahili()) {
+      if (!canEditDahili()) {
         formMessage.className = 'form-message error';
         formMessage.textContent = 'Bu işlem için yetkiniz yok';
         formMessage.style.display = 'block';
@@ -297,7 +301,7 @@
     });
 
     deleteRecordBtn?.addEventListener('click', async () => {
-      if (!canManageDahili()) return;
+      if (!canDeleteDahili()) return;
       if (!editingId || !confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
       try {
         const response = await fetch(`/api/dahili-numaralar/${editingId}`, { method: 'DELETE' });

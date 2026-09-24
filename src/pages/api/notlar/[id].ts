@@ -91,7 +91,7 @@ export const GET: APIRoute = async ({ params }) => {
   }
 };
 
-// Not güncelle (sef veya admin)
+// Not güncelleme yönetici rolüne özeldir
 export const PUT: APIRoute = async ({ params, request, locals }) => {
   // Yetki kontrolü
   if (!locals.user) {
@@ -101,7 +101,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef' && locals.user.role !== 'gar_mudur') {
+  if (locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -112,6 +112,12 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     await ensureAppSchema();
     const { id } = params;
     const body = await request.json();
+    if (body.kategori === 'Özel' && locals.user.role !== 'yonetici') {
+      return new Response(JSON.stringify({ error: 'Özel not oluşturma ve düzenleme yalnızca yöneticilere açıktır' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // Mevcut kaydı kontrol et
     const existing = await query<any>('SELECT * FROM notlar WHERE id = $1', [id]);
@@ -190,7 +196,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-// Not sil (sef veya admin)
+// Not silme yönetici rolüne özeldir
 export const DELETE: APIRoute = async ({ params, locals }) => {
   // Yetki kontrolü
   if (!locals.user) {
@@ -200,7 +206,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef' && locals.user.role !== 'gar_mudur') {
+  if (locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -211,10 +217,16 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     await ensureAppSchema();
     const { id } = params;
 
-    const existing = await query<any>('SELECT medya, icerik FROM notlar WHERE id = $1', [id]);
+    const existing = await query<any>('SELECT kategori, medya, icerik FROM notlar WHERE id = $1', [id]);
     if (existing.rows.length === 0) {
       return new Response(JSON.stringify({ error: 'Not bulunamadı' }), {
         status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    if (existing.rows[0].kategori === 'Özel' && locals.user.role !== 'yonetici') {
+      return new Response(JSON.stringify({ error: 'Bu not yalnızca yöneticiler tarafından silinebilir' }), {
+        status: 403,
         headers: { 'Content-Type': 'application/json' }
       });
     }

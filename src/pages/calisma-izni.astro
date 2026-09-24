@@ -1,10 +1,7 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 
-const marmarayIstasyonlari = [
-  'Halkalı', 'Mustafa Kemal', 'Küçükçekmece', 'Florya', 'Florya Akvaryum', 'Yeşilköy', 'Yeşilyurt', 'Ataköy', 'Bakırköy', 'Yenimahalle', 'Zeytinburnu', 'Kazlıçeşme', 'Yenikapı', 'Sirkeci',
-  'Üsküdar', 'Ayrılık Çeşmesi', 'Acıbadem', 'Ünalan', 'Göztepe', 'Feneryolu', 'Bostancı', 'Küçükyalı', 'İdealtepe', 'Süreyya Plajı', 'Maltepe', 'Cevizli', 'Atalar', 'Kartal', 'Yunus', 'Pendik', 'Tersane', 'Güzelyalı', 'Aydıntepe', 'İçmeler', 'Tuzla', 'Çayırova', 'Osmangazi', 'Gebze'
-];
+
 ---
 
 <PageLayout title="Çalışma İzinleri">
@@ -29,12 +26,7 @@ const marmarayIstasyonlari = [
         <input type="text" id="searchInput" class="search-input" placeholder="Ara... (MMS No, Çalışma Kodu, İş)" />
         <button id="searchClear" class="search-clear" style="display: none;">✕</button>
       </div>
-      <select id="istasyonFilter" class="select-filter station-select">
-        <option value="">📍 Tüm İstasyonlar</option>
-        {marmarayIstasyonlari.map((istasyon) => (
-          <option value={istasyon}>{istasyon}</option>
-        ))}
-      </select>
+      <input id="istasyonFilter" class="select-filter station-select" type="text" placeholder="📍 İstasyon ara" />
     </div>
 
     <div class="stats-bar">
@@ -92,10 +84,7 @@ const marmarayIstasyonlari = [
         <div class="form-grid">
           <div class="form-group">
             <label>İstasyon *</label>
-            <select id="istasyon" required>
-              <option value="">Seçiniz...</option>
-              {marmarayIstasyonlari.map(ist => <option value={ist}>{ist}</option>)}
-            </select>
+            <input type="text" id="istasyon" required />
           </div>
           <div class="form-group">
             <label>Çalışanlar</label>
@@ -140,12 +129,7 @@ const marmarayIstasyonlari = [
         </div>
         <div class="form-group">
           <label>İstasyon</label>
-          <select id="reportStation">
-            <option value="">Tüm İstasyonlar</option>
-            {marmarayIstasyonlari.map((istasyon) => (
-              <option value={istasyon}>{istasyon}</option>
-            ))}
-          </select>
+          <input id="reportStation" type="text" placeholder="İstasyon" />
         </div>
         
         <div class="form-actions">

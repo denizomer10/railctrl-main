@@ -59,7 +59,7 @@ let currentDurum: string | null = null;
     let totalPages = 1;
     const limit = 30;
     let editingId: number | null = null;
-    let currentUserRole = 'user';
+    let currentUserRole = 'personel';
     const pageParams = new URLSearchParams(window.location.search);
     const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
     const autoViewId = Number.parseInt(pageParams.get('viewId') || '', 10);
@@ -74,11 +74,11 @@ let currentDurum: string | null = null;
     }
 
     function canEditKayipEsya() {
-      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
     }
 
     function canDeleteKayipEsya() {
-      return currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'yonetici';
     }
 
     // Kullanıcı rolü
@@ -87,9 +87,9 @@ let currentDurum: string | null = null;
         const res = await fetch('/api/auth/me', { credentials: 'include' });
         if (res.ok) {
           const data = await res.json();
-          currentUserRole = data.user?.role || 'user';
+          currentUserRole = data.user?.role || 'personel';
         }
-      } catch (e) { currentUserRole = 'user'; }
+      } catch (e) { currentUserRole = 'personel'; }
     }
 
     async function tryOpenEditFromQuery() {

@@ -2,7 +2,7 @@
 
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear') as HTMLElement;
-    const istasyonFilter = document.getElementById('istasyonFilter') as HTMLSelectElement;
+    const istasyonFilter = document.getElementById('istasyonFilter') as HTMLInputElement;
     const tableBody = document.getElementById('tableBody') as HTMLElement;
     const noResults = document.getElementById('noResults') as HTMLElement;
     const paginationContainer = document.getElementById('paginationContainer') as HTMLElement;
@@ -46,7 +46,7 @@
     let totalPages = 1;
     const limit = 30;
     let editingId: number | null = null;
-    let currentUserRole = 'user';
+    let currentUserRole = 'personel';
     const pageParams = new URLSearchParams(window.location.search);
     const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
 
@@ -59,22 +59,22 @@
     }
 
     function canEditCalisma() {
-      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
     }
 
     function canCreateCalisma() {
-      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
     }
 
     function canDeleteCalisma() {
-      return currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'yonetici';
     }
 
     async function getUserRole() {
       try {
         const res = await fetch('/api/auth/me');
-        if (res.ok) { const data = await res.json(); currentUserRole = data.user?.role || 'user'; }
-      } catch (e) { currentUserRole = 'user'; }
+        if (res.ok) { const data = await res.json(); currentUserRole = data.user?.role || 'personel'; }
+      } catch (e) { currentUserRole = 'personel'; }
     }
     getUserRole();
 
@@ -135,15 +135,6 @@
         if (data.stats) {
           if (total) total.textContent = data.stats.total || '0';
           if (istCount) istCount.textContent = data.stats.istasyonCount || '0';
-        }
-
-        if (data.istasyonlar && istasyonFilter.options.length <= 1) {
-          data.istasyonlar.forEach((ist: string) => {
-            const opt = document.createElement('option');
-            opt.value = ist;
-            opt.textContent = ist;
-            istasyonFilter.appendChild(opt);
-          });
         }
 
         if (data.records.length === 0) {
@@ -281,7 +272,13 @@
       searchTimeout = setTimeout(() => { currentPage = 1; loadRecords(); }, 300);
     });
     searchClear?.addEventListener('click', () => { searchInput.value = ''; searchClear.style.display = 'none'; currentPage = 1; loadRecords(); });
-    istasyonFilter?.addEventListener('change', () => { currentIstasyon = istasyonFilter.value; currentPage = 1; loadRecords(); });
+    let stationSearchTimeout: number | undefined;
+    istasyonFilter?.addEventListener('input', () => {
+      currentIstasyon = istasyonFilter.value;
+      currentPage = 1;
+      window.clearTimeout(stationSearchTimeout);
+      stationSearchTimeout = window.setTimeout(loadRecords, 250);
+    });
 
     // Rapor Modal Elements
     const reportBtn = document.getElementById('reportBtn') as HTMLButtonElement;
@@ -291,7 +288,7 @@
     const reportEndDate = document.getElementById('reportEndDate') as HTMLInputElement;
     const reportAllDates = document.getElementById('reportAllDates') as HTMLInputElement;
     const reportDateRangeRow = document.getElementById('reportDateRangeRow') as HTMLElement;
-    const reportStation = document.getElementById('reportStation') as HTMLSelectElement;
+    const reportStation = document.getElementById('reportStation') as HTMLInputElement;
     const downloadPdfBtn = document.getElementById('downloadPdfBtn') as HTMLButtonElement;
     registerModal(reportModal);
 
@@ -370,25 +367,9 @@
     const resolveStationForReport = (query: string): string => {
       const normalizedQuery = normalizeText(query);
       if (!normalizedQuery) return '';
-      const options = Array.from(reportStation.options || []).map((opt) => String(opt.value || '')).filter(Boolean);
-      let bestStation = '';
-      let bestScore = 0;
-      for (const station of options) {
-        const normalizedStation = normalizeText(station);
-        const tokens = normalizedStation.split(/\s+/).filter((t) => t.length >= 3);
-        let score = 0;
-        if (normalizedQuery.includes(normalizedStation)) score = 120 + normalizedStation.length;
-        if (!score && tokens.length) {
-          const matched = tokens.filter((t) => normalizedQuery.includes(t)).length;
-          if (matched === tokens.length) score = 80 + tokens.length * 10;
-          else if (matched > 0 && tokens.length > 1) score = 45 + matched * 10;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          bestStation = station;
-        }
-      }
-      return bestScore >= 55 ? bestStation : '';
+      const stationInput = reportStation.value.trim();
+      if (stationInput && normalizedQuery.includes(normalizeText(stationInput))) return stationInput;
+      return '';
     };
 
     const createCalismaReportPdf = async (openInNewWindow = false) => {

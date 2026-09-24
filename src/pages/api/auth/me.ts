@@ -18,14 +18,11 @@ export const GET: APIRoute = async ({ locals }) => {
   return new Response(JSON.stringify({
     user: {
       id: locals.user.id,
-      username: locals.user.username,
-      email: locals.user.email,
+      nickname: locals.user.nickname,
       displayName: locals.user.displayName,
       role: locals.user.role,
+      gorevi: locals.user.gorevi || null,
       station: locals.user.station || null,
-      sicilNo: locals.user.sicilNo || null,
-      kkyNo: locals.user.kkyNo || null,
-      bagliBirim: locals.user.bagliBirim || null,
     }
   }), {
     status: 200,

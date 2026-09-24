@@ -2,7 +2,7 @@
 function initLoginForm() {
 		const form = document.getElementById('loginForm') as HTMLFormElement | null;
 		const errorDiv = document.getElementById('errorMessage') as HTMLDivElement | null;
-		const usernameInput = document.getElementById('username') as HTMLInputElement | null;
+		const usernameInput = document.getElementById('nickname') as HTMLInputElement | null;
 		const passwordInput = document.getElementById('password') as HTMLInputElement | null;
 		const toggleBtn = document.getElementById('password-toggle') as HTMLButtonElement | null;
 
@@ -41,10 +41,10 @@ function initLoginForm() {
 
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
-			const username = usernameInput.value.trim();
+			const nickname = usernameInput.value.trim();
 			const password = passwordInput.value;
 
-			if (!username || !password) {
+			if (!nickname || !password) {
 				errorDiv.textContent = document.documentElement.lang === 'en' ? 'Please fill in all fields.' : 'Lütfen tüm alanları doldurun';
 				errorDiv.classList.add('show');
 				loginButton.classList.remove('success');
@@ -63,20 +63,20 @@ function initLoginForm() {
 						'Content-Type': 'application/json',
 						'Accept': 'application/json',
 					},
-					body: JSON.stringify({ username, password }),
+					body: JSON.stringify({ nickname, password }),
 				});
 
 				const data = await response.json().catch(() => ({}));
 
 				if (!response.ok) {
 					const englishErrors: Record<string, string> = {
-						missing_fields: 'Username and password are required.',
-						invalid_credentials: 'Incorrect username or password.',
+						missing_fields: 'Nickname and password are required.',
+						invalid_credentials: 'Incorrect nickname or password.',
 						rate_limit: 'Too many failed attempts. Please try again later.',
 					};
 					const errorMessage = document.documentElement.lang === 'en'
 						? (englishErrors[data?.code] || 'Sign-in failed. Please try again.')
-						: (typeof data?.error === 'string' ? data.error : 'Şifre hatalı veya giriş başarısız.');
+						: (typeof data?.error === 'string' ? data.error : 'Nickname veya şifre hatalı.');
 					errorDiv.textContent = errorMessage;
 					errorDiv.classList.add('show');
 					loginButton.classList.add('error');
@@ -86,7 +86,7 @@ function initLoginForm() {
 
 				const fullName = typeof data?.user?.fullName === 'string' && data.user.fullName.trim()
 					? data.user.fullName.trim()
-					: username;
+					: nickname;
 
 				loginButton.disabled = true;
 				buttonLoading.style.display = 'none';

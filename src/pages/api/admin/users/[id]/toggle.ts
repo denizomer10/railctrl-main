@@ -7,7 +7,7 @@ export const prerender = false;
 
 // POST - Toggle user active status
 export const POST: APIRoute = async ({ params, locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -61,7 +61,7 @@ export const POST: APIRoute = async ({ params, locals }) => {
     await logAudit({
       userId: locals.user.id,
       action: 'admin.user.toggle',
-      resourceType: 'user',
+      resourceType: 'personel',
       resourceId: id,
       details: { is_active: result.rows[0].is_active },
     });

@@ -1,9 +1,8 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
-import { MARMARAY_ISTASYONLARI } from '../lib/stations';
 
 const user = Astro.locals.user;
-const isManager = user?.role === 'admin' || user?.role === 'sef' || user?.role === 'gar_mudur';
+const isManager = user?.role === 'yonetici';
 const months = [
   { value: 1, label: 'Ocak' },
   { value: 2, label: 'Şubat' },
@@ -56,10 +55,7 @@ const leaveTypeOptions = [
 
     <div class="toolbar">
       {isManager && (
-        <select id="stationFilter">
-          <option value="">İstasyon Seç</option>
-          {MARMARAY_ISTASYONLARI.map((s) => <option value={s}>{s}</option>)}
-        </select>
+        <input id="stationFilter" type="text" placeholder="İstasyon ara" />
       )}
       <select id="monthFilter">
         {months.map((m) => <option value={m.value}>{m.label}</option>)}
@@ -94,10 +90,7 @@ const leaveTypeOptions = [
       <form id="planForm" class="form-grid">
         <input type="hidden" id="planId" />
         <label>İstasyon
-          <select id="planStation" required>
-            <option value="">Seçiniz</option>
-            {MARMARAY_ISTASYONLARI.map((s) => <option value={s}>{s}</option>)}
-          </select>
+          <input id="planStation" type="text" required />
         </label>
         <label>Ay
           <select id="planMonth" required>

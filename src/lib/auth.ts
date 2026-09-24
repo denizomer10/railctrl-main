@@ -11,16 +11,15 @@ import { hashString } from './encryption';
 import { ensureAppSchema } from './schema';
 
 // Tipler
-export type UserRole = 'user' | 'sef' | 'gar_mudur' | 'admin';
+export type UserRole = 'personel' | 'yonetici';
 
 export interface User {
   id: string;
   username: string;
-  email: string;
   fullName: string;
   role: UserRole;
   station?: string | null;
-  department?: string;
+  gorevi?: string;
   phone?: string;
   isActive: boolean;
   lastLogin?: Date;
@@ -150,8 +149,7 @@ export function verifyToken(token: string): Promise<SessionTokenPayload | null> 
 }
 
 /**
- * Kullanıcı girişi - username veya email ile
- * @param identifier - username (örn: "yasin") veya email (örn: "yasin@ornek.com")
+ * Kullanıcı girişi nickname ile
  * @param password - kullanıcı şifresi
  */
 export async function login(
@@ -166,9 +164,8 @@ export async function login(
   // identifier'ı normalize et (kurum alan adı dayatması yok)
   const normalizedIdentifier = identifier.toLowerCase().trim();
 
-  // Username veya email ile kullanıcıyı bul
   const result = await query<any>(
-    `SELECT * FROM ${Tables.USERS} WHERE (username = $1 OR email = $1) AND is_active = true`,
+    `SELECT * FROM ${Tables.USERS} WHERE username = $1 AND is_active = true`,
     [normalizedIdentifier]
   );
   
@@ -188,11 +185,10 @@ export async function login(
   const user: User = {
     id: userRow.id,
     username: userRow.username,
-    email: userRow.email,
     fullName: userRow.full_name,
     role: userRow.role,
     station: userRow.istasyon,
-    department: userRow.department,
+    gorevi: userRow.gorevi,
     isActive: userRow.is_active,
     lastLogin: userRow.last_login,
     createdAt: userRow.created_at,
@@ -271,11 +267,10 @@ export async function refreshTokens(refreshToken: string): Promise<AuthTokens | 
   const user: User = {
     id: row.user_id,
     username: row.username,
-    email: row.email,
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    department: row.department,
+    gorevi: row.gorevi,
     isActive: row.is_active,
     lastLogin: row.last_login,
     createdAt: row.created_at,
@@ -358,11 +353,10 @@ export async function getUserById(userId: string): Promise<User | null> {
   return {
     id: row.id,
     username: row.username,
-    email: row.email,
     fullName: row.full_name,
     role: row.role,
     station: row.istasyon,
-    department: row.department,
+    gorevi: row.gorevi,
     isActive: row.is_active,
     lastLogin: row.last_login,
     createdAt: row.created_at,

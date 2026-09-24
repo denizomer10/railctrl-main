@@ -14,7 +14,6 @@ import { Tables } from '../../../lib/database';
 export const prerender = false;
 
 const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
-const SABIT_GOREV = 'İstasyon Operasyon İşçisi';
 
 async function ensureIzinIstekleriTableShape(): Promise<void> {
   const info = await query<any>('PRAGMA table_info(izin_istekleri)');
@@ -121,7 +120,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     let queryText: string;
     let params: any[];
 
-    if (user.role === 'sef' || user.role === 'admin') {
+    if (user.role === 'yonetici') {
       queryText = `
         SELECT i.*, u.full_name as kullanici_adi
             FROM ${Tables.IZIN_ISTEKLERI} i
@@ -173,7 +172,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     }
 
     const body = await request.json();
-    const { 
+    const {
       personel_id,
       ad_soyad,
       birim,
@@ -222,7 +221,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         user.id,
         ad_soyad,
         SABIT_BIRIM,
-        SABIT_GOREV,
+        String(gorevi || '').trim() || null,
         aitOlduguYil,
         izin_turu,
         baslangic_tarihi,

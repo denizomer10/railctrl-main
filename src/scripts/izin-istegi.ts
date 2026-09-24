@@ -1,7 +1,6 @@
 // izin-istegi istemcisi. izin-istegi.astro tarafından bundled <script> ile çağrılır.
 // State
   const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
-  const SABIT_GOREV = 'İstasyon Operasyon İşçisi';
   let selectedType: string | null = null;
   let personelData: any = null;
 
@@ -31,7 +30,7 @@
         user_id: user.id,
         ad_soyad: user.full_name || '',
         birim: SABIT_BIRIM,
-        gorevi: SABIT_GOREV,
+        gorevi: user.gorevi || '',
         izindeki_adres: null,
       };
       showPersonelInfo();
@@ -209,7 +208,7 @@
           personel_id: data.personel_id || null,
           ad_soyad: data.ad_soyad,
           birim: SABIT_BIRIM,
-          gorevi: SABIT_GOREV,
+          gorevi: personelData?.gorevi || '',
           izin_turu: data.izin_turu,
           baslangic_tarihi: data.baslangic_tarihi,
           bitis_tarihi: data.bitis_tarihi,

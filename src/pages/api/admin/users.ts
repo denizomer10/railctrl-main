@@ -6,9 +6,9 @@ import { logAudit } from '../../../lib/audit';
 
 export const prerender = false;
 
-// GET - List all users (sadece admin erişebilir)
+// GET - List all users (sadece yönetici erişebilir)
 export const GET: APIRoute = async ({ locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -18,8 +18,8 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     await ensureAppSchema();
     const result = await query(
-      `SELECT id, email, full_name as name, role, gorevi, is_active, created_at, last_login, istasyon, notify_mms, notify_calisma
-         FROM ${Tables.USERS} 
+      `SELECT id, username AS nickname, full_name AS name, role, is_active, created_at, last_login, notify_mms, notify_calisma
+         FROM ${Tables.USERS}
        ORDER BY created_at DESC`
     );
 
@@ -36,9 +36,9 @@ export const GET: APIRoute = async ({ locals }) => {
   }
 };
 
-// POST - Create new user (sadece admin erişebilir)
+// POST - Create new user (sadece yönetici erişebilir)
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -47,60 +47,64 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { email, name, password, role, gorevi, istasyon, notify_mms, notify_calisma } = await request.json();
+    const { nickname, name, password, role, gorevi, notify_mms, notify_calisma } = await request.json();
+    const normalizedNickname = String(nickname || '').trim().toLowerCase();
 
     // Validate input
-    if (!email || !name || !password || !role) {
+    if (!normalizedNickname || !name || !password || !role) {
       return new Response(JSON.stringify({ error: 'All fields are required' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Check if email already exists
-    const existing = await query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length > 0) {
-      return new Response(JSON.stringify({ error: 'Bu e-posta adresi zaten kayıtlı' }), {
+    const nicknamePattern = /^[a-z0-9_.-]{3,32}$/;
+    if (!nicknamePattern.test(normalizedNickname)) {
+      return new Response(JSON.stringify({ error: 'Nickname 3–32 karakter olmalı; harf, sayı, nokta, tire ve alt çizgi kullanabilirsiniz.' }), {
         status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    const existing = await query('SELECT id FROM users WHERE username = $1', [normalizedNickname]);
+    if (existing.rows.length > 0) {
+      return new Response(JSON.stringify({ error: 'Bu nickname zaten kullanılıyor' }), {
+        status: 409,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
     // Validate role
-    const validRoles = ['user', 'sef', 'gar_mudur', 'admin'];
+    const validRoles = ['personel', 'yonetici'];
     if (!validRoles.includes(role)) {
-      return new Response(JSON.stringify({ error: 'Invalid role' }), {
+      return new Response(JSON.stringify({ error: 'Rol Personel veya Yönetici olmalı' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' }
       });
     }
 
-    // Hash password
+    if (gorevi !== 'personel' && gorevi !== 'yonetici') {
+      return new Response(JSON.stringify({ error: 'Görevi Personel veya Yönetici olmalı' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    }
 
-    // Hash password
     const passwordHash = await hashPassword(password);
 
-    // Username from email (before @)
-    const username = email.split('@')[0].toLowerCase();
-
-    // Create user
     const result = await query(
-          `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya) 
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 1, 1) 
-       RETURNING id, email, full_name as name, role, gorevi, is_active, created_at, istasyon, notify_mms, notify_calisma`,
-      [crypto.randomUUID(), username, email, passwordHash, name, role, gorevi || null, istasyon || null, notify_mms ?? true, notify_calisma ?? true]
+      `INSERT INTO ${Tables.USERS} (id, username, email, password_hash, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, 1, 1)
+       RETURNING id, username AS nickname, full_name AS name, role, gorevi, is_active, created_at, notify_mms, notify_calisma`,
+      [crypto.randomUUID(), normalizedNickname, `${normalizedNickname}@local.invalid`, passwordHash, name.trim(), role, gorevi, notify_mms ?? true, notify_calisma ?? true]
     );
 
     await logAudit({
       userId: locals.user.id,
       action: 'admin.user.create',
-      resourceType: 'user',
+      resourceType: 'personel',
       resourceId: result.rows[0].id,
       details: {
-        email,
+        nickname: normalizedNickname,
         role,
-        gorevi: gorevi || null,
-        istasyon: istasyon || null,
+        gorevi,
       },
       ipAddress: request.headers.get('x-forwarded-for'),
       userAgent: request.headers.get('user-agent'),
@@ -116,13 +120,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     if (error?.code === '23505') {
       const detail = String(error?.detail || '');
       if (detail.includes('(username)')) {
-        return new Response(JSON.stringify({ error: 'Bu kullanıcı adı zaten kayıtlı (email @ öncesi).' }), {
-          status: 409,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      }
-      if (detail.includes('(email)')) {
-        return new Response(JSON.stringify({ error: 'Bu e-posta adresi zaten kayıtlı' }), {
+        return new Response(JSON.stringify({ error: 'Bu nickname zaten kullanılıyor.' }), {
           status: 409,
           headers: { 'Content-Type': 'application/json' }
         });

@@ -14,13 +14,13 @@ type AuditRow = {
   user_agent: string | null;
   created_at: string;
   user_name: string | null;
-  user_email: string | null;
+  user_nickname: string | null;
 };
 
 async function fetchAuditLogs(limit: number): Promise<AuditRow[]> {
   const result = await query<AuditRow>(
     `SELECT al.id, al.action, al.resource_type, al.resource_id, al.details, al.ip_address, al.user_agent, al.created_at,
-            u.full_name as user_name, u.email as user_email
+            u.full_name as user_name, u.username as user_nickname
      FROM audit_logs al
      LEFT JOIN users u ON u.id = al.user_id
      ORDER BY al.created_at DESC
@@ -48,7 +48,7 @@ function xmlCell(value: unknown): string {
 }
 
 export const GET: APIRoute = async ({ locals, url }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 
@@ -59,7 +59,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const logs = await fetchAuditLogs(limit);
 
     if (format === 'csv') {
-      const header = ['id', 'created_at', 'user_name', 'user_email', 'action', 'resource_type', 'resource_id', 'ip_address', 'user_agent', 'details'];
+      const header = ['id', 'created_at', 'user_name', 'user_nickname', 'action', 'resource_type', 'resource_id', 'ip_address', 'user_agent', 'details'];
       const lines = [header.join(',')];
 
       for (const row of logs) {
@@ -67,7 +67,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           csvCell(row.id),
           csvCell(row.created_at),
           csvCell(row.user_name),
-          csvCell(row.user_email),
+          csvCell(row.user_nickname),
           csvCell(row.action),
           csvCell(row.resource_type),
           csvCell(row.resource_id),
@@ -93,7 +93,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
           <Cell><Data ss:Type="String">${xmlCell(row.id)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.created_at)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.user_name)}</Data></Cell>
-          <Cell><Data ss:Type="String">${xmlCell(row.user_email)}</Data></Cell>
+          <Cell><Data ss:Type="String">${xmlCell(row.user_nickname)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.action)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.resource_type)}</Data></Cell>
           <Cell><Data ss:Type="String">${xmlCell(row.resource_id)}</Data></Cell>
@@ -114,7 +114,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         <Cell><Data ss:Type="String">id</Data></Cell>
         <Cell><Data ss:Type="String">created_at</Data></Cell>
         <Cell><Data ss:Type="String">user_name</Data></Cell>
-        <Cell><Data ss:Type="String">user_email</Data></Cell>
+        <Cell><Data ss:Type="String">user_nickname</Data></Cell>
         <Cell><Data ss:Type="String">action</Data></Cell>
         <Cell><Data ss:Type="String">resource_type</Data></Cell>
         <Cell><Data ss:Type="String">resource_id</Data></Cell>
@@ -159,7 +159,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 };
 
 export const DELETE: APIRoute = async ({ locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 

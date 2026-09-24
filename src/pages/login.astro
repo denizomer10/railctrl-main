@@ -8,9 +8,8 @@ const errorParam = url.searchParams.get('error');
 // Hata mesajlarını eşleştir
 const errorMessages: Record<string, string> = {
 	'rate_limit': 'Çok fazla başarısız deneme. 15 dakika sonra tekrar deneyin.',
-	'missing_fields': 'Kullanıcı adı ve şifre gerekli.',
-	'invalid_email': 'Geçerli bir kullanıcı adı veya e-posta girin.',
-	'invalid_credentials': 'Kullanıcı adı veya şifre hatalı.',
+	'missing_fields': 'Nickname ve şifre gerekli.',
+	'invalid_credentials': 'Nickname veya şifre hatalı.',
 	'unknown': 'Giriş yapılırken bir hata oluştu.'
 };
 
@@ -34,7 +33,7 @@ const serverError = errorParam ? errorMessages[errorParam] || null : null;
 						<div class="error-message show" id="serverError">{serverError}</div>
 					)}
 					<div class="form-group">
-						<label for="username">Kullanıcı Adı</label>
+						<label for="nickname">Nickname</label>
 						<div class="input-container">
 							<svg class="input-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 								<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -42,14 +41,14 @@ const serverError = errorParam ? errorMessages[errorParam] || null : null;
 							</svg>
 							<input
 								type="text"
-								id="username"
-								name="username"
-								placeholder="kullanıcı adı"
+								id="nickname"
+								name="nickname"
+								placeholder="Nickname"
 								required
 								autocomplete="username"
 							/>
 													</div>
-						<small class="form-hint">Kullanıcı adınızı veya e-postanızı girin (örn: yasin)</small>
+						<small class="form-hint">Nickname’inizi girin</small>
 					</div>
 
 					<div class="form-group">

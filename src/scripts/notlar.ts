@@ -2,7 +2,7 @@
 
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear');
-    const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement;
+    const stationFilter = document.getElementById('stationFilter') as HTMLInputElement;
     const chips = document.querySelectorAll('.chip');
     const tableBody = document.getElementById('tableBody');
     const noResults = document.getElementById('noResults');
@@ -63,7 +63,7 @@
     let currentPage = 1;
     let totalPages = 1;
     const limit = 30;
-    let currentUserRole = 'user';
+    let currentUserRole = 'personel';
     let currentViewNote: any = null;
     let editingId: number | null = null;
     let attachedMedia: any[] = [];
@@ -169,9 +169,9 @@
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          currentUserRole = data.user?.role || 'user';
+          currentUserRole = data.user?.role || 'personel';
         }
-      } catch (e) { currentUserRole = 'user'; }
+      } catch (e) { currentUserRole = 'personel'; }
     }
     getUserRole();
     applyEditorThemeDefaults();
@@ -412,7 +412,7 @@
       });
       
       // Şef veya admin ise düzenleme/silme butonlarını göster
-      const canEdit = currentUserRole === 'sef' || currentUserRole === 'admin';
+      const canEdit = currentUserRole === 'yonetici';
       viewActions!.style.display = canEdit ? 'flex' : 'none';
       
       showModal(viewModal as HTMLElement);
@@ -425,7 +425,7 @@
       noteIdInput.value = note.id;
       (document.getElementById('baslik') as HTMLInputElement).value = note.baslik || '';
       (document.getElementById('kategori') as HTMLSelectElement).value = note.kategori || 'Genel';
-      (document.getElementById('noteIstasyon') as HTMLSelectElement).value = note.istasyon || '';
+      (document.getElementById('noteIstasyon') as HTMLInputElement).value = note.istasyon || '';
       richEditor.innerHTML = sanitizeHtml(note.icerik || '');
       syncEditorToTextarea();
       attachedMedia = Array.isArray(note.medya) ? note.medya : (() => {
@@ -434,7 +434,7 @@
       renderMediaList();
       
       // Şef veya admin ise silme butonunu göster
-      const canDelete = currentUserRole === 'sef' || currentUserRole === 'admin';
+      const canDelete = currentUserRole === 'yonetici';
       deleteFromFormBtn!.style.display = canDelete ? 'block' : 'none';
       
       formMessage!.style.display = 'none';
@@ -581,7 +581,7 @@
       });
     });
 
-    stationFilter?.addEventListener('change', () => {
+    stationFilter?.addEventListener('input', () => {
       currentIstasyon = stationFilter.value || '';
       currentPage = 1;
       loadNotes();
@@ -644,12 +644,12 @@
       const payload: Record<string, any> = {
         baslik: (document.getElementById('baslik') as HTMLInputElement).value,
         kategori: (document.getElementById('kategori') as HTMLSelectElement).value,
-        istasyon: (document.getElementById('noteIstasyon') as HTMLSelectElement).value,
+        istasyon: (document.getElementById('noteIstasyon') as HTMLInputElement).value,
         icerik: (document.getElementById('icerik') as HTMLTextAreaElement).value,
         medya: attachedMedia,
       };
       if (payload.kategori === 'Özel') {
-        payload.hedef_roller = ['sef', 'gar_mudur', 'admin'];
+        payload.hedef_roller = ['yonetici'];
       }
 
       try {

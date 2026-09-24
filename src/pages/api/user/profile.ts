@@ -28,7 +28,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     await ensureAppSchema();
     const result = await query(
-      `SELECT id, username, email, full_name, role, gorevi, department, phone, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, created_at 
+      `SELECT id, username AS nickname, full_name, role, gorevi, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, created_at
            FROM ${Tables.USERS} WHERE id = $1`,
       [locals.user.id]
     );
@@ -73,7 +73,14 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { full_name, email, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, current_password, new_password } = await request.json();
+    const { full_name, nickname, role, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, current_password, new_password } = await request.json();
+
+    if (role !== undefined) {
+      return new Response(JSON.stringify({ error: 'Rol yalnızca yönetici tarafından değiştirilebilir' }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -84,12 +91,6 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     if (full_name && full_name.trim()) {
       updates.push(`full_name = $${paramIndex}`);
       values.push(full_name.trim());
-      paramIndex++;
-    }
-
-    if (istasyon !== undefined) {
-      updates.push(`istasyon = $${paramIndex}`);
-      values.push(istasyon?.trim() || null);
       paramIndex++;
     }
 
@@ -117,37 +118,29 @@ export const PUT: APIRoute = async ({ request, locals }) => {
       paramIndex++;
     }
 
-    // Email güncelleme
-    if (email && email.trim()) {
-      // Email formatı kontrolü
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return new Response(JSON.stringify({ error: 'Geçersiz email formatı' }), {
+    if (nickname !== undefined) {
+      const normalizedNickname = String(nickname || '').trim().toLowerCase();
+      if (!/^[a-z0-9_.-]{3,32}$/.test(normalizedNickname)) {
+        return new Response(JSON.stringify({ error: 'Nickname 3–32 karakter olmalı; harf, sayı, nokta, tire ve alt çizgi kullanabilirsiniz.' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-
-      // Email zaten kullanılıyor mu kontrol et
       const existing = await query(
-              `SELECT id FROM ${Tables.USERS} WHERE email = $1 AND id != $2`,
-        [email.toLowerCase(), locals.user.id]
+        `SELECT id FROM ${Tables.USERS} WHERE username = $1 AND id != $2`,
+        [normalizedNickname, locals.user.id]
       );
       if (existing.rows.length > 0) {
-        return new Response(JSON.stringify({ error: 'Bu email adresi zaten kullanılıyor' }), {
-          status: 400,
+        return new Response(JSON.stringify({ error: 'Bu nickname zaten kullanılıyor' }), {
+          status: 409,
           headers: { 'Content-Type': 'application/json' }
         });
       }
-
-      updates.push(`email = $${paramIndex}`);
-      values.push(email.toLowerCase().trim());
-      paramIndex++;
-
-      // Username'i de güncelle
-      const newUsername = email.split('@')[0].toLowerCase();
       updates.push(`username = $${paramIndex}`);
-      values.push(newUsername);
+      values.push(normalizedNickname);
+      paramIndex++;
+      updates.push(`email = $${paramIndex}`);
+      values.push(`${normalizedNickname}@local.invalid`);
       paramIndex++;
     }
 
@@ -208,7 +201,7 @@ export const PUT: APIRoute = async ({ request, locals }) => {
     values.push(locals.user.id);
     const result = await query(
           `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} 
-       RETURNING id, username, email, full_name, role, gorevi, istasyon, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya`,
+       RETURNING id, username AS nickname, full_name, role, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya`,
       values
     );
 

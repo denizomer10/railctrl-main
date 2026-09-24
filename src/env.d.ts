@@ -22,14 +22,11 @@ declare namespace App {
 		};
 		user?: {
 			id: string;
-			username: string;
-			email: string;
+			nickname: string;
 			displayName: string;
-			role: 'admin' | 'sef' | 'gar_mudur' | 'user';
+			role: 'personel' | 'yonetici';
 			station?: string | null;
-			sicilNo?: string | null;
-			kkyNo?: string | null;
-			bagliBirim?: string | null;
+			gorevi?: string | null;
 		};
 	}
 }

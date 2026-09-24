@@ -58,7 +58,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef' && locals.user.role !== 'user') {
+  if (locals.user.role !== 'yonetici' && locals.user.role !== 'personel') {
     return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -163,7 +163,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef') {
+  if (locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }

@@ -14,7 +14,7 @@ export const GET: APIRoute = async ({ locals }) => {
   try {
     await ensureAppSchema();
 
-    const result = locals.user.role === 'admin'
+    const result = locals.user.role === 'yonetici'
       ? await query<any>(
         `SELECT id, user_id, full_name, station, mesaj, status, created_at
              FROM ${Tables.GERI_BILDIRIMLER}

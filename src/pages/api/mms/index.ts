@@ -31,8 +31,8 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     if (istasyon) {
-      queryText += ` AND istasyon = $${paramIndex}`;
-      params.push(istasyon);
+      queryText += ` AND istasyon ILIKE $${paramIndex}`;
+      params.push(`%${istasyon}%`);
       paramIndex++;
     }
 
@@ -66,8 +66,8 @@ export const GET: APIRoute = async ({ url }) => {
     }
 
     if (istasyon) {
-      countQuery += ` AND istasyon = $${countParamIndex}`;
-      countParams.push(istasyon);
+      countQuery += ` AND istasyon ILIKE $${countParamIndex}`;
+      countParams.push(`%${istasyon}%`);
       countParamIndex++;
     }
 
@@ -118,7 +118,7 @@ export const GET: APIRoute = async ({ url }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(locals, ['admin', 'sef', 'user']);
+  const auth = requireRole(locals, ['yonetici', 'personel']);
   if (!auth.ok) {
     return auth.response;
   }

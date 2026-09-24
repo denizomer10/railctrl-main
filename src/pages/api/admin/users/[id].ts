@@ -7,9 +7,9 @@ import { Tables } from '../../../../lib/database';
 
 export const prerender = false;
 
-// PUT - Update user (şef ve admin erişebilir)
+// PUT - Admin kullanıcı yönetimi
 export const PUT: APIRoute = async ({ params, request, locals }) => {
-  if (!locals.user || (locals.user.role !== 'admin' && locals.user.role !== 'sef')) {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -27,7 +27,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { name, email, role, gorevi, password, istasyon, notify_mms, notify_calisma } = await request.json();
+    const { name, nickname, role, gorevi, password, notify_mms, notify_calisma } = await request.json();
 
     // Build update query dynamically
     const updates: string[] = [];
@@ -40,42 +40,59 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
       paramIndex++;
     }
 
-    if (email) {
-      updates.push(`email = $${paramIndex}`);
-      values.push(email);
-      paramIndex++;
-      // Also update username
+    if (nickname) {
+      const normalizedNickname = String(nickname).trim().toLowerCase();
+      if (!/^[a-z0-9_.-]{3,32}$/.test(normalizedNickname)) {
+        return new Response(JSON.stringify({ error: 'Nickname 3–32 karakter olmalı; harf, sayı, nokta, tire ve alt çizgi kullanabilirsiniz.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const existing = await query('SELECT id FROM users WHERE username = $1 AND id != $2', [normalizedNickname, id]);
+      if (existing.rows.length > 0) {
+        return new Response(JSON.stringify({ error: 'Bu nickname zaten kullanılıyor' }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
       updates.push(`username = $${paramIndex}`);
-      values.push(email.split('@')[0].toLowerCase());
+      values.push(normalizedNickname);
+      paramIndex++;
+      updates.push(`email = $${paramIndex}`);
+      values.push(`${normalizedNickname}@local.invalid`);
       paramIndex++;
     }
 
     // Rol değişikliği sadece admin yapabilir
-    if (role && locals.user.role === 'admin') {
-      const validRoles = ['user', 'sef', 'gar_mudur', 'admin'];
-      if (validRoles.includes(role)) {
-        updates.push(`role = $${paramIndex}`);
-        values.push(role);
-        paramIndex++;
+    if (role && locals.user.role === 'yonetici') {
+      const validRoles = ['personel', 'yonetici'];
+      if (!validRoles.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Rol Personel veya Yönetici olmalı' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
       }
+      updates.push(`role = $${paramIndex}`);
+      values.push(role);
+      paramIndex++;
+    }
+
+    if (gorevi !== undefined) {
+      if (gorevi !== 'personel' && gorevi !== 'yonetici') {
+        return new Response(JSON.stringify({ error: 'Görevi Personel veya Yönetici olmalı' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      updates.push(`gorevi = $${paramIndex}`);
+      values.push(gorevi);
+      paramIndex++;
     }
 
     if (password && password.length >= 6) {
       const passwordHash = await hashPassword(password);
       updates.push(`password_hash = $${paramIndex}`);
       values.push(passwordHash);
-      paramIndex++;
-    }
-
-    if (istasyon !== undefined) {
-      updates.push(`istasyon = $${paramIndex}`);
-      values.push(istasyon || null);
-      paramIndex++;
-    }
-
-    if (gorevi !== undefined) {
-      updates.push(`gorevi = $${paramIndex}`);
-      values.push(gorevi || null);
       paramIndex++;
     }
 
@@ -100,7 +117,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
     values.push(id);
     const result = await query(
-          `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, email, full_name as name, role, gorevi, is_active, istasyon, notify_mms, notify_calisma`,
+          `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username AS nickname, full_name AS name, role, gorevi, is_active, notify_mms, notify_calisma`,
       values
     );
 
@@ -114,14 +131,13 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     await logAudit({
       userId: locals.user.id,
       action: 'admin.user.update',
-      resourceType: 'user',
+      resourceType: 'personel',
       resourceId: id,
       details: {
         name,
-        email,
+        nickname,
         role,
         gorevi,
-        istasyon,
         notify_mms,
         notify_calisma,
       },
@@ -142,9 +158,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   }
 };
 
-// DELETE - Delete user (sadece admin)
+// DELETE - Delete user (sadece yönetici)
 export const DELETE: APIRoute = async ({ params, locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' }
@@ -187,7 +203,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     await logAudit({
       userId: locals.user.id,
       action: 'admin.user.delete',
-      resourceType: 'user',
+      resourceType: 'personel',
       resourceId: id,
       details: {},
     });

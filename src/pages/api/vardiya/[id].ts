@@ -46,14 +46,13 @@ export const GET: APIRoute = async ({ params, locals }) => {
 
     const row = result.rows[0];
 
-    if (auth.user.role === 'user') {
+    if (auth.user.role === 'personel') {
       const station = auth.user.station || (await getUserStation(auth.user.id));
+      if (!station) return jsonResponse({ error: 'Kullanıcının istasyon bilgisi bulunamadı' }, 400);
       const requestedNorm = normalizeStationName(station);
       const rowNorm = normalizeStationName(row.istasyon);
       const isStationMatch = requestedNorm === rowNorm || looseStationKey(requestedNorm) === looseStationKey(rowNorm);
-      if (!station || !isStationMatch) {
-        return jsonResponse({ error: 'Bu kaydı görüntüleme yetkiniz yok' }, 403);
-      }
+      if (!isStationMatch) return jsonResponse({ error: 'Bu kaydı görüntüleme yetkiniz yok' }, 403);
     }
 
     return jsonResponse({
@@ -70,7 +69,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
 };
 
 export const PUT: APIRoute = async ({ params, request, locals }) => {
-  const auth = requireRole(locals, ['admin', 'sef', 'gar_mudur']);
+  const auth = requireRole(locals, ['yonetici']);
   if (!auth.ok) return auth.response;
 
   try {
@@ -146,7 +145,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 };
 
 export const DELETE: APIRoute = async ({ params, locals, request }) => {
-  const auth = requireRole(locals, ['admin', 'sef', 'gar_mudur']);
+  const auth = requireRole(locals, ['yonetici']);
   if (!auth.ok) return auth.response;
 
   try {

@@ -5,7 +5,7 @@ import { logAudit } from '../../../lib/audit';
 export const prerender = false;
 
 export const DELETE: APIRoute = async ({ params, locals, request }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 403,
       headers: { 'Content-Type': 'application/json' },

@@ -43,12 +43,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
     const requestedMonth = Number.parseInt(url.searchParams.get('month') || String(now.getMonth() + 1), 10);
     const safeMonth = Number.isFinite(requestedMonth) ? requestedMonth : now.getMonth() + 1;
 
-    let station = url.searchParams.get('station') || null;
-    if (auth.user.role === 'user') {
-      station = auth.user.station || (await getUserStation(auth.user.id));
-      if (!station) {
-        return jsonResponse({ error: 'Kullanıcının istasyon bilgisi bulunamadı' }, 400);
-      }
+    const station = auth.user.role === 'personel'
+      ? auth.user.station || (await getUserStation(auth.user.id))
+      : url.searchParams.get('station') || null;
+    if (auth.user.role === 'personel' && !station) {
+      return jsonResponse({ records: [] });
     }
 
     const normalizedStation = station ? normalizeStationName(station) : '';
@@ -98,7 +97,7 @@ export const GET: APIRoute = async ({ url, locals }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(locals, ['admin', 'sef', 'gar_mudur']);
+  const auth = requireRole(locals, ['yonetici']);
   if (!auth.ok) return auth.response;
 
   try {

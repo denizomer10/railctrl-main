@@ -6,6 +6,7 @@
 
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
+import { requireRole } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createGlobalNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
@@ -137,7 +138,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
   }
 };
 
-// Yeni kayıp eşya kaydı oluştur (user, sef veya admin)
+// Yeni kayıp eşya kaydı oluştur
 export const POST: APIRoute = async ({ request, locals }) => {
   if (!locals.user) {
     return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
@@ -146,12 +147,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   }
 
-  if (locals.user.role !== 'admin' && locals.user.role !== 'sef' && locals.user.role !== 'user') {
-    return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+  const auth = requireRole(locals, ['yonetici', 'personel']);
+  if (!auth.ok) return auth.response;
 
   try {
     await ensureAppSchema();

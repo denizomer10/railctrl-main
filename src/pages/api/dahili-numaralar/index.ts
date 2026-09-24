@@ -99,7 +99,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
 };
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const auth = requireRole(locals, ['admin', 'sef']);
+  const auth = requireRole(locals, ['yonetici', 'personel']);
   if (!auth.ok) {
     return auth.response;
   }

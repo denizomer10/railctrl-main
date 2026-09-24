@@ -6,7 +6,7 @@ import { Tables } from '../../../lib/database';
 export const prerender = false;
 
 export const GET: APIRoute = async ({ locals }) => {
-  if (!locals.user || locals.user.role !== 'admin') {
+  if (!locals.user || locals.user.role !== 'yonetici') {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json' } });
   }
 

@@ -2,8 +2,8 @@
 // Navigation component
 // @ts-ignore - user is defined in env.d.ts
 const user = Astro.locals.user;
-const isAdmin = user?.role === 'admin';
-const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanıcı';
+const isAdmin = user?.role === 'yonetici';
+const welcomeName = user?.displayName || user?.nickname || 'Kullanıcı';
 ---
 
 <!-- Desktop Navigation -->
@@ -876,26 +876,8 @@ const welcomeName = user?.displayName || user?.email?.split('@')[0] || 'Kullanı
   import { initNavigation } from '../scripts/navigation';
   initNavigation();
 
-  const dictionaries = { tr: { notes:'Notlar', personnel:'Personel İşlemleri', workPermit:'Çalışma İzni', problemRecords:'Arıza Kayıtları', problemTracking:'Bakım ve arıza takip sistemi', admin:'Yönetici', adminOperations:'Yönetici İşlemleri', logout:'Çıkış', theme:'Tema Değiştir', feedback:'Geri bildirim', notifications:'Bildirimler', markRead:'Okundu yap', clear:'Temizle', search:'Site içinde ara', searchPlaceholder:'Arıza, Çalışma İzni, Not, Kayıp Eşya, Dahili Numara...', searchTitle:'Site İçi Arama', appTitle:'Tren Yönetim Sistemi' }, en: { notes:'Notes', personnel:'Personnel', workPermit:'Work Permit', problemRecords:'Problem Records', problemTracking:'Maintenance and problem tracking', admin:'Admin', adminOperations:'Administration', logout:'Log out', theme:'Toggle theme', feedback:'Feedback', notifications:'Notifications', markRead:'Mark as read', clear:'Clear', search:'Search the site', searchPlaceholder:'Problems, Work Permits, Notes, Lost & Found, Extensions...', searchTitle:'Site Search', appTitle:'Train Management System' } };
   const langButtons = [document.getElementById('lang-toggle-btn'), document.getElementById('lang-toggle-btn-mobile')].filter(Boolean);
   const activeLanguage = document.documentElement.lang === 'en' ? 'en' : 'tr';
-  document.documentElement.lang = activeLanguage;
-  document.querySelectorAll('[data-i18n]').forEach((el) => {
-    const key = el.getAttribute('data-i18n');
-    if (dictionaries[activeLanguage][key]) el.textContent = dictionaries[activeLanguage][key];
-  });
-  document.querySelectorAll('[data-i18n]').forEach((element) => {
-    const key = element.getAttribute('data-i18n');
-    if (dictionaries[activeLanguage][key]) element.textContent = dictionaries[activeLanguage][key];
-  });
-  document.querySelectorAll('[data-nav-i18n]').forEach((element) => {
-    const key = element.getAttribute('data-nav-i18n');
-    if (dictionaries[activeLanguage][key]) element.textContent = dictionaries[activeLanguage][key];
-  });
-  document.querySelectorAll('[data-nav-attr]').forEach((element) => {
-    const [attribute, key] = element.getAttribute('data-nav-attr').split(':');
-    if (dictionaries[activeLanguage][key]) element.setAttribute(attribute, dictionaries[activeLanguage][key]);
-  });
   langButtons.forEach((button) => {
     button.textContent = activeLanguage === 'tr' ? 'TR' : 'EN';
     button.setAttribute('aria-label', activeLanguage === 'tr' ? 'Switch to English' : 'Türkçeye geç');

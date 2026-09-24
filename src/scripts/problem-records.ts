@@ -17,7 +17,7 @@ import { escapeHtml } from './api-client';
     const durumGroup = document.getElementById('durumGroup') as HTMLElement;
     const notGroup = document.getElementById('notGroup') as HTMLElement;
     const deleteRecordBtn = document.getElementById('deleteRecordBtn') as HTMLButtonElement;
-    const stationFilter = document.getElementById('stationFilter') as HTMLSelectElement;
+    const stationFilter = document.getElementById('stationFilter') as HTMLInputElement;
     const allModals: HTMLElement[] = [];
 
     const registerModal = (m?: HTMLElement | null) => {
@@ -51,7 +51,7 @@ import { escapeHtml } from './api-client';
     let totalPages = 1;
     const limit = 30;
     let editingId: number | null = null;
-    let currentUserRole = 'user';
+    let currentUserRole = 'personel';
     const pageParams = new URLSearchParams(window.location.search);
     const autoEditId = Number.parseInt(pageParams.get('editId') || '', 10);
 
@@ -66,15 +66,15 @@ import { escapeHtml } from './api-client';
 
     // Kullanıcı rolü
     function canEditMms() {
-      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
     }
 
     function canDeleteMms() {
-      return currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'yonetici';
     }
 
     function canCreateMms() {
-      return currentUserRole === 'user' || currentUserRole === 'sef' || currentUserRole === 'admin';
+      return currentUserRole === 'personel' || currentUserRole === 'yonetici';
     }
 
     async function getUserRole() {
@@ -82,9 +82,9 @@ import { escapeHtml } from './api-client';
         const res = await fetch('/api/auth/me');
         if (res.ok) {
           const data = await res.json();
-          currentUserRole = data.user?.role || 'user';
+          currentUserRole = data.user?.role || 'personel';
         }
-      } catch (e) { currentUserRole = 'user'; }
+      } catch (e) { currentUserRole = 'personel'; }
       if (newRecordBtn) {
         newRecordBtn.style.display = canCreateMms() ? 'inline-flex' : 'none';
       }
@@ -351,10 +351,12 @@ import { escapeHtml } from './api-client';
     });
 
     // Station filter
-    stationFilter?.addEventListener('change', () => {
+    let stationSearchTimeout: number | undefined;
+    stationFilter?.addEventListener('input', () => {
       currentStation = stationFilter.value;
       currentPage = 1;
-      loadRecords();
+      window.clearTimeout(stationSearchTimeout);
+      stationSearchTimeout = window.setTimeout(loadRecords, 250);
     });
 
 
@@ -366,7 +368,7 @@ import { escapeHtml } from './api-client';
     const reportEndDate = document.getElementById('reportEndDate') as HTMLInputElement;
     const reportAllDates = document.getElementById('reportAllDates') as HTMLInputElement;
     const reportDateRangeRow = document.getElementById('reportDateRangeRow') as HTMLElement;
-    const reportStation = document.getElementById('reportStation') as HTMLSelectElement;
+    const reportStation = document.getElementById('reportStation') as HTMLInputElement;
     const reportDurum = document.getElementById('reportDurum') as HTMLSelectElement;
     const downloadPdfBtn = document.getElementById('downloadPdfBtn') as HTMLButtonElement;
     registerModal(reportModal);
@@ -446,27 +448,9 @@ import { escapeHtml } from './api-client';
     const resolveStationForReport = (query: string): string => {
       const normalizedQuery = normalizeText(query);
       if (!normalizedQuery) return '';
-      const options = Array.from(reportStation.options || []).map((opt) => String(opt.value || '')).filter(Boolean);
-      let bestStation = '';
-      let bestScore = 0;
-
-      for (const station of options) {
-        const normalizedStation = normalizeText(station);
-        const tokens = normalizedStation.split(/\s+/).filter((t) => t.length >= 3);
-        let score = 0;
-        if (normalizedQuery.includes(normalizedStation)) score = 120 + normalizedStation.length;
-        if (!score && tokens.length) {
-          const matched = tokens.filter((t) => normalizedQuery.includes(t)).length;
-          if (matched === tokens.length) score = 80 + tokens.length * 10;
-          else if (matched > 0 && tokens.length > 1) score = 45 + matched * 10;
-        }
-        if (score > bestScore) {
-          bestScore = score;
-          bestStation = station;
-        }
-      }
-
-      return bestScore >= 55 ? bestStation : '';
+      const stationInput = reportStation.value.trim();
+      if (stationInput && normalizedQuery.includes(normalizeText(stationInput))) return stationInput;
+      return '';
     };
 
     const createMmsReportPdf = async (openInNewWindow = false) => {
