@@ -1,0 +1,521 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+// Kurumsal sistem linkleri
+const sayfaLinkleri = [
+  {
+    id: 'dahili-numaralar',
+    title: 'Dahili Numaralar',
+    description: 'Dahili telefon numarası listesi',
+    icon: '📞',
+    color: '#0ea5e9',
+    href: '/dahili-numaralar',
+    external: false
+  },
+  {
+    id: 'vardiya',
+    title: 'Vardiya',
+    description: 'Vardiya plan ve takvim ekranı',
+    icon: '📅',
+    color: '#7c3aed',
+    href: '/vardiya',
+    external: false
+  },
+  {
+    id: 'kayip-esya',
+    title: 'Kayıp Eşya',
+    description: 'Kayıp eşya kayıt ve takip ekranı',
+    icon: '🧳',
+    color: '#f59e0b',
+    href: '/kayip-esya',
+    external: false
+  },
+  {
+    id: 'calisma-izni-sayfasi',
+    title: 'Çalışma İzni',
+    description: 'Çalışma izin kayıtları ve işlemleri',
+    icon: '🛠️',
+    color: '#4f46e5',
+    href: '/calisma-izni',
+    external: false
+  },
+  {
+    id: 'problem-records',
+    title: 'Arıza Kayıtları',
+    description: 'Arıza kayıtları ve takip',
+    icon: '🔧',
+    color: '#2563eb',
+    href: '/problem-records',
+    external: false
+  },
+  {
+    id: 'notlar',
+    title: 'Notlar',
+    description: 'Personel için önemli bilgiler, prosedürler ve duyurular',
+    icon: '📝',
+    color: '#0f766e',
+    href: '/notlar',
+    external: false
+  }
+];
+---
+
+<PageLayout title="Personel İşlemleri">
+  <div class="personel-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📋</div>
+        <div class="header-text">
+          <h1>Personel İşlemleri</h1>
+          <p>Formlar ve kurumsal sistemlere hızlı erişim</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Cards Grid -->
+    <div class="forms-grid">
+      <!-- Sayfa Linkleri -->
+      {sayfaLinkleri.map(link => (
+        <a 
+          class="form-card page-link" 
+          href={link.href}
+          target={link.external ? '_blank' : undefined}
+          rel={link.external ? 'noopener noreferrer' : undefined}
+          style={`--card-color: ${link.color}`}
+        >
+          <div class="card-icon">{link.icon}</div>
+          <div class="card-content">
+            <h3>{link.title}</h3>
+            <p>{link.description}</p>
+          </div>
+          <div class="card-arrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <!-- Info Section -->
+    <div class="info-section">
+      <div class="info-card">
+        <span class="info-icon">💡</span>
+        <div class="info-text">
+          <strong>Nasıl Kullanılır?</strong>
+          <p>Sistem kartlarından ilgili uygulamalara hızlıca erişebilirsiniz.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="pdfViewerModal" class="pdf-viewer-modal" style="display: none;">
+      <div class="pdf-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="pdfViewerTitle">
+        <div class="pdf-viewer-header">
+          <h3 id="pdfViewerTitle">PDF Görüntüleyici</h3>
+          <button type="button" id="closePdfViewerBtn" class="pdf-viewer-close" aria-label="Kapat">&times;</button>
+        </div>
+        <div class="pdf-viewer-toolbar">
+          <a id="openPdfInNewTabBtn" class="pdf-viewer-action" target="_blank" rel="noopener noreferrer">Yeni Sekmede Aç</a>
+          <a id="downloadPdfBtn" class="pdf-viewer-action primary" download>İndir</a>
+        </div>
+        <div class="pdf-viewer-body">
+          <iframe id="pdfViewerFrame" title="Personel İşlemleri PDF Görüntüleyici" loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</PageLayout>
+
+<style>
+  .personel-page {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .page-header {
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+
+  .header-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+
+  .header-icon {
+    font-size: 3rem;
+  }
+
+  .header-text h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0;
+    color: #1f2937;
+  }
+
+  @supports (-webkit-background-clip: text) {
+    .header-text h1 {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  }
+
+  :global(html[data-theme="dark"]) .personel-page .header-text h1 {
+    color: #e5e7eb;
+    background: none !important;
+    -webkit-text-fill-color: #f8fafc !important;
+  }
+
+  .header-text p {
+    color: #666;
+    margin: 0.25rem 0 0;
+    font-size: 0.95rem;
+  }
+
+  :global(html[data-theme="dark"]) .personel-page .header-text p {
+    color: #d1d5db;
+  }
+
+  /* Forms Grid */
+  .forms-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .form-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .form-card:visited {
+    color: inherit;
+  }
+
+  :global(html[data-theme="dark"]) .form-card {
+    background: #1a1a2e;
+    border-color: #333;
+  }
+
+  .form-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--card-color);
+    transition: width 0.3s ease;
+  }
+
+  .form-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    border-color: var(--card-color);
+  }
+
+  .form-card:hover::before {
+    width: 6px;
+  }
+
+  :global(html[data-theme="dark"]) .form-card:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+  }
+
+  .card-icon {
+    width: 56px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    background: linear-gradient(135deg, rgba(var(--card-color-rgb), 0.1), rgba(var(--card-color-rgb), 0.05));
+    border-radius: 14px;
+    flex-shrink: 0;
+  }
+
+  .card-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .card-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.25rem;
+    color: #1f2937;
+  }
+
+  :global(html[data-theme="dark"]) .card-content h3 {
+    color: #f3f4f6;
+  }
+
+  .card-content p {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin: 0;
+  }
+
+  :global(html[data-theme="dark"]) .personel-page .card-content p {
+    color: #cbd5e1;
+  }
+
+  .card-arrow {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    transition: all 0.3s ease;
+  }
+
+  .card-arrow svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .form-card:hover .card-arrow {
+    color: var(--card-color);
+    transform: translateX(4px);
+  }
+
+  /* Info Section */
+  .info-section {
+    margin-top: 2rem;
+  }
+
+  .info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border-radius: 12px;
+    border: 1px solid #bae6fd;
+  }
+
+  :global(html[data-theme="dark"]) .info-card {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+
+  .info-icon {
+    font-size: 1.5rem;
+  }
+
+  .info-text strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+    color: #0369a1;
+  }
+
+  :global(html[data-theme="dark"]) .info-text strong {
+    color: #60a5fa;
+  }
+
+  .info-text p {
+    font-size: 0.875rem;
+    color: #0c4a6e;
+    margin: 0;
+  }
+
+  :global(html[data-theme="dark"]) .info-text p {
+    color: #93c5fd;
+  }
+
+  .pdf-viewer-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 12000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.55);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .pdf-viewer-dialog {
+    width: min(1200px, 100%);
+    height: min(88vh, 920px);
+    border-radius: 16px;
+    border: 1px solid #cbd5e1;
+    background: #fff;
+    box-shadow: 0 24px 60px rgba(2, 6, 23, 0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-dialog {
+    background: #111827;
+    border-color: #374151;
+  }
+
+  .pdf-viewer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-header {
+    border-bottom-color: #374151;
+  }
+
+  .pdf-viewer-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: #111827;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-header h3 {
+    color: #e5e7eb;
+  }
+
+  .pdf-viewer-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    border: 1px solid #d1d5db;
+    background: #f8fafc;
+    color: #334155;
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-close {
+    background: #1f2937;
+    border-color: #374151;
+    color: #cbd5e1;
+  }
+
+  .pdf-viewer-toolbar {
+    display: flex;
+    gap: 0.65rem;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-toolbar {
+    border-bottom-color: #374151;
+  }
+
+  .pdf-viewer-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+    padding: 0.45rem 0.9rem;
+    border-radius: 10px;
+    border: 1px solid #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .pdf-viewer-action.primary {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    border-color: #1d4ed8;
+    color: #fff;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-action {
+    background: #1e3a8a;
+    border-color: #3b82f6;
+    color: #bfdbfe;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-action.primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: #f8fafc;
+  }
+
+  .pdf-viewer-body {
+    flex: 1;
+    min-height: 0;
+    background: #e2e8f0;
+  }
+
+  :global(html[data-theme="dark"]) .pdf-viewer-body {
+    background: #0b1220;
+  }
+
+  #pdfViewerFrame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: #fff;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .header-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .forms-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .form-card {
+      padding: 1rem;
+    }
+
+    .card-icon {
+      width: 48px;
+      height: 48px;
+      font-size: 1.5rem;
+    }
+
+    .pdf-viewer-dialog {
+      width: 100%;
+      height: 92vh;
+      border-radius: 12px;
+    }
+
+    .pdf-viewer-toolbar {
+      flex-wrap: wrap;
+    }
+
+    .pdf-viewer-action {
+      flex: 1;
+    }
+  }
+</style>
+
+<script>
+  import { initPdfViewer } from '../scripts/pdf-viewer';
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initPdfViewer, { once: true });
+  } else {
+    initPdfViewer();
+  }
+</script>

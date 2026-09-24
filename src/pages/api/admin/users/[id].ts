@@ -1,0 +1,222 @@
+import type { APIRoute } from 'astro';
+import { query } from '../../../../lib/database';
+import { hashPassword } from '../../../../lib/auth';
+import { ensureAppSchema } from '../../../../lib/schema';
+import { logAudit } from '../../../../lib/audit';
+import { Tables } from '../../../../lib/database';
+
+export const prerender = false;
+
+// PUT - Admin kullanıcı yönetimi
+export const PUT: APIRoute = async ({ params, request, locals }) => {
+  if (!locals.user || locals.user.role !== 'yonetici') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { id } = params;
+
+  if (!id) {
+    return new Response(JSON.stringify({ error: 'User ID required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    await ensureAppSchema();
+    const { name, nickname, role, gorevi, password, notify_mms, notify_calisma } = await request.json();
+
+    // Build update query dynamically
+    const updates: string[] = [];
+    const values: any[] = [];
+    let paramIndex = 1;
+
+    if (name) {
+      updates.push(`full_name = $${paramIndex}`);
+      values.push(name);
+      paramIndex++;
+    }
+
+    if (nickname) {
+      const normalizedNickname = String(nickname).trim().toLowerCase();
+      if (!/^[a-z0-9_.-]{3,32}$/.test(normalizedNickname)) {
+        return new Response(JSON.stringify({ error: 'Nickname 3–32 karakter olmalı; harf, sayı, nokta, tire ve alt çizgi kullanabilirsiniz.' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      const existing = await query('SELECT id FROM users WHERE username = $1 AND id != $2', [normalizedNickname, id]);
+      if (existing.rows.length > 0) {
+        return new Response(JSON.stringify({ error: 'Bu nickname zaten kullanılıyor' }), {
+          status: 409,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      updates.push(`username = $${paramIndex}`);
+      values.push(normalizedNickname);
+      paramIndex++;
+      updates.push(`email = $${paramIndex}`);
+      values.push(`${normalizedNickname}@local.invalid`);
+      paramIndex++;
+    }
+
+    // Rol değişikliği sadece admin yapabilir
+    if (role && locals.user.role === 'yonetici') {
+      const validRoles = ['personel', 'yonetici'];
+      if (!validRoles.includes(role)) {
+        return new Response(JSON.stringify({ error: 'Rol Personel veya Yönetici olmalı' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      updates.push(`role = $${paramIndex}`);
+      values.push(role);
+      paramIndex++;
+    }
+
+    if (gorevi !== undefined) {
+      if (gorevi !== 'personel' && gorevi !== 'yonetici') {
+        return new Response(JSON.stringify({ error: 'Görevi Personel veya Yönetici olmalı' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+      updates.push(`gorevi = $${paramIndex}`);
+      values.push(gorevi);
+      paramIndex++;
+    }
+
+    if (password && password.length >= 6) {
+      const passwordHash = await hashPassword(password);
+      updates.push(`password_hash = $${paramIndex}`);
+      values.push(passwordHash);
+      paramIndex++;
+    }
+
+    if (notify_mms !== undefined) {
+      updates.push(`notify_mms = $${paramIndex}`);
+      values.push(Boolean(notify_mms));
+      paramIndex++;
+    }
+
+    if (notify_calisma !== undefined) {
+      updates.push(`notify_calisma = $${paramIndex}`);
+      values.push(Boolean(notify_calisma));
+      paramIndex++;
+    }
+
+    if (updates.length === 0) {
+      return new Response(JSON.stringify({ error: 'No valid fields to update' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    values.push(id);
+    const result = await query(
+          `UPDATE ${Tables.USERS} SET ${updates.join(', ')} WHERE id = $${paramIndex} RETURNING id, username AS nickname, full_name AS name, role, gorevi, is_active, notify_mms, notify_calisma`,
+      values
+    );
+
+    if (result.rows.length === 0) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    await logAudit({
+      userId: locals.user.id,
+      action: 'admin.user.update',
+      resourceType: 'personel',
+      resourceId: id,
+      details: {
+        name,
+        nickname,
+        role,
+        gorevi,
+        notify_mms,
+        notify_calisma,
+      },
+      ipAddress: request.headers.get('x-forwarded-for'),
+      userAgent: request.headers.get('user-agent'),
+    });
+
+    return new Response(JSON.stringify({ success: true, user: result.rows[0] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    return new Response(JSON.stringify({ error: 'Failed to update user' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+};
+
+// DELETE - Delete user (sadece yönetici)
+export const DELETE: APIRoute = async ({ params, locals }) => {
+  if (!locals.user || locals.user.role !== 'yonetici') {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  const { id } = params;
+
+  if (!id) {
+    return new Response(JSON.stringify({ error: 'User ID required' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  // Prevent self-deletion
+  if (id === locals.user.id) {
+    return new Response(JSON.stringify({ error: 'Cannot delete your own account' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+
+  try {
+    await ensureAppSchema();
+    // Delete user's sessions first
+      await query(`DELETE FROM ${Tables.SESSIONS} WHERE user_id = $1`, [id]);
+      await query(`DELETE FROM ${Tables.REFRESH_TOKENS} WHERE user_id = $1`, [id]);
+    
+    // Delete user
+      const result = await query(`DELETE FROM ${Tables.USERS} WHERE id = $1 RETURNING id`, [id]);
+
+    if (result.rows.length === 0) {
+      return new Response(JSON.stringify({ error: 'User not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    await logAudit({
+      userId: locals.user.id,
+      action: 'admin.user.delete',
+      resourceType: 'personel',
+      resourceId: id,
+      details: {},
+    });
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return new Response(JSON.stringify({ error: 'Failed to delete user' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+};

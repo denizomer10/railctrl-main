@@ -1,0 +1,162 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="İdari Çizelge">
+  <section class="idari-section">
+    <header class="idari-header">
+      <div class="idari-copy">
+        <h2 data-pages="title">İdari Ceza Çizelgesi</h2>
+      </div>
+    </header>
+
+    <div class="idari-viewer" id="idari-viewer">
+      <div class="idari-image-container" id="idari-image-container">
+        <img
+          id="idari-image"
+          src="/files/ceza-miktarlari.webp"
+          alt="İdari ceza çizelgesi"
+          draggable="false"
+        />
+      </div>
+      <div class="zoom-indicator" id="idari-zoom-indicator">100%</div>
+    </div>
+  </section>
+
+<script>
+  import { initZoomViewer } from '../scripts/zoom-viewer';
+  initZoomViewer({ viewer: 'idari-viewer', container: 'idari-image-container', indicator: 'idari-zoom-indicator' });
+</script>
+</PageLayout>
+
+<style>
+  .idari-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .idari-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .idari-copy {
+    width: 100%;
+  }
+
+  .idari-copy h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .idari-copy p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    line-height: 1.6;
+  }
+
+  html[data-theme="dark"] .idari-copy p {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .idari-viewer {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    max-height: 80vh;
+    background: #f5f7fb;
+    border-radius: 16px;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .idari-viewer:active,
+  .idari-viewer.dragging {
+    cursor: grabbing;
+  }
+
+  .idari-image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+  }
+
+  .idari-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .zoom-indicator {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(27, 40, 69, 0.85);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .zoom-indicator.show {
+    opacity: 1;
+  }
+
+  .idari-hints {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    margin: 0;
+    list-style: none;
+  }
+
+  .idari-hints li {
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  html[data-theme="dark"] .idari-viewer {
+    background: #0e1525;
+    border-color: rgba(102, 126, 234, 0.25);
+  }
+
+  @media (max-width: 768px) {
+    .idari-viewer {
+      height: 60vh;
+      min-height: 320px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .idari-viewer {
+      height: 55vh;
+      min-height: 280px;
+    }
+  }
+</style>
+

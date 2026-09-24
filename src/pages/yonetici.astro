@@ -1,0 +1,988 @@
+---
+const user = Astro.locals.user;
+if (!user || user.role !== 'yonetici') {
+  return Astro.redirect('/403');
+}
+const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
+---
+
+<!doctype html>
+<html lang="tr" data-asset-version={assetVersion}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Yönetici İşlemleri - Tren Yönetim Sistemi</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#1b2845" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
+    <script is:inline>
+      try {
+        var __savedLanguage = localStorage.getItem('lang');
+        var __systemLanguage = navigator.languages?.[0] || navigator.language || 'en';
+        document.documentElement.lang = __savedLanguage === 'tr' || __savedLanguage === 'en'
+          ? __savedLanguage
+          : (__systemLanguage.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+      } catch (e) { document.documentElement.lang = 'en'; }
+      try {
+        var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', __t);
+      } catch (e) {}
+    </script>
+    <script>
+      import { initShell } from '../scripts/app-shell';
+      import { initLocalization } from '../scripts/localization';
+      initShell({ assetVersion: document.documentElement.dataset.assetVersion });
+      initLocalization();
+    </script>
+    <style is:global>
+      :root {
+        --bg: #f5f8ff;
+        --surface: #ffffff;
+        --surface-2: #f8fbff;
+        --line: #d9e4f7;
+        --text: #1f2a44;
+        --muted: #60708d;
+        --primary: #1d4ed8;
+        --primary-2: #2563eb;
+        --ok: #16a34a;
+        --danger: #dc2626;
+        --shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+        --glass-bg: rgba(255, 255, 255, 0.58);
+        --glass-bg-strong: rgba(255, 255, 255, 0.7);
+        --glass-border: rgba(148, 163, 184, 0.35);
+      }
+
+      html[data-theme='dark'] {
+        --bg: #0b1220;
+        --surface: #111827;
+        --surface-2: #0f172a;
+        --line: #2f3b51;
+        --text: #e5edf8;
+        --muted: #9fb0cc;
+        --primary: #3b82f6;
+        --primary-2: #60a5fa;
+        --ok: #22c55e;
+        --danger: #ef4444;
+        --shadow: 0 10px 24px rgba(2, 6, 23, 0.45);
+        --glass-bg: rgba(15, 23, 42, 0.68);
+        --glass-bg-strong: rgba(15, 23, 42, 0.8);
+        --glass-border: rgba(96, 165, 250, 0.25);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        color: var(--text);
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background:
+          radial-gradient(1000px 420px at 12% -10%, rgba(37, 99, 235, 0.12), transparent 70%),
+          radial-gradient(900px 380px at 100% -10%, rgba(14, 116, 144, 0.1), transparent 70%),
+          var(--bg);
+        overflow-x: hidden;
+      }
+
+      .admin-layout {
+        min-height: 100vh;
+        position: relative;
+        padding: 1rem;
+        overflow-x: clip;
+        max-width: 100%;
+      }
+
+      .sidebar {
+        width: min(300px, calc(100vw - 1.5rem));
+        border-radius: 20px;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg-strong);
+        color: var(--text);
+        -webkit-backdrop-filter: blur(14px) saturate(145%);
+        backdrop-filter: blur(14px) saturate(145%);
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        box-shadow: 0 20px 42px rgba(15, 23, 42, 0.22);
+        position: fixed;
+        left: 0.75rem;
+        top: 0.75rem;
+        bottom: 0.75rem;
+        z-index: 2100;
+        overflow: auto;
+        transform: translateX(calc(-100% - 1.1rem));
+        transition: transform 0.24s ease;
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .brand {
+        text-align: center;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--glass-border);
+      }
+
+      .brand .logo {
+        font-size: 4rem;
+        line-height: 1;
+        filter: drop-shadow(0 8px 20px rgba(0,0,0,.35));
+      }
+
+      .brand h1 {
+        margin: 0.6rem 0 0;
+        font-size: 1.75rem;
+        color: var(--text);
+      }
+
+      .menu {
+        display: grid;
+        gap: 0.55rem;
+      }
+
+      .mobile-menu-tools {
+        display: none;
+      }
+
+      .menu-btn {
+        appearance: none;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 0.7rem 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: .2s ease;
+      }
+
+      .menu-ico {
+        font-size: 0.95rem;
+        opacity: 0.9;
+      }
+
+      .menu-btn:hover,
+      .menu-btn.active {
+        background: linear-gradient(140deg, rgba(59,130,246,.22), rgba(14,165,233,.2));
+        border-color: color-mix(in srgb, var(--glass-border) 38%, #60a5fa 62%);
+      }
+
+      .right {
+        display: grid;
+        gap: 1rem;
+        grid-template-rows: auto 1fr;
+        transition: margin-left .24s ease;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .right.with-menu {
+        margin-left: 316px;
+      }
+
+      .topbar {
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 0.75rem 0.9rem;
+        box-shadow: var(--shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .top-head {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        min-width: 0;
+      }
+
+      .topbar h2 {
+        margin: 0;
+        font-size: 1.15rem;
+      }
+
+      .muted {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+
+      .btn {
+        border: 1px solid transparent;
+        border-radius: 10px;
+        padding: 0.52rem 0.75rem;
+        font-size: 0.83rem;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .btn.primary {
+        background: linear-gradient(135deg, var(--primary), var(--primary-2));
+        color: #fff;
+      }
+
+      .btn.soft {
+        background: var(--glass-bg);
+        color: var(--text);
+        border-color: var(--glass-border);
+      }
+
+      .btn.danger {
+        background: rgba(239, 68, 68, 0.14);
+        color: var(--danger);
+        border-color: rgba(239, 68, 68, 0.24);
+      }
+
+      .btn.icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.42rem;
+      }
+
+      .icon-only {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+      }
+
+      .refresh-icon {
+        display: inline-block;
+        font-size: 1rem;
+      }
+
+      .refresh-icon.spin {
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .theme-btn {
+        min-width: 130px;
+        justify-content: space-between;
+      }
+
+      .theme-pill {
+        width: 42px;
+        height: 22px;
+        border-radius: 999px;
+        border: 1px solid var(--glass-border);
+        background: rgba(15, 23, 42, 0.14);
+        display: inline-flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 0.25rem;
+        position: relative;
+      }
+
+      .theme-pill::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        left: 2px;
+        top: 2px;
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        transition: transform 0.22s ease;
+      }
+
+      .theme-pill.to-light::after {
+        transform: translateX(20px);
+        background: linear-gradient(135deg, #fde68a, #f59e0b);
+      }
+
+      .theme-pill .sun,
+      .theme-pill .moon {
+        font-size: 0.72rem;
+        opacity: 0.8;
+      }
+
+      .audit-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .records-toolbar {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) auto auto;
+        gap: 0.45rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .records-pager {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        margin-top: 0.7rem;
+      }
+
+      .panel {
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 16px;
+        padding: 0.9rem;
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+        min-width: 0;
+      }
+
+      .panel-title {
+        margin: 0 0 0.65rem;
+        font-size: 1rem;
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0,1fr));
+        gap: 0.65rem;
+      }
+
+      .card {
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        border-radius: 12px;
+        padding: 0.68rem;
+      }
+
+      .card .k { font-size: 0.78rem; color: var(--muted); }
+      .card .v { font-size: 1.4rem; font-weight: 800; margin-top: 0.2rem; }
+
+      .split {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 1rem;
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0,1fr)) auto;
+        gap: 0.45rem;
+        min-width: 0;
+      }
+
+      input, select {
+        width: 100%;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 0.56rem 0.62rem;
+        font-size: 0.86rem;
+      }
+
+      .table-wrap {
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .82rem;
+      }
+      th, td { border-bottom: 1px solid var(--line); padding: .48rem .4rem; text-align: left; vertical-align: top; }
+      th { font-size: .74rem; color: var(--muted); text-transform: uppercase; letter-spacing: .35px; }
+
+      td {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+      }
+
+      .tag { display: inline-block; border-radius: 999px; padding: .16rem .48rem; font-size: .72rem; font-weight: 800; }
+      .tag.active { background: rgba(34,197,94,.15); color: var(--ok); }
+      .tag.passive { background: rgba(239,68,68,.14); color: var(--danger); }
+      .tag.role { background: rgba(59,130,246,.16); color: var(--primary); }
+
+      .actions { display: flex; gap: .35rem; flex-wrap: wrap; }
+
+      .user-mobile-list {
+        display: none;
+      }
+
+      .user-mobile-card {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--glass-bg);
+        padding: 0.6rem;
+        margin-bottom: 0.55rem;
+      }
+
+      .user-mobile-row {
+        display: grid;
+        grid-template-columns: 110px minmax(0, 1fr);
+        gap: 0.4rem;
+        align-items: start;
+        padding: 0.3rem 0;
+        border-bottom: 1px dashed color-mix(in srgb, var(--line) 75%, transparent 25%);
+      }
+
+      .user-mobile-row:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .user-mobile-k {
+        font-size: 0.72rem;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.2px;
+      }
+
+      .user-mobile-v {
+        min-width: 0;
+        word-break: break-word;
+        overflow-wrap: anywhere;
+        font-size: 0.84rem;
+      }
+
+      .user-mobile-actions {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 0.4rem;
+      }
+
+      .user-mobile-actions .btn {
+        width: 100%;
+        padding-left: 0.35rem;
+        padding-right: 0.35rem;
+        font-size: 0.76rem;
+      }
+
+      .empty {
+        border: 1px dashed var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        color: var(--muted);
+      }
+
+      .toast {
+        position: fixed;
+        right: 1rem;
+        bottom: 1rem;
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        padding: .65rem .8rem;
+        box-shadow: var(--shadow);
+        z-index: 4000;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 5000;
+        display: grid;
+        place-items: center;
+        background: rgba(0,0,0,.35);
+      }
+
+      .modal-box {
+        width: min(560px, calc(100vw - 2rem));
+        background: var(--glass-bg-strong);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: .9rem;
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .menu-toggle {
+        min-width: 42px;
+      }
+
+      .mobile-drawer-toggle {
+        display: none;
+        position: fixed;
+        left: 0.85rem;
+        top: 0.85rem;
+        z-index: 2300;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg-strong);
+        color: var(--text);
+        border-radius: 12px;
+        padding: 0.5rem 0.65rem;
+        font-size: 0.92rem;
+        font-weight: 800;
+        box-shadow: var(--shadow);
+        -webkit-backdrop-filter: blur(12px) saturate(145%);
+        backdrop-filter: blur(12px) saturate(145%);
+      }
+
+      .menu-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.28);
+        z-index: 2000;
+      }
+
+      html[data-theme='dark'] .menu-backdrop {
+        background: rgba(2, 6, 23, 0.48);
+      }
+
+      .modal-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: .65rem;
+      }
+
+      .modal-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: .5rem;
+      }
+
+      .edit-user-grid {
+        grid-template-columns: 1fr;
+        gap: .8rem;
+      }
+
+      .edit-user-field {
+        display: grid;
+        gap: .25rem;
+      }
+
+      .edit-user-field label {
+        color: var(--text);
+        font-size: .86rem;
+        font-weight: 700;
+      }
+
+      .full-span {
+        grid-column: span 2;
+      }
+
+      @media (max-width: 1200px) {
+        .cards { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .split { grid-template-columns: 1fr; }
+        .form-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }
+        .records-toolbar { grid-template-columns: 1fr 1fr; }
+        .right.with-menu { margin-left: 0; }
+      }
+
+      @media (min-width: 1201px) {
+        .sidebar {
+          transform: translateX(0);
+        }
+
+        .menu-backdrop {
+          display: none;
+        }
+      }
+
+      @media (max-width: 860px) {
+        .admin-layout { padding: .65rem; }
+        .cards { grid-template-columns: 1fr; }
+        .mobile-drawer-toggle {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+        .topbar {
+          padding-top: 3rem;
+        }
+        .top-head {
+          width: 100%;
+        }
+        .top-head > div {
+          min-width: 0;
+        }
+        .topbar h2 {
+          font-size: 1.05rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+        .top-actions {
+          display: none;
+        }
+        .btn {
+          min-height: 40px;
+        }
+        .form-grid { grid-template-columns: 1fr; }
+        .records-toolbar { grid-template-columns: 1fr; }
+        .modal-grid { grid-template-columns: 1fr; }
+        .edit-user-grid { grid-template-columns: 1fr; }
+        .full-span { grid-column: span 1; }
+        .table-wrap {
+          overflow-x: auto;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: thin;
+        }
+        .table-wrap table {
+          min-width: 760px;
+          table-layout: auto;
+        }
+        .table-wrap table.users-table {
+          min-width: 100%;
+          width: 100%;
+        }
+        .table-wrap.users-desktop-table {
+          display: none;
+        }
+        .user-mobile-list {
+          display: block;
+        }
+        .sidebar {
+          width: min(300px, calc(100vw - 1rem));
+          left: 0.5rem;
+          top: 0.5rem;
+          bottom: 0.5rem;
+        }
+        .mobile-menu-tools {
+          display: grid;
+          gap: 0.5rem;
+          margin-top: auto;
+          padding-top: 0.65rem;
+          border-top: 1px solid var(--glass-border);
+        }
+        .mobile-menu-tools .btn {
+          width: 100%;
+          justify-content: center;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .table-wrap table {
+          min-width: 700px;
+          font-size: 0.79rem;
+        }
+        .user-mobile-row {
+          grid-template-columns: 92px minmax(0, 1fr);
+        }
+        .user-mobile-actions {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <style>[hidden]{display:none !important;}</style>
+    <div class="admin-layout">
+      <div class="menu-backdrop" id="menuBackdrop" hidden></div>
+      <button id="drawerToggle" class="mobile-drawer-toggle" title="Menü">
+        <span>&#9776;</span>
+        <span>Men&uuml;</span>
+      </button>
+
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <span class="logo" role="img" aria-label="Tren Yönetim Sistemi">🚂</span>
+          <h1>Y&ouml;netici &Idot;&#351;lemleri</h1>
+        </div>
+        <div class="menu" id="sideMenu">
+          <button class="menu-btn active" data-tab="dashboard"><span class="menu-ico">&#128202;</span><span>Genel Bak&imath;&#351;</span></button>
+          <button class="menu-btn" data-tab="users"><span class="menu-ico">&#128100;</span><span>Personel &Idot;&#351;lemleri</span></button>
+          <button class="menu-btn" data-tab="feedback"><span class="menu-ico">&#128172;</span><span>Geri Bildirimler</span></button>
+          <button class="menu-btn" data-tab="records"><span class="menu-ico">&#128451;</span><span>Sistem Kay&imath;tlar&imath;</span></button>
+          <button class="menu-btn" data-tab="files"><span class="menu-ico">&#128193;</span><span>Dosya Y&ouml;netimi</span></button>
+          <button class="menu-btn" data-tab="audit"><span class="menu-ico">&#129534;</span><span>Audit Kay&imath;tlar&imath;</span></button>
+          <button class="menu-btn" id="homeBtn"><span class="menu-ico">&#127968;</span><span>Ana Sayfa</span></button>
+        </div>
+        <div class="mobile-menu-tools">
+          <button class="btn soft icon" id="mRefreshBtn" title="&#350;imdi Yenile">
+            <span class="refresh-icon" id="mRefreshIcon">&#8635;</span>
+            <span>Yenile</span>
+          </button>
+          <button class="btn soft icon theme-btn" id="mThemeBtn" title="Tema De&#287;i&#351;tir">
+            <span class="theme-pill" id="mThemePill">
+              <span class="sun">&#9728;</span>
+              <span class="moon">&#9789;</span>
+            </span>
+            <span id="mThemeLabel">Gece Tema</span>
+          </button>
+        </div>
+      </aside>
+
+      <main class="right" id="mainRight">
+        <div class="topbar">
+          <div class="top-head">
+            <div>
+              <h2 id="topTitle">Y&ouml;netici Paneli</h2>
+              <div class="muted">Son &ccedil;ekilme: <span id="lastSync">-</span> &bull; Otomatik yenileme: 30 sn</div>
+            </div>
+          </div>
+          <div class="top-actions">
+            <button class="btn soft icon" id="refreshBtn" title="&#350;imdi Yenile">
+              <span class="refresh-icon" id="refreshIcon">&#8635;</span>
+              <span>Yenile</span>
+            </button>
+            <button class="btn soft icon theme-btn" id="themeBtn" title="Tema De&#287;i&#351;tir">
+              <span class="theme-pill" id="themePill">
+                <span class="sun">&#9728;</span>
+                <span class="moon">&#9789;</span>
+              </span>
+              <span id="themeLabel">Gece Tema</span>
+            </button>
+          </div>
+        </div>
+
+        <section id="tab-dashboard" class="split" data-section="dashboard">
+          <div class="panel">
+            <h3 class="panel-title">&#128200; Sistem &Ouml;zeti</h3>
+            <div class="cards" id="reportCards"></div>
+            <div class="empty" id="reportEmpty" hidden>Rapor verisi yok</div>
+          </div>
+          <div class="panel">
+            <h3 class="panel-title">Son 10 Audit</h3>
+            <div class="table-wrap" id="recentAuditWrap" hidden>
+              <table>
+                <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>Aksiyon</th></tr></thead>
+                <tbody id="recentAuditBody"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="recentAuditEmpty">Kay&imath;t yok</div>
+          </div>
+        </section>
+
+        <section id="tab-users" class="panel" data-section="users" hidden>
+          <div>
+            <h3 class="panel-title">&#10133; Personel Ekle</h3>
+            <button class="btn primary" id="openCreateBtn">Yeni Personel Ekle</button>
+          </div>
+          <div>
+            <h3 class="panel-title">&#128101; Personel Listesi</h3>
+            <div class="table-wrap users-desktop-table" id="usersDesktopWrap" hidden>
+              <table class="users-table">
+                <thead>
+                  <tr>
+                    <th>Ad Soyad</th>
+                    <th>Nickname</th>
+                    <th>Rol</th>
+                    <th>Durum</th>
+                    <th>Son Giri&#351;</th>
+                    <th>&Idot;&#351;lem</th>
+                  </tr>
+                </thead>
+                <tbody id="usersBody"></tbody>
+              </table>
+            </div>
+            <div class="user-mobile-list" id="usersMobileList"></div>
+            <div class="empty" id="usersEmpty" hidden>Personel bulunamad&imath;</div>
+          </div>
+        </section>
+
+        <section id="tab-feedback" class="panel" data-section="feedback" hidden>
+          <h3 class="panel-title">Geri Bildirimler</h3>
+          <div class="table-wrap" id="feedbackWrap" hidden>
+            <table>
+              <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>&Idot;stasyon</th><th>Mesaj</th><th>&Idot;&#351;lem</th></tr></thead>
+              <tbody id="feedbackBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="feedbackEmpty">Geri bildirim yok</div>
+        </section>
+
+        <section id="tab-records" class="panel" data-section="records" hidden>
+          <h3 class="panel-title">Sistem Genel Kay&imath;tlar&imath;</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="exportRecordsExcel"><span>&#128202;</span><span>Excel Rapor</span></button>
+            <button class="btn soft icon" id="exportRecordsCsv"><span>&#128196;</span><span>CSV Rapor</span></button>
+          </div>
+          <div class="records-toolbar">
+            <select id="recordsModule">
+              <option value="mms">MMS</option>
+              <option value="calisma">&Ccedil;al&imath;&#351;ma &Idot;zni</option>
+              <option value="dahili">Dahili Numara</option>
+              <option value="vardiya">Vardiya</option>
+              <option value="kayip_esya">Kay&imath;p E&#351;ya</option>
+            </select>
+            <input id="recordsSearch" placeholder="Kay&imath;t, konum, kullan&imath;c&imath; ara" />
+            <div class="muted" style="display:flex;align-items:center;padding:0 .2rem;">Toplam: <span id="recordsTotal">&nbsp;0</span></div>
+            <button class="btn soft" id="clearRecordsBtn">Temizle</button>
+            <button class="btn primary" id="applyRecordsBtn">Filtrele</button>
+          </div>
+          <div class="table-wrap" id="recordsTableWrap" hidden>
+            <table>
+              <thead id="recordsHead"></thead>
+              <tbody id="recordsBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="recordsEmpty">Sistem kayd&imath; bulunamad&imath;</div>
+          <div class="empty" id="recordsLoading" hidden>Y&uuml;kleniyor...</div>
+          <div class="records-pager">
+            <button class="btn soft" id="prevRecordsBtn">&Ouml;nceki</button>
+            <div class="muted">Sayfa <span id="recordsPageLabel">1 / 1</span></div>
+            <button class="btn soft" id="nextRecordsBtn">Sonraki</button>
+          </div>
+        </section>
+
+        <section id="tab-files" class="panel" data-section="files" hidden>
+          <h3 class="panel-title">Public Files Y&ouml;netimi</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="refreshFilesBtn"><span>&#8635;</span><span>Dosyalar&imath; Yenile</span></button>
+          </div>
+          <div class="table-wrap" id="filesWrap" hidden>
+            <table>
+              <thead><tr><th>Dosya</th><th>Boyut</th><th>G&uuml;ncelleme</th><th>Ba&#287;lant&imath;</th><th>&Idot;&#351;lem</th></tr></thead>
+              <tbody id="filesBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="filesEmpty">public/files i&ccedil;inde dosya bulunamad&imath;</div>
+        </section>
+
+        <section id="tab-audit" class="panel" data-section="audit" hidden>
+          <h3 class="panel-title">Audit Kay&imath;tlar&imath;</h3>
+          <div class="audit-actions">
+            <button class="btn soft icon" id="exportAuditExcel"><span>&#128202;</span><span>Excel'e Aktar</span></button>
+            <button class="btn soft icon" id="exportAuditCsv"><span>&#128196;</span><span>CSV Olarak Aktar</span></button>
+            <button class="btn danger icon" id="clearAuditBtn"><span>&#128465;</span><span>T&uuml;m&uuml;n&uuml; Sil</span></button>
+          </div>
+          <div class="table-wrap" id="auditWrap" hidden>
+            <table>
+              <thead><tr><th>Tarih</th><th>Kullan&imath;c&imath;</th><th>Aksiyon</th><th>Kaynak</th><th>IP</th></tr></thead>
+              <tbody id="auditBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="auditEmpty">Audit kayd&imath; bulunamad&imath;</div>
+        </section>
+      </main>
+
+      <div class="modal" id="createModal" hidden>
+        <div class="modal-box">
+          <div class="modal-head">
+            <strong>Yeni Personel Ekle</strong>
+            <button class="btn soft" id="closeCreateBtn">Kapat</button>
+          </div>
+          <div class="modal-grid edit-user-grid">
+            <div class="edit-user-field">
+              <label for="new-user-name">Ad Soyad</label>
+              <input id="new-user-name" placeholder="Ad Soyad" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-nickname">Nickname</label>
+              <input id="new-user-nickname" type="text" placeholder="Nickname" autocomplete="username" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-password">&#350;ifre</label>
+              <input id="new-user-password" type="password" placeholder="&#350;ifre" />
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-role">Rol</label>
+              <select id="new-user-role">
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="new-user-job">Görevi</label>
+              <select id="new-user-job">
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+            <button class="btn soft" id="cancelCreateBtn">&Idot;ptal</button>
+            <button class="btn primary" id="submitCreateBtn">Olu&#351;tur</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal" id="editModal" hidden>
+        <div class="modal-box">
+          <div class="modal-head">
+            <strong>Personel D&uuml;zenle</strong>
+            <button class="btn soft" id="closeEditBtn">Kapat</button>
+          </div>
+          <div class="modal-grid edit-user-grid">
+            <div class="edit-user-field">
+              <label for="edit-user-name">Ad Soyad</label>
+              <input id="edit-user-name" placeholder="Ad Soyad" />
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-nickname">Nickname</label>
+              <input id="edit-user-nickname" type="text" placeholder="Nickname" autocomplete="username" />
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-role">Rol</label>
+              <select id="edit-user-role">
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-job">Görevi</label>
+              <select id="edit-user-job">
+                <option value="personel">Personel</option>
+                <option value="yonetici">Yönetici</option>
+              </select>
+            </div>
+            <div class="edit-user-field">
+              <label for="edit-user-password">Yeni &#350;ifre</label>
+              <input id="edit-user-password" type="password" placeholder="Yeni &#351;ifre (opsiyonel)" />
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:.5rem;margin-top:.75rem;">
+            <button class="btn soft" id="cancelEditBtn">&Idot;ptal</button>
+            <button class="btn primary" id="saveEditBtn">Kaydet</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="toast" id="toast" hidden></div>
+      <button id="adminLanguageToggle" type="button" class="btn soft" style="position:fixed;right:1rem;bottom:1rem;z-index:1000">EN</button>
+    </div>
+
+    <script>
+      import { finalizeShell } from '../scripts/app-shell';
+      import { getPreferredLanguage, initLocalization } from '../scripts/localization';
+      finalizeShell({ enablePwa: true, responsiveTables: true });
+      initLocalization();
+      const languageToggle = document.getElementById('adminLanguageToggle');
+      const updateLanguageToggle = () => {
+        const language = getPreferredLanguage();
+        languageToggle!.textContent = language === 'tr' ? 'EN' : 'TR';
+        languageToggle!.setAttribute('aria-label', language === 'tr' ? 'Switch to English' : 'Türkçeye geç');
+      };
+      updateLanguageToggle();
+      languageToggle?.addEventListener('click', () => {
+        localStorage.setItem('lang', getPreferredLanguage() === 'tr' ? 'en' : 'tr');
+        window.location.reload();
+      });
+    </script>
+
+    <script>
+  import { initYonetici } from '../scripts/yonetici';
+  initYonetici();
+</script>
+  </body>
+</html>

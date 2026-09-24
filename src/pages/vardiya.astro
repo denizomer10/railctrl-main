@@ -1,0 +1,605 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+const user = Astro.locals.user;
+const isManager = user?.role === 'yonetici';
+const months = [
+  { value: 1, label: 'Ocak' },
+  { value: 2, label: 'Şubat' },
+  { value: 3, label: 'Mart' },
+  { value: 4, label: 'Nisan' },
+  { value: 5, label: 'Mayıs' },
+  { value: 6, label: 'Haziran' },
+  { value: 7, label: 'Temmuz' },
+  { value: 8, label: 'Ağustos' },
+  { value: 9, label: 'Eylül' },
+  { value: 10, label: 'Ekim' },
+  { value: 11, label: 'Kasım' },
+  { value: 12, label: 'Aralık' },
+];
+const shiftOptions = [
+  { value: 'sabah', label: 'Sabah (08:00 - 16:00)' },
+  { value: 'ara', label: 'Ara (16:00 - 00:00)' },
+  { value: 'gece', label: 'Gece (00:00 - 08:00)' },
+];
+const dayOptions = ['Pazartesi', 'Salı', 'Çarşamba', 'Perşembe', 'Cuma', 'Cumartesi', 'Pazar'];
+const leaveTypeOptions = [
+  { value: 'YI', label: 'YI - Yıllık İzin' },
+  { value: 'MI', label: 'MI - Mazeret İzni' },
+  { value: 'UOG', label: 'UOG - Ücretsiz İzin' },
+  { value: 'EL', label: 'EL - Evlenme İzni' },
+  { value: 'DI', label: 'DI - Doğum İzni' },
+  { value: 'OL', label: 'OL - Ölüm İzni' },
+  { value: 'R', label: 'R - Raporlu' },
+  { value: 'RT', label: 'RT - Resmi Tatil' },
+  { value: 'TKS', label: 'TKS - Takas' },
+  { value: 'IDR', label: 'IDR - İdari İzin' },
+];
+---
+
+<PageLayout title="Vardiya">
+  <div class="vardiya-page modern-records-page" id="vardiya-root" data-is-manager={isManager ? "1" : "0"} data-user-station={user?.station ?? ""}>
+    <div class="page-header">
+      <div>
+        <h1>Vardiya</h1>
+        <p>İstasyon bazlı aylık vardiya planlama ve görüntüleme</p>
+      </div>
+      {isManager && (
+        <div class="header-actions">
+          <button id="newPlanBtn" class="btn-primary">Vardiya Oluştur</button>
+          <button id="printBtn" class="btn-secondary" disabled>PDF Oluştur</button>
+          <button id="excelBtn" class="btn-secondary" disabled>Excel Oluştur</button>
+        </div>
+      )}
+    </div>
+
+    <div class="toolbar">
+      {isManager && (
+        <input id="stationFilter" type="text" placeholder="İstasyon ara" />
+      )}
+      <select id="monthFilter">
+        {months.map((m) => <option value={m.value}>{m.label}</option>)}
+      </select>
+    </div>
+
+    <div id="message" class="message" style="display:none"></div>
+
+    <div id="currentCard" class="current-card" style="display:none">
+      <div class="current-head">
+        <h3 id="cardTitle">Vardiya</h3>
+        {isManager && (
+          <div class="row-actions">
+            <button id="editBtn" class="btn-secondary" disabled>Düzenle</button>
+            <button id="deleteBtn" class="btn-danger" disabled>Kaldır</button>
+          </div>
+        )}
+      </div>
+      <div id="weekSummary" class="week-summary"></div>
+      <div id="printArea" class="print-area">
+        <div id="matrixSvgWrap" class="matrix-host"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="planModal" class="modal-overlay" style="display:none">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="modalTitle">Vardiya Oluştur</h3>
+        <button id="closeModal" class="btn-close">✕</button>
+      </div>
+      <form id="planForm" class="form-grid">
+        <input type="hidden" id="planId" />
+        <label>İstasyon
+          <input id="planStation" type="text" required />
+        </label>
+        <label>Ay
+          <select id="planMonth" required>
+            {months.map((m) => <option value={m.value}>{m.label}</option>)}
+          </select>
+        </label>
+
+        <label>Personel Seç
+          <select id="personWeekTarget">
+            <option value="1">1. Personel</option>
+            <option value="2">2. Personel</option>
+            <option value="3">3. Personel</option>
+            <option value="4">4. Personel</option>
+          </select>
+        </label>
+
+        <div class="week-grid">
+          <label>1. Hafta <select id="hafta1">{shiftOptions.map((o) => <option value={o.value}>{o.label}</option>)}</select></label>
+          <label>2. Hafta <select id="hafta2">{shiftOptions.map((o) => <option value={o.value}>{o.label}</option>)}</select></label>
+          <label>3. Hafta <select id="hafta3">{shiftOptions.map((o) => <option value={o.value}>{o.label}</option>)}</select></label>
+          <label>4. Hafta <select id="hafta4">{shiftOptions.map((o) => <option value={o.value}>{o.label}</option>)}</select></label>
+          <label>5. Hafta <select id="hafta5">{shiftOptions.map((o) => <option value={o.value}>{o.label}</option>)}</select></label>
+        </div>
+
+        <div class="personel-box">
+          <h4>Personel (max 4)</h4>
+          <div class="person-row person-row-head">
+            <span>Personel Ad Soyad</span>
+            <span>Dinlenme</span>
+          </div>
+          {[1,2,3,4].map((i) => (
+            <div class="person-row">
+              <input id={`person_name_${i}`} placeholder={`Personel ${i} Ad Soyad`} />
+              <select id={`person_off_${i}`}>
+                {dayOptions.map((d) => <option value={d}>{d}</option>)}
+              </select>
+            </div>
+          ))}
+          <div class="izin-box">
+            <h4>İzin Günü Seçimi</h4>
+          <div class="izin-controls">
+            <label>Personel
+              <select id="izinPersonTarget">
+                  <option value="1">1. Personel</option>
+                  <option value="2">2. Personel</option>
+                  <option value="3">3. Personel</option>
+                  <option value="4">4. Personel</option>
+              </select>
+            </label>
+            <label>Tarih
+              <input id="izinDay" type="date" />
+            </label>
+            <label>Başlangıç
+              <input id="izinStartDay" type="date" />
+            </label>
+            <label>Bitiş
+              <input id="izinEndDay" type="date" />
+            </label>
+            <label>İzin Tipi
+              <select id="izinType">
+                {leaveTypeOptions.map((o) => <option value={o.value}>{o.label}</option>)}
+              </select>
+            </label>
+            <button type="button" id="addIzinBtn" class="btn-secondary">İzin Ekle</button>
+            <button type="button" id="addRangeIzinBtn" class="btn-secondary">Hızlı Aralık Ekle</button>
+          </div>
+            <div id="izinList" class="izin-list"></div>
+          </div>
+        </div>
+
+        <div id="saveMessage" class="message" style="display:none"></div>
+        <div class="form-actions">
+          <button type="button" id="cancelModal" class="btn-secondary">İptal</button>
+          <button type="submit" id="saveBtn" class="btn-primary">Oluştur</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<script>
+  import { initVardiya } from '../scripts/vardiya';
+  initVardiya();
+</script>
+</PageLayout>
+
+
+<style>
+  :global(main) {
+    width: min(1500px, 100%);
+    max-width: 100%;
+    padding: 1rem;
+    box-sizing: border-box;
+    overflow-x: hidden;
+  }
+
+  .vardiya-page {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+    display: grid;
+    gap: 14px;
+    overflow-x: hidden;
+  }
+
+  .page-header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:14px;
+    padding:18px;
+    border-radius:16px;
+    border:1px solid #dce8f5;
+    background:linear-gradient(140deg, #f9fcff 0%, #eef6ff 100%);
+  }
+  .page-header h1 { margin:0; font-size:1.5rem; }
+  .page-header p { margin:4px 0 0; color:#4b5563; font-weight:500; }
+
+  .toolbar {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    padding:10px;
+    border-radius:14px;
+    border:1px solid #dce7f3;
+    background:#f9fbff;
+  }
+
+  .toolbar select {
+    min-width: 150px;
+    padding:10px 12px;
+    border:1px solid #cfdae8;
+    border-radius:10px;
+    background:#fff;
+    font-weight:600;
+  }
+
+  .btn-primary, .btn-secondary, .btn-danger {
+    border:0;
+    border-radius:10px;
+    padding:10px 14px;
+    font-weight:700;
+    cursor:pointer;
+  }
+  .btn-primary { background:#0f766e; color:#fff; }
+  .btn-secondary { background:#e8eef7; color:#1f2937; }
+  .btn-danger { background:#dc2626; color:#fff; }
+  .header-actions, .row-actions { display:flex; gap:8px; }
+
+  .message { padding:10px 12px; border-radius:10px; font-weight:600; }
+  .message.ok { background:#dcfce7; color:#166534; }
+  .message.err { background:#fee2e2; color:#991b1b; }
+  .message.warn { background:#fef3c7; color:#92400e; }
+
+  .current-card {
+    border:1px solid #dbe6f4;
+    border-radius:14px;
+    background:#fff;
+    padding:14px;
+    box-shadow:0 8px 18px rgba(15, 23, 42, 0.06);
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .current-head {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:12px;
+    margin-bottom:10px;
+  }
+  .current-head h3 { margin:0; font-size:1.45rem; }
+
+  .week-summary {
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+    gap:8px;
+    margin-bottom:12px;
+  }
+  .week-item {
+    padding:10px 12px;
+    border:1px solid #e2eaf5;
+    border-radius:10px;
+    background:#f6f9fe;
+  }
+  .week-item-title { font-weight:700; margin-bottom:6px; }
+  .week-item-line { margin:2px 0; }
+
+  .print-area {
+    border:1px solid #d7e3ef;
+    border-radius:12px;
+    padding:12px;
+    background:#fcfdff;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .matrix-host { width:100%; }
+
+  :global(.schedule-shell) {
+    border:1px solid #d5e2ef;
+    border-radius:12px;
+    background:#fff;
+    padding:14px;
+  }
+  :global(.matrix-title) {
+    margin:0 0 10px;
+    text-align:center;
+    font-size:1.55rem;
+    letter-spacing:.2px;
+    font-weight:800;
+    color:#1e293b;
+  }
+
+  :global(.schedule-table-wrap) {
+    width:100%;
+    max-width:100%;
+    overflow-x:auto;
+    overflow-y:hidden;
+    border:1px solid #1f2937;
+    border-radius:8px;
+    box-sizing:border-box;
+    background:#fff;
+  }
+
+  :global(.schedule-table) {
+    width:max-content;
+    min-width:100%;
+    border-collapse:collapse;
+    table-layout:fixed;
+    background:#fff;
+  }
+  :global(.schedule-table .col-left) { width:220px; }
+  :global(.schedule-table .col-day) { width:40px; }
+
+  :global(.schedule-table th),
+  :global(.schedule-table td) {
+    border:1px solid #1f2937;
+    height:28px;
+    padding:0 2px;
+    text-align:center;
+    font-size:12px;
+    line-height:1.05;
+    white-space:nowrap;
+  }
+  :global(.schedule-table .left-col) {
+    position:sticky;
+    left:0;
+    z-index:3;
+    background:#f8fafc;
+    font-weight:700;
+  }
+  :global(.schedule-table thead th) {
+    position:sticky;
+    top:0;
+    z-index:4;
+    background:#f1f5f9;
+    font-weight:800;
+  }
+  :global(.schedule-table thead .left-col) { z-index:5; }
+  :global(.schedule-table .day-head.sun) { background:#fff200; }
+  :global(.schedule-table .day-num) { background:#f6e9d2; font-weight:700; }
+  :global(.schedule-table .off-day) { background:#f8fafc; font-weight:600; }
+  :global(.schedule-table .name) { background:#eef3f9; font-weight:800; }
+  :global(.schedule-table td.off) { background:#8db5ea; font-weight:700; }
+  :global(.schedule-table td.leave) { background:#fecaca; color:#7f1d1d; font-weight:800; }
+  :global(.schedule-table tr.name-row th),
+  :global(.schedule-table tr.name-row td) { border-top-width:2px; }
+  :global(.schedule-table .no-personel) { padding:18px; font-size:14px; font-weight:700; }
+
+  :global(.matrix-legend) {
+    margin:10px 0 4px;
+    text-align:center;
+    font-size:12px;
+    color:#334155;
+  }
+  :global(.matrix-shift-legend) {
+    margin:0;
+    text-align:center;
+    font-size:13px;
+    font-weight:800;
+    color:#1f2937;
+  }
+
+  :global(body.modal-open) {
+    overflow: hidden !important;
+  }
+
+  .modal-overlay {
+    position:fixed;
+    inset:0;
+    background:rgba(2, 6, 23, 0.5);
+    -webkit-backdrop-filter:blur(10px) saturate(110%);
+    backdrop-filter:blur(10px) saturate(110%);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:22000;
+    padding:1.25rem;
+    overflow-y:auto;
+  }
+  .modal-content {
+    width:min(740px, calc(100vw - 2rem));
+    max-height:none;
+    height:auto;
+    overflow:visible;
+    background:#fff;
+    border:1px solid #d1d9e6;
+    border-radius:18px;
+    padding:16px;
+    box-shadow:0 30px 80px rgba(2, 6, 23, 0.55);
+    display:flex;
+    flex-direction:column;
+    margin:auto;
+  }
+  .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; position:sticky; top:0; background:inherit; z-index:2; padding-bottom:10px; border-bottom:1px solid #dbe4f1; }
+  .btn-close { border:0; background:transparent; font-size:1.4rem; cursor:pointer; }
+  .form-grid { display:grid; gap:10px; overflow:visible; min-height:0; }
+  .form-grid label { display:grid; gap:6px; font-weight:600; }
+  .form-grid input, .form-grid select { padding:8px 10px; border:1px solid #d1d5db; border-radius:8px; }
+  .week-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin-top:4px; }
+  .personel-box { border:1px dashed #d1d5db; border-radius:10px; padding:10px; }
+  .personel-box h4 { margin:0 0 10px; }
+  .izin-box {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed #d1d5db;
+  }
+  .izin-controls {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    align-items: end;
+  }
+  .izin-list {
+    margin-top: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .izin-empty {
+    font-size: 12px;
+    color: #64748b;
+  }
+  .izin-chip {
+    border: 1px solid #d1d5db;
+    background: #f8fafc;
+    color: #0f172a;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .person-row { display:grid; grid-template-columns:1.5fr 1fr; gap:8px; margin-bottom:8px; }
+  .person-row-head { margin-bottom:6px; font-size:12px; font-weight:700; color:#64748b; }
+  .person-row-head span:last-child { text-align:right; }
+  .form-actions {
+    display:flex;
+    justify-content:flex-end;
+    gap:8px;
+    margin-top:10px;
+    padding-top:10px;
+    border-top:1px solid #dbe4f1;
+    position:static;
+  }
+
+  @media (max-width: 900px) {
+    .page-header { padding:14px; }
+    .current-head { align-items:flex-start; flex-direction:column; }
+    .header-actions { width:100%; }
+    .header-actions .btn-primary,
+    .header-actions .btn-secondary { flex:1; }
+    :global(.matrix-title) { font-size:1.15rem; }
+    :global(.schedule-table .col-left) { width:160px; }
+    :global(.schedule-table .col-day) { width:34px; }
+    :global(.schedule-table th),
+    :global(.schedule-table td) { font-size:11px; height:24px; }
+    :global(.matrix-legend),
+    :global(.matrix-shift-legend) { font-size:11px; }
+    .modal-overlay { padding:.5rem; align-items:flex-start; }
+    .modal-content {
+      width:min(100%, 640px);
+      height:auto;
+      max-height:none;
+      border-radius:12px;
+      padding:14px;
+    }
+    .week-grid { grid-template-columns:1fr; }
+    .person-row { grid-template-columns:1fr; }
+    .izin-controls { grid-template-columns:1fr; }
+  }
+
+  @media (max-width: 560px) {
+    .modal-overlay { padding:.4rem; }
+    .modal-content { width:100%; padding:12px; border-radius:10px; }
+    .form-grid input, .form-grid select { padding:9px 10px; }
+  }
+
+  @media print {
+    @page { size: A4 landscape; margin: 8mm; }
+    html, body { background:#fff !important; margin:0 !important; padding:0 !important; }
+    body.print-vardiya-only .vardiya-page,
+    body.print-vardiya-only .vardiya-page * {
+      visibility:hidden !important;
+    }
+    body.print-vardiya-only #printArea,
+    body.print-vardiya-only #printArea * {
+      visibility:visible !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    body.print-vardiya-only #printArea {
+      position:fixed !important;
+      left:0 !important;
+      top:0 !important;
+      width:100% !important;
+      max-width:none !important;
+      z-index:999999 !important;
+      border:0 !important;
+      margin:0 !important;
+      padding:0 !important;
+      background:#fff !important;
+    }
+    body.print-vardiya-only :global(.schedule-shell) { border:0 !important; padding:0 !important; }
+    body.print-vardiya-only :global(.schedule-table-wrap) { overflow:visible !important; }
+  }
+
+  [data-theme="dark"] .vardiya-page { color:#e5edf8; }
+  [data-theme="dark"] .page-header { background:linear-gradient(140deg, #0b1220 0%, #16243a 100%); border-color:#334155; }
+  [data-theme="dark"] .page-header h1 { color:#f8fafc; }
+  [data-theme="dark"] .page-header p { color:#e2e8f0; }
+  [data-theme="dark"] .toolbar { background:#0b1220; border-color:#334155; }
+  [data-theme="dark"] .toolbar select,
+  [data-theme="dark"] .form-grid input,
+  [data-theme="dark"] .form-grid select { background:#0b1220; color:#e2e8f0; border-color:#334155; }
+  [data-theme="dark"] .current-card,
+  [data-theme="dark"] .modal-content { background:#0f172a; border-color:#334155; color:#e2e8f0; }
+  [data-theme="dark"] .modal-header,
+  [data-theme="dark"] .form-actions { border-color:#334155; }
+  [data-theme="dark"] .current-card {
+    background:#0f172a;
+    border-color:#334155;
+    color:#e2e8f0;
+    box-shadow:0 18px 40px rgba(2, 6, 23, 0.6);
+  }
+  [data-theme="dark"] .current-head h3 { color:#f8fafc; }
+  [data-theme="dark"] .week-item {
+    background:#1e293b;
+    border-color:#334155;
+    color:#cbd5e1;
+  }
+  [data-theme="dark"] .week-item strong { color:#f8fafc; }
+  [data-theme="dark"] .btn-secondary { background:#334155; color:#e2e8f0; }
+  [data-theme="dark"] .print-area { background:#0f172a; border-color:#334155; }
+  [data-theme="dark"] .btn-close { color:#e2e8f0; }
+  [data-theme="dark"] .personel-box { border-color:#475569; }
+  [data-theme="dark"] .personel-box h4 { color:#f8fafc; }
+  [data-theme="dark"] .izin-box { border-top-color:#475569; }
+  [data-theme="dark"] .izin-empty { color:#94a3b8; }
+  [data-theme="dark"] .izin-chip {
+    background:#111827;
+    border-color:#334155;
+    color:#e2e8f0;
+  }
+  [data-theme="dark"] .person-row-head { color:#cbd5e1; }
+  [data-theme="dark"] .form-grid label { color:#e2e8f0; }
+  [data-theme="dark"] .modal-header h3 { color:#f8fafc; }
+  [data-theme="dark"] .message.ok { background:#14532d; color:#dcfce7; }
+  [data-theme="dark"] .message.err { background:#7f1d1d; color:#fee2e2; }
+  [data-theme="dark"] .message.warn { background:#78350f; color:#fef3c7; }
+
+  [data-theme="dark"] :global(.schedule-shell),
+  [data-theme="dark"] :global(.schedule-table-wrap),
+  [data-theme="dark"] :global(.schedule-table) { background:#fff; color:#0f172a !important; }
+  [data-theme="dark"] :global(.matrix-title) { color:#0f172a !important; }
+  [data-theme="dark"] :global(.matrix-legend),
+  [data-theme="dark"] :global(.matrix-shift-legend) { color:#1f2937 !important; }
+  [data-theme="dark"] :global(.schedule-table th),
+  [data-theme="dark"] :global(.schedule-table td) { color:#0f172a !important; }
+  [data-theme="dark"] :global(.schedule-table td.leave) { background:#fca5a5 !important; color:#7f1d1d !important; }
+
+  /* Scoped + dynamic table conflict fix: force global dark-mode selectors */
+  :global(html[data-theme="dark"] .vardiya-page .current-card) {
+    background:#0f172a !important;
+    border-color:#334155 !important;
+    color:#e2e8f0 !important;
+  }
+  :global(html[data-theme="dark"] .vardiya-page .current-head h3),
+  :global(html[data-theme="dark"] .vardiya-page .week-item strong) {
+    color:#f8fafc !important;
+  }
+  :global(html[data-theme="dark"] .vardiya-page .week-item) {
+    color:#cbd5e1 !important;
+  }
+
+  :global(html[data-theme="dark"] .vardiya-page .schedule-shell),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table-wrap),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table) {
+    background:#ffffff !important;
+  }
+  :global(html[data-theme="dark"] .vardiya-page .matrix-title),
+  :global(html[data-theme="dark"] .vardiya-page .matrix-legend),
+  :global(html[data-theme="dark"] .vardiya-page .matrix-shift-legend),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table th),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table td),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table .left-col),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table .name),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table .off-day),
+  :global(html[data-theme="dark"] .vardiya-page .schedule-table .day-num) {
+    color:#0f172a !important;
+    opacity:1 !important;
+    text-shadow:none !important;
+  }
+</style>

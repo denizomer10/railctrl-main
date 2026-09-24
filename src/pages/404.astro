@@ -1,0 +1,341 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="Sayfa Bulunamadı">
+  <div class="error-container">
+    <div class="error-content">
+      <div class="error-icon">
+        <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="15" y1="9" x2="9" y2="15"></line>
+          <line x1="9" y1="9" x2="15" y2="15"></line>
+        </svg>
+      </div>
+      
+      <h1>404</h1>
+      <h2>Sayfa Bulunamadı</h2>
+      
+      <p class="error-message">
+        Aradığınız sayfa mevcut değil veya taşınmış olabilir.
+      </p>
+      
+      <p class="error-description">
+        Sayfa bağlantısı değişmiş veya kaldırılmış olabilir.
+        <br />
+        Lütfen bağlantınızı kontrol edin veya ana sayfadan devam edin.
+      </p>
+      
+      <div class="action-buttons">
+        <a href="/" class="btn btn-primary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+          Ana Sayfaya Dön
+        </a>
+        
+        <button onclick="history.back()" class="btn btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+          </svg>
+          Geri Dön
+        </button>
+      </div>
+      
+      <div class="quick-links">
+        <p class="quick-links-title">Popüler Sayfalar:</p>
+        <div class="links-grid">
+          <a href="/calisma-izni" class="quick-link">📋 Çalışma İzni</a>
+          <a href="/dahili-numaralar" class="quick-link">📞 Dahili Numaralar</a>
+          <a href="/notlar" class="quick-link">📝 Notlar</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .error-container {
+      min-height: calc(100vh - 80px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .error-container::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 50px 50px;
+      animation: moveBackground 20s linear infinite;
+    }
+
+    @keyframes moveBackground {
+      0% { transform: translate(0, 0); }
+      100% { transform: translate(50px, 50px); }
+    }
+
+    html[data-theme="dark"] .error-container {
+      background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+    }
+
+    .error-content {
+      text-align: center;
+      max-width: 650px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      padding: 3rem 2rem;
+      border-radius: 24px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      animation: fadeInUp 0.6s ease-out;
+      position: relative;
+      z-index: 1;
+    }
+
+    html[data-theme="dark"] .error-content {
+      background: rgba(26, 32, 44, 0.95);
+      color: #e2e8f0;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .error-icon {
+      margin: 0 auto 2rem;
+      width: 120px;
+      height: 120px;
+      color: #f5576c;
+      animation: shake 2s infinite;
+    }
+
+    @keyframes shake {
+      0%, 100% {
+        transform: rotate(0deg);
+      }
+      25% {
+        transform: rotate(-5deg);
+      }
+      75% {
+        transform: rotate(5deg);
+      }
+    }
+
+    h1 {
+      font-size: 6rem;
+      font-weight: 900;
+      margin: 0;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+    }
+
+    html[data-theme="dark"] h1 {
+      background: linear-gradient(135deg, #f093fb 0%, #ff6b9d 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 1rem 0;
+      color: #2d3748;
+    }
+
+    html[data-theme="dark"] h2 {
+      color: #e2e8f0;
+    }
+
+    .error-message {
+      font-size: 1.25rem;
+      color: #4a5568;
+      margin: 1.5rem 0;
+      font-weight: 500;
+    }
+
+    html[data-theme="dark"] .error-message {
+      color: #cbd5e0;
+    }
+
+    .error-description {
+      font-size: 1rem;
+      color: #718096;
+      margin: 1.5rem 0;
+      line-height: 1.6;
+    }
+
+    html[data-theme="dark"] .error-description {
+      color: #a0aec0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: 2.5rem 0 2rem;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.875rem 1.75rem;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(245, 87, 108, 0.4);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(245, 87, 108, 0.6);
+    }
+
+    .btn-secondary {
+      background: #e2e8f0;
+      color: #2d3748;
+    }
+
+    html[data-theme="dark"] .btn-secondary {
+      background: #2d3748;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e0;
+      transform: translateY(-2px);
+    }
+
+    html[data-theme="dark"] .btn-secondary:hover {
+      background: #4a5568;
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .quick-links {
+      margin-top: 2rem;
+      padding-top: 2rem;
+      border-top: 2px solid #e2e8f0;
+    }
+
+    html[data-theme="dark"] .quick-links {
+      border-top-color: #2d3748;
+    }
+
+    .quick-links-title {
+      font-size: 0.875rem;
+      color: #718096;
+      margin: 0 0 1rem 0;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    html[data-theme="dark"] .quick-links-title {
+      color: #a0aec0;
+    }
+
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .quick-link {
+      display: block;
+      padding: 0.75rem 1rem;
+      background: #f7fafc;
+      border-radius: 8px;
+      color: #2d3748;
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+    }
+
+    html[data-theme="dark"] .quick-link {
+      background: #2d3748;
+      color: #e2e8f0;
+    }
+
+    .quick-link:hover {
+      background: #edf2f7;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    html[data-theme="dark"] .quick-link:hover {
+      background: #4a5568;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Mobile */
+    @media (max-width: 640px) {
+      .error-content {
+        padding: 2rem 1.5rem;
+      }
+
+      h1 {
+        font-size: 4rem;
+      }
+
+      h2 {
+        font-size: 1.5rem;
+      }
+
+      .error-message {
+        font-size: 1.1rem;
+      }
+
+      .action-buttons {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .btn {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .links-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</PageLayout>
+

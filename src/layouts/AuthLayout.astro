@@ -1,0 +1,182 @@
+---
+import Footer from '../components/Footer.astro';
+const { title } = Astro.props;
+const assetVersion = import.meta.env.PUBLIC_ASSET_VERSION || __RAILCTRL_BUILD_ID__;
+---
+
+<!DOCTYPE html>
+<html lang="tr" data-asset-version={assetVersion}>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} - Tren Yönetim Sistemi</title>
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+  <link rel="apple-touch-icon-precomposed" href="/apple-touch-icon-precomposed.png" />
+  <link rel="shortcut icon" href="/favicon.ico" />
+  <meta name="msapplication-TileImage" content="/icons/icon-192.png" />
+  <meta name="msapplication-TileColor" content="#1b2845" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#1b2845" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Tren Yönetim Sistemi" />
+  <script is:inline>
+    try {
+      var __savedLanguage = localStorage.getItem('lang');
+      var __systemLanguage = navigator.languages?.[0] || navigator.language || 'en';
+      document.documentElement.lang = __savedLanguage === 'tr' || __savedLanguage === 'en'
+        ? __savedLanguage
+        : (__systemLanguage.toLowerCase().startsWith('tr') ? 'tr' : 'en');
+    } catch (e) {
+      document.documentElement.lang = 'en';
+    }
+    try {
+      var __t = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', __t);
+    } catch (e) {}
+  </script>
+  <script>
+    import { initShell } from '../scripts/app-shell';
+    initShell({ assetVersion: document.documentElement.dataset.assetVersion });
+  </script>
+  <link rel="stylesheet" href={`/css/app.css?v=${assetVersion}`} />
+  <style>
+    .auth-language-switch {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 10;
+      display: inline-flex;
+      gap: 0.2rem;
+      padding: 0.2rem;
+      border: 1px solid rgba(255, 255, 255, 0.36);
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.58);
+      box-shadow: 0 6px 18px rgba(2, 6, 23, 0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .auth-language-switch button {
+      min-width: 2.6rem;
+      min-height: 2.2rem;
+      padding: 0.35rem 0.55rem;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .auth-language-switch button.active {
+      background: white;
+      color: #1d4ed8;
+    }
+
+    :root {
+      --primary-color: #007acc;
+      --text-color: #333;
+      --card-bg: white;
+      --shadow-color: rgba(0,0,0,0.1);
+    }
+
+    /* Dark mode variables */
+    [data-theme="dark"] {
+      --primary-color: #4da6ff;
+      --text-color: #ffffff;
+      --card-bg: #1e1e1e;
+      --shadow-color: rgba(0,0,0,0.6);
+    }
+
+    /* Make page background dark with overlay in dark mode */
+    html[data-theme="dark"] body {
+      background: linear-gradient(135deg, #020617 0%, #0f172a 60%, #0b3b5e 100%);
+      background-size: cover;
+      color: var(--text-color);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      color: var(--text-color);
+      min-height: 100vh;
+      overflow-x: hidden;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    html, body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      box-shadow: none;
+      border-radius: 0;
+    }
+
+    /* Respect user's motion preferences */
+    @media (prefers-reduced-motion: reduce) {
+      * {
+        animation: none !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="auth-layout">
+  <div class="auth-language-switch" role="group" aria-label="Language">
+    <button type="button" data-language-choice="tr" aria-label="Türkçe">TR</button>
+    <button type="button" data-language-choice="en" aria-label="English">EN</button>
+  </div>
+  <main>
+    <slot />
+  </main>
+  <Footer />
+  <script>
+    import { finalizeShell } from '../scripts/app-shell';
+    import { getPreferredLanguage, initLocalization } from '../scripts/localization';
+    finalizeShell();
+    initLocalization();
+    const languageButtons = document.querySelectorAll<HTMLButtonElement>('[data-language-choice]');
+    const updateLanguageSwitch = () => {
+      const language = getPreferredLanguage();
+      languageButtons.forEach((button) => {
+        const selected = button.dataset.languageChoice === language;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+      });
+    };
+    updateLanguageSwitch();
+    languageButtons.forEach((button) => button.addEventListener('click', () => {
+      localStorage.setItem('lang', button.dataset.languageChoice === 'tr' ? 'tr' : 'en');
+      window.location.reload();
+    }));
+  </script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="Kayıp Eşya">
+  <div class="kayip-esya-page modern-records-page">
+    <!-- Header -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📦</div>
+        <div class="header-text">
+          <h1>Kayıp Eşya Kayıtları</h1>
+          <p>Bulunan eşyaları kaydedin ve takip edin</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="reportBtn" class="btn-report">
+          <span class="btn-icon">📊</span>
+          Rapor Al
+        </button>
+        <button id="newRecordBtn" class="btn-new">
+          <span class="btn-icon">+</span>
+          Yeni Kayıt
+        </button>
+      </div>
+    </div>
+
+    <!-- Search & Filters -->
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Belge No, Eşya, İsim)" />
+        <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+      </div>
+      <div class="filter-chips">
+        <button class="chip active" data-durum="all">Tümü</button>
+        <button class="chip" data-durum="">⏳ Beklemede</button>
+        <button class="chip" data-durum="Teslim Edildi">✅ Teslim Edildi</button>
+        <button class="chip" data-durum="İmha Edildi">🗑️ İmha</button>
+        <button class="chip" data-durum="Depoda">📦 Depoda</button>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-value" id="totalCount">-</span><span class="stat-label">Toplam</span></div>
+      <div class="stat-item st-warning"><span class="stat-value" id="bekleyenCount">-</span><span class="stat-label">Beklemede</span></div>
+      <div class="stat-item st-success"><span class="stat-value" id="teslimCount">-</span><span class="stat-label">Teslim Edildi</span></div>
+      <div class="stat-item st-danger"><span class="stat-value" id="imhaCount">-</span><span class="stat-label">İmha</span></div>
+      <div class="stat-item st-info"><span class="stat-value" id="depoCount">-</span><span class="stat-label">Depoda</span></div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Belge No</th>
+            <th>Tarih</th>
+            <th>Eşya Tanımı</th>
+            <th>Durum</th>
+            <th>Eşya Sahibi</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="loading-row">
+            <td colspan="6">
+              <div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- No Results -->
+    <div id="noResults" class="no-results" style="display: none;">
+      <div class="no-results-icon">🔍</div>
+      <h3>Sonuç Bulunamadı</h3>
+    </div>
+
+    <!-- Load More -->
+    <div id="paginationContainer" class="pagination-container" style="display: none;"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="recordModal" class="modal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Yeni Kayıp Eşya Kaydı</h3>
+        <button id="closeModal" class="modal-close">✕</button>
+      </div>
+      <form id="recordForm">
+        <input type="hidden" id="recordId" />
+        
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Belge No</label>
+            <input type="text" id="belge_no" placeholder="Örn: 007525" />
+          </div>
+          <div class="form-group">
+            <label>Tarih *</label>
+            <input type="date" id="tarih" required />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Eşya Tanımı *</label>
+          <textarea id="esya_tanimi" rows="3" required placeholder="Bulunan eşyayı tanımlayın..."></textarea>
+        </div>
+
+        <div class="form-group" id="durumGroup" style="display: none;">
+          <label>Durum</label>
+          <select id="durumu">
+            <option value="">⏳ Beklemede</option>
+            <option value="Teslim Edildi">✅ Teslim Edildi</option>
+            <option value="İmha Edildi">🗑️ İmha Edildi</option>
+            <option value="Depoda">📦 Depoda</option>
+          </select>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Eşya Sahibi Ad-Soyad</label>
+            <input type="text" id="esya_sahibi_ad_soyad" placeholder="Eşya sahibi" />
+          </div>
+          <div class="form-group">
+            <label>Eşya Sahibi Tel</label>
+            <input type="tel" id="esya_sahibi_tel" placeholder="0XXX XXX XX XX" />
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Teslim Alan</label>
+            <input type="text" id="teslim_alan" placeholder="Teslim alan kişi" />
+          </div>
+          <div class="form-group">
+            <label>Büroya Teslim Eden</label>
+            <input type="text" id="buroya_teslim_eden" placeholder="Görevli adı" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Büro Görevlisi</label>
+          <input type="text" id="teslim_alan_buro_gorevlisi" placeholder="Teslim alan büro görevlisi" />
+        </div>
+
+        <div id="formMessage" class="form-message" style="display: none;"></div>
+        
+        <div class="form-actions">
+          <button type="button" id="deleteRecordBtn" class="btn-delete" style="display: none;">Sil</button>
+          <div class="form-actions-right">
+            <button type="button" id="cancelBtn" class="btn-cancel">İptal</button>
+            <button type="submit" class="btn-submit">Kaydet</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rapor Modal -->
+  <div id="reportModal" class="modal" style="display: none;">
+    <div class="modal-box report-modal-box">
+      <div class="modal-header">
+        <h3>📊 Kayıp Eşya Raporu</h3>
+        <button id="closeReportModal" class="modal-close">✕</button>
+      </div>
+      <div class="report-form">
+        <div id="reportDateRangeRow" class="form-grid">
+          <div class="form-group">
+            <label>Başlangıç Tarihi</label>
+            <input type="date" id="reportStartDate" />
+          </div>
+          <div class="form-group">
+            <label>Bitiş Tarihi</label>
+            <input type="date" id="reportEndDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;">
+            <input type="checkbox" id="reportAllDates" />
+            Tüm Tarihler
+          </label>
+        </div>
+        <div class="form-group">
+          <label>Durum</label>
+          <select id="reportDurum">
+            <option value="">Tümü</option>
+            <option value="Beklemede">⏳ Beklemede</option>
+            <option value="Teslim Edildi">✅ Teslim Edildi</option>
+            <option value="İmha Edildi">🗑️ İmha</option>
+            <option value="Depoda">📦 Depoda</option>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="button" id="downloadPdfBtn" class="btn-submit">📄 PDF Oluştur</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  import { initKayipEsya } from '../scripts/kayip-esya';
+  initKayipEsya();
+</script>
+</PageLayout>
+
+<style>
+  .kayip-esya-page { max-width: 100%; }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header-content { display: flex; align-items: center; gap: 0.75rem; }
+  .header-icon { font-size: 2rem; }
+  .header-text h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
+  .header-text p { color: #666; margin: 0.25rem 0 0; font-size: 0.9rem; }
+  [data-theme="dark"] .header-text p { color: #aaa; }
+  .header-actions { display:flex; gap:0.75rem; align-items:center; }
+
+  .btn-report {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white; border: none; border-radius: 10px;
+    font-weight: 600; font-size: 0.9rem; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-report:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4); }
+
+  .btn-new {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white; border: none; border-radius: 10px;
+    font-weight: 600; font-size: 0.9rem; cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .btn-new:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+  .btn-icon { font-size: 1.2rem; font-weight: 700; }
+
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 1rem;
+    margin-bottom: 1rem; align-items: center;
+  }
+
+  .search-wrapper {
+    position: relative; flex: 1; min-width: 250px; max-width: 400px;
+  }
+  .search-icon {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 1rem; opacity: 0.7; line-height: 1; pointer-events: none; z-index: 1;
+  }
+  .search-input {
+    width: 100%; padding: 0.75rem 2.6rem 0.75rem 3rem;
+    border: 1px solid #e0e0e0; border-radius: 10px;
+    font-size: 0.9rem; background: #fff;
+  }
+  [data-theme="dark"] .search-input { background: #1a1a2e; border-color: #333; color: #fff; }
+  .search-input:focus { outline: none; border-color: #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+  .search-clear {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; color: #999;
+    display: flex; align-items: center; justify-content: center; z-index: 2;
+  }
+
+  .filter-chips { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .chip {
+    padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid #e0e0e0;
+    background: #fff; font-size: 0.8rem; cursor: pointer; transition: all 0.2s;
+  }
+  [data-theme="dark"] .chip { background: #1a1a2e; border-color: #333; color: #ccc; }
+  .chip:hover { border-color: #10b981; }
+  .chip.active { background: #10b981; color: white; border-color: #10b981; }
+
+  .stats-bar {
+    display: flex; gap: 1rem; margin-bottom: 1rem;
+    padding: 1rem; background: #f8f9fa; border-radius: 12px;
+    flex-wrap: wrap;
+  }
+  [data-theme="dark"] .stats-bar { background: #1a1a2e; }
+  .stat-item {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 0.5rem 1rem; min-width: 80px;
+  }
+  .stat-value { font-size: 1.5rem; font-weight: 700; }
+  .stat-label { font-size: 0.75rem; color: #666; margin-top: 0.25rem; }
+  [data-theme="dark"] .stat-label { color: #aaa; }
+  .st-warning .stat-value { color: #f59e0b; }
+  .st-success .stat-value { color: #10b981; }
+  .st-danger .stat-value { color: #ef4444; }
+  .st-info .stat-value { color: #3b82f6; }
+
+  .table-container {
+    background: #fff; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  [data-theme="dark"] .table-container { background: #1a1a2e; }
+
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table th {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white; padding: 1rem; text-align: left; font-weight: 600; font-size: 0.85rem;
+  }
+  .data-table td {
+    padding: 0.875rem 1rem; border-bottom: 1px solid #eee; font-size: 0.85rem;
+  }
+  [data-theme="dark"] .data-table td { border-color: #333; }
+  .data-table tbody tr:hover { background: #f8f9fa; }
+  [data-theme="dark"] .data-table tbody tr:hover { background: #252542; }
+
+  .belge-no { 
+    font-weight: 600; color: #10b981; 
+    background: rgba(16, 185, 129, 0.1); 
+    padding: 0.25rem 0.5rem; border-radius: 6px;
+  }
+  [data-theme="dark"] .belge-no { color: #34d399; background: rgba(16, 185, 129, 0.2); }
+  .date-cell { color: #666; font-size: 0.8rem; }
+  [data-theme="dark"] .date-cell { color: #aaa; }
+  .esya-cell { max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  [data-theme="dark"] .esya-cell { color: #e0e0e0; }
+  [data-theme="dark"] .data-table td { color: #e0e0e0; }
+
+  .status-badge {
+    display: inline-block; padding: 0.35rem 0.75rem;
+    border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+  }
+  .status-warning { background: #fef3c7; color: #92400e; }
+  .status-success { background: #d1fae5; color: #065f46; }
+  .status-danger { background: #fee2e2; color: #991b1b; }
+  .status-info { background: #dbeafe; color: #1e40af; }
+  .status-secondary { background: #f3f4f6; color: #4b5563; }
+  [data-theme="dark"] .status-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+  [data-theme="dark"] .status-success { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+  [data-theme="dark"] .status-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+  [data-theme="dark"] .status-info { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+  [data-theme="dark"] .status-secondary { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+
+  .action-btns { display: flex; gap: 0.5rem; }
+  .btn-action {
+    padding: 0.4rem 0.6rem; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 0.85rem; transition: all 0.2s;
+  }
+  .btn-edit { background: #e0f2fe; color: #0369a1; }
+  .btn-edit:hover { background: #0369a1; color: white; }
+
+  .loading-state {
+    display: flex; align-items: center; justify-content: center;
+    gap: 1rem; padding: 3rem; color: #666;
+  }
+  .spinner {
+    width: 24px; height: 24px; border: 3px solid #e0e0e0;
+    border-top-color: #10b981; border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-results {
+    text-align: center; padding: 3rem; color: #666;
+  }
+  [data-theme="dark"] .no-results { color: #ccc; }
+  .no-results-icon { font-size: 3rem; margin-bottom: 1rem; }
+  [data-theme="dark"] .no-results h3 { color: #e0e0e0; }
+
+   :global(.pagination-container) { display: flex; justify-content: center; gap: 0.45rem; padding: 1.25rem; flex-wrap: wrap; }
+   :global(.page-btn) {
+    min-width: 36px;
+    height: 36px;
+    border: 1px solid #d1d5db;
+    border-radius: 10px;
+    background: #fff;
+    color: #334155;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+   :global(.page-btn:hover) { border-color: #10b981; color: #047857; }
+   :global(.page-btn.active) { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border-color: transparent; }
+  [data-theme="dark"]  :global(.page-btn) { background: #111827; color: #d1d5db; border-color: #374151; }
+  [data-theme="dark"]  :global(.page-btn.active) { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border-color: transparent; }
+
+  /* Modal */
+  .modal {
+    position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 12000; padding: 1rem;
+  }
+  .modal-box {
+    background: #fff; border-radius: 16px; width: 100%; max-width: 600px;
+    max-height: 90vh; overflow-y: auto;
+  }
+  [data-theme="dark"] .modal-box { background: #1a1a2e; }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1.25rem; border-bottom: 1px solid #eee;
+  }
+  [data-theme="dark"] .modal-header { border-color: #333; }
+  .modal-header h3 { font-size: 1.25rem; font-weight: 700; margin: 0; }
+  [data-theme="dark"] .modal-header h3 { color: #e0e0e0; }
+  .modal-close {
+    background: none; border: none; font-size: 1.5rem;
+    cursor: pointer; color: #666; padding: 0.5rem;
+  }
+
+  .report-modal-box { max-width: 520px; }
+  .report-form { padding: 1.25rem; }
+  .report-form input[type="date"] { cursor: pointer; padding-right: 0.75rem; }
+  .report-form input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+    -webkit-appearance: none;
+  }
+
+  #recordForm { padding: 1.25rem; }
+  .form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+  .form-group { margin-bottom: 1rem; }
+  .form-group label {
+    display: block; margin-bottom: 0.5rem;
+    font-weight: 600; font-size: 0.85rem; color: #333;
+  }
+  [data-theme="dark"] .form-group label { color: #ccc; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 0.75rem; border: 1px solid #ddd;
+    border-radius: 8px; font-size: 0.9rem; background: #fff;
+  }
+  [data-theme="dark"] .form-group input,
+  [data-theme="dark"] .form-group select,
+  [data-theme="dark"] .form-group textarea {
+    background: #252542; border-color: #444; color: #fff;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+    outline: none; border-color: #10b981;
+  }
+  #tarih { cursor: pointer; padding-right: 0.75rem; }
+  #tarih::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+    -webkit-appearance: none;
+  }
+  .form-group input:disabled, .form-group select:disabled, .form-group textarea:disabled {
+    opacity: 0.6; cursor: not-allowed;
+  }
+
+  .form-message {
+    padding: 0.75rem; border-radius: 8px; text-align: center;
+    margin-bottom: 1rem; font-weight: 500;
+  }
+  .form-message.success { background: #d1fae5; color: #065f46; }
+  .form-message.error { background: #fee2e2; color: #991b1b; }
+
+  .form-actions {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 1rem; border-top: 1px solid #eee; margin-top: 1rem;
+  }
+  [data-theme="dark"] .form-actions { border-color: #333; }
+  .form-actions-right { display: flex; gap: 0.75rem; }
+  .btn-cancel {
+    padding: 0.75rem 1.5rem; background: #f0f0f0; border: none;
+    border-radius: 8px; font-weight: 600; cursor: pointer;
+  }
+  [data-theme="dark"] .btn-cancel { background: #333; color: #ccc; }
+  .btn-submit {
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none; border-radius: 8px; color: white;
+    font-weight: 600; cursor: pointer;
+  }
+  .btn-submit:hover { box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4); }
+  .btn-delete {
+    padding: 0.75rem 1.25rem; background: #fee2e2; border: none;
+    border-radius: 8px; color: #dc2626; font-weight: 600; cursor: pointer;
+  }
+  .btn-delete:hover { background: #dc2626; color: white; }
+
+  .modal-box {
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  #recordForm,
+  .form-grid,
+  .form-group,
+  .form-actions,
+  .form-actions-right {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .toolbar { flex-direction: column; }
+    .search-wrapper { max-width: 100%; }
+    .filter-chips { width: 100%; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 0.5rem; }
+    .stats-bar { justify-content: space-around; }
+    .stat-item { min-width: 60px; padding: 0.5rem; }
+    .data-table { min-width: 0; width: 100%; }
+    .table-container { overflow-x: hidden; }
+    .form-grid { grid-template-columns: 1fr; }
+    .modal { padding: 0.5rem; }
+    .modal-box { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); }
+    .form-actions { flex-wrap: wrap; gap: 0.5rem; }
+    .form-actions-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+  }
+</style>
+

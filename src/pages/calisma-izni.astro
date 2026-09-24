@@ -1,0 +1,344 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+
+---
+
+<PageLayout title="Çalışma İzinleri">
+  <div class="izin-page modern-records-page">
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-icon">📋</div>
+        <div class="header-text">
+          <h1>Çalışma İzinleri</h1>
+          <p>Saha çalışma izin kayıtları</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="reportBtn" class="btn-report"><span class="btn-icon">📊</span> Rapor Al</button>
+        <button id="newRecordBtn" class="btn-new"><span class="btn-icon">+</span> Yeni Kayıt</button>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (MMS No, Çalışma Kodu, İş)" />
+        <button id="searchClear" class="search-clear" style="display: none;">✕</button>
+      </div>
+      <input id="istasyonFilter" class="select-filter station-select" type="text" placeholder="📍 İstasyon ara" />
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-item"><span class="stat-value" id="totalCount">-</span><span class="stat-label">Toplam</span></div>
+      <div class="stat-item st-info"><span class="stat-value" id="istasyonCount">-</span><span class="stat-label">İstasyon</span></div>
+    </div>
+
+    <div class="table-container">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>MMS No</th>
+            <th>Çalışma Kodu</th>
+            <th>Tarih</th>
+            <th>Yapılacak İş</th>
+            <th>Çalışanlar</th>
+            <th>İstasyon</th>
+            <th>Bildiren</th>
+            <th>İşlem</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr class="loading-row"><td colspan="8"><div class="loading-state"><div class="spinner"></div><span>Yükleniyor...</span></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="noResults" class="no-results" style="display: none;"><div class="no-results-icon">🔍</div><h3>Sonuç Bulunamadı</h3></div>
+    <div id="paginationContainer" class="pagination-container" style="display: none;"></div>
+  </div>
+
+  <!-- Modal -->
+  <div id="recordModal" class="modal" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 id="modalTitle">Yeni Çalışma İzni</h3>
+        <button id="closeModal" class="modal-close">✕</button>
+      </div>
+      <form id="recordForm">
+        <input type="hidden" id="recordId" />
+        <div class="form-grid">
+          <div class="form-group">
+            <label>MMS Numarası</label>
+            <input type="text" id="mms_numarasi" placeholder="Örn: 273210" />
+          </div>
+          <div class="form-group">
+            <label>Çalışma Kodu/Birimi *</label>
+            <input type="text" id="calisma_kodu" required placeholder="Örn: SÇM-001/EAYS" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Yapılacak İş *</label>
+          <textarea id="yapilacak_is" rows="3" required placeholder="Yapılacak iş açıklaması..."></textarea>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>İstasyon *</label>
+            <input type="text" id="istasyon" required />
+          </div>
+          <div class="form-group">
+            <label>Çalışanlar</label>
+            <input type="text" id="calisanlar" placeholder="Çalışan isimleri..." />
+          </div>
+        </div>
+        <div id="formMessage" class="form-message" style="display: none;"></div>
+        <div class="form-actions">
+          <button type="button" id="deleteRecordBtn" class="btn-delete" style="display: none;">Sil</button>
+          <div class="form-actions-right">
+            <button type="button" id="cancelBtn" class="btn-cancel">İptal</button>
+            <button type="submit" class="btn-submit">Kaydet</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Rapor Modal -->
+  <div id="reportModal" class="modal" style="display: none;">
+    <div class="modal-box report-modal-box">
+      <div class="modal-header">
+        <h3>📊 Çalışma İzni Raporu</h3>
+        <button id="closeReportModal" class="modal-close">✕</button>
+      </div>
+      <div class="report-form">
+        <div id="reportDateRangeRow" class="form-grid">
+          <div class="form-group">
+            <label>Başlangıç Tarihi</label>
+            <input type="date" id="reportStartDate" />
+          </div>
+          <div class="form-group">
+            <label>Bitiş Tarihi</label>
+            <input type="date" id="reportEndDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label style="display:flex;align-items:center;gap:.45rem;cursor:pointer;">
+            <input type="checkbox" id="reportAllDates" />
+            Tüm Tarihler
+          </label>
+        </div>
+        <div class="form-group">
+          <label>İstasyon</label>
+          <input id="reportStation" type="text" placeholder="İstasyon" />
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" id="downloadPdfBtn" class="btn-submit">📄 PDF Oluştur</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  import { initCalismaIzni } from '../scripts/calisma-izni';
+  initCalismaIzni();
+</script>
+</PageLayout>
+
+<style>
+  .izin-page { max-width: 100%; }
+  .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 1rem; }
+  .header-content { display: flex; align-items: center; gap: 0.75rem; }
+  .header-icon { font-size: 2rem; }
+  .header-text h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+  .header-text p { color: #666; margin: 0.2rem 0 0; font-size: 0.85rem; }
+  [data-theme="dark"] .header-text p { color: #999; }
+
+  .header-actions { display: flex; gap: 0.75rem; }
+
+  .btn-report { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+  .btn-report:hover { filter: brightness(1.1); }
+
+  .btn-new { display: flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer; }
+  .btn-new:hover { opacity: 0.9; }
+  .btn-icon { font-size: 1.1rem; font-weight: bold; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 1rem; align-items: center; }
+  .search-wrapper { position: relative; flex: 1; min-width: 200px; max-width: 350px; }
+  .search-icon { position: absolute; left: 0.9rem; top: 50%; transform: translateY(-50%); font-size: 1rem; line-height: 1; pointer-events: none; z-index: 1; }
+  .search-input { width: 100%; padding: 0.65rem 2.2rem 0.65rem 2.8rem; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 0.9rem; }
+  [data-theme="dark"] .search-input { background: #1a1a1a; border-color: #333; color: #fff; }
+  .search-input:focus { outline: none; border-color: #10b981; }
+  .search-clear { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: #ddd; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; cursor: pointer; z-index: 2; }
+  .select-filter { padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 8px; background: #fff; font-size: 0.85rem; min-width: 150px; }
+  [data-theme="dark"] .select-filter { background: #1a1a1a; border-color: #333; color: #fff; }
+
+  .stats-bar { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .stat-item { background: #fff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  [data-theme="dark"] .stat-item { background: #1a1a1a; border-color: #333; }
+  .stat-value { font-size: 1.1rem; font-weight: 700; color: #10b981; }
+  .stat-label { color: #888; font-size: 0.75rem; }
+  .st-info .stat-value { color: #3b82f6; }
+
+  .table-container { background: #fff; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+  [data-theme="dark"] .table-container { background: #1a1a1a; border-color: #333; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .data-table thead { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+  .data-table th { padding: 0.75rem; text-align: left; font-weight: 600; font-size: 0.8rem; }
+  .data-table tbody tr { border-bottom: 1px solid #e0e0e0; }
+  [data-theme="dark"] .data-table tbody tr { border-color: #333; }
+  .data-table tbody tr:hover { background: #f0fdf4; }
+  [data-theme="dark"] .data-table tbody tr:hover { background: #064e3b33; }
+  .data-table td { padding: 0.6rem 0.75rem; vertical-align: middle; }
+  [data-theme="dark"] .data-table td { color: #e0e0e0; }
+
+  .mms-no { font-weight: 700; color: #10b981; font-family: monospace; }
+  [data-theme="dark"] .mms-no { color: #34d399; }
+  .kod-badge { display: inline-block; padding: 0.2rem 0.5rem; background: #dbeafe; color: #1e40af; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  [data-theme="dark"] .kod-badge { background: #1e3a8a; color: #93c5fd; }
+  .date-cell { color: #666; font-size: 0.8rem; white-space: nowrap; }
+  [data-theme="dark"] .date-cell { color: #aaa; }
+  .is-cell { max-width: 220px; line-height: 1.3; }
+  [data-theme="dark"] .is-cell { color: #e0e0e0; }
+  .calisan-cell { color: #555; font-size: 0.8rem; }
+  [data-theme="dark"] .calisan-cell { color: #bbb; }
+  .istasyon-badge { display: inline-block; padding: 0.2rem 0.5rem; background: #d1fae5; color: #065f46; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+  [data-theme="dark"] .istasyon-badge { background: #064e3b; color: #6ee7b7; }
+
+  .action-btns { display: flex; gap: 0.3rem; }
+  .btn-action { padding: 0.3rem 0.5rem; border: none; border-radius: 4px; cursor: pointer; font-size: 0.75rem; }
+  .btn-edit { background: #dbeafe; color: #1e40af; }
+  .btn-edit:hover { background: #bfdbfe; }
+  [data-theme="dark"] .btn-edit { background: #1e3a5f; color: #93c5fd; }
+
+  .loading-row td { padding: 2rem; }
+  .loading-state { display: flex; align-items: center; justify-content: center; gap: 0.5rem; color: #888; }
+  .spinner { width: 20px; height: 20px; border: 2px solid #e0e0e0; border-top-color: #10b981; border-radius: 50%; animation: spin 0.6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .no-results { text-align: center; padding: 2rem; }
+  [data-theme="dark"] .no-results { color: #ccc; }
+  .no-results-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .no-results h3 { margin: 0; font-size: 1rem; }
+  [data-theme="dark"] .no-results h3 { color: #e0e0e0; }
+
+   :global(.pagination-container) { display: flex; justify-content: center; gap: 0.5rem; margin-top: 1rem; flex-wrap: wrap; }
+   :global(.page-btn) {
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.7rem;
+    border: 1px solid #bbf7d0;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #ffffff 0%, #f0fdf4 100%);
+    color: #065f46;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.12);
+    transition: all 0.2s ease;
+  }
+   :global(.page-btn:hover) { transform: translateY(-1px); box-shadow: 0 10px 18px rgba(16, 185, 129, 0.2); }
+   :global(.page-btn.active) { background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; box-shadow: 0 10px 22px rgba(16, 185, 129, 0.35); }
+  [data-theme="dark"]  :global(.page-btn) { border-color: #14532d; background: linear-gradient(180deg, #0b1f19 0%, #102a22 100%); color: #86efac; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35); }
+  [data-theme="dark"]  :global(.page-btn.active) { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+
+  .modal { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; z-index: 12000; padding: 1rem; }
+  .modal-box { background: #fff; border-radius: 12px; width: 100%; max-width: 520px; max-height: 85vh; overflow-y: auto; box-shadow: 0 10px 40px rgba(0,0,0,0.2); }
+  [data-theme="dark"] .modal-box { background: #1a1a1a; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem; border-bottom: 1px solid #e0e0e0; }
+  [data-theme="dark"] .modal-header { border-color: #333; }
+  .modal-header h3 { margin: 0; font-size: 1.1rem; }
+  [data-theme="dark"] .modal-header h3 { color: #e0e0e0; }
+  .modal-close { background: #f0f0f0; border: none; border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 0.9rem; }
+  [data-theme="dark"] .modal-close { background: #333; color: #ccc; }
+  .modal-close:hover { background: #fee2e2; color: #dc2626; }
+
+  #recordForm { padding: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .form-group { margin-bottom: 0.75rem; }
+  .form-group label { display: block; margin-bottom: 0.3rem; font-weight: 600; font-size: 0.8rem; }
+  [data-theme="dark"] .form-group label { color: #ccc; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.6rem 0.75rem; border: 1px solid #ddd; border-radius: 6px; background: #fff; font-size: 0.9rem; }
+  [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea { background: #0a0a0a; border-color: #333; color: #fff; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #10b981; }
+  .form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
+
+  .form-message { padding: 0.6rem; border-radius: 6px; text-align: center; font-size: 0.85rem; margin-bottom: 0.75rem; }
+  .form-message.success { background: #d1fae5; color: #065f46; }
+  .form-message.error { background: #fee2e2; color: #991b1b; }
+
+  .form-actions { display: flex; justify-content: space-between; align-items: center; padding-top: 0.75rem; border-top: 1px solid #e0e0e0; }
+  [data-theme="dark"] .form-actions { border-color: #333; }
+  .form-actions-right { display: flex; gap: 0.5rem; }
+  .btn-cancel { padding: 0.6rem 1rem; background: #f0f0f0; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; }
+  [data-theme="dark"] .btn-cancel { background: #333; color: #ccc; }
+  .btn-submit { padding: 0.6rem 1.25rem; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 6px; color: white; font-weight: 600; cursor: pointer; }
+  .btn-delete { padding: 0.6rem 1rem; background: #fee2e2; border: none; border-radius: 6px; color: #dc2626; font-weight: 600; cursor: pointer; }
+  .btn-delete:hover { background: #fecaca; }
+
+  /* Station Select */
+  .station-select {
+    padding: 0.5rem 2rem 0.5rem 1rem;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 0.85rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2310b981' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem center;
+    background-size: 14px;
+    min-width: 180px;
+  }
+  [data-theme="dark"] .station-select { background-color: #1a1a1a; border-color: #333; color: #ccc; }
+  .station-select:focus { outline: none; border-color: #10b981; }
+
+  /* Rapor Modal */
+  .report-modal-box { max-width: 500px; }
+  .report-form { padding: 1rem; }
+  .report-form input[type="date"] { cursor: pointer; padding-right: 0.75rem; }
+  .report-form input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    display: none;
+    -webkit-appearance: none;
+  }
+
+  .modal-box,
+  .report-modal-box {
+    overflow-x: hidden;
+    box-sizing: border-box;
+  }
+
+  #recordForm,
+  .report-form,
+  .form-grid,
+  .form-group,
+  .form-actions,
+  .form-actions-right {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .page-header { flex-direction: column; align-items: flex-start; }
+    .toolbar { flex-direction: column; }
+    .search-wrapper { max-width: 100%; }
+    .table-container { overflow-x: hidden; }
+    .data-table { min-width: 0; width: 100%; }
+    .form-grid { grid-template-columns: 1fr; }
+    .modal { padding: 0.5rem; }
+    .modal-box,
+    .report-modal-box { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); }
+    .form-actions { flex-wrap: wrap; gap: 0.5rem; }
+    .form-actions-right { width: 100%; justify-content: flex-end; flex-wrap: wrap; }
+  }
+</style>
+

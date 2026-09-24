@@ -1,0 +1,41 @@
+---
+// Footer component
+---
+
+<footer>
+  <p>© <span data-i18n="allRightsReserved">Tüm Hakları Saklıdır</span> - <span data-i18n="appTitle">Tren Yönetim Sistemi</span></p>
+</footer>
+
+<style>
+  footer {
+    text-align: center;
+    padding: 1.5rem;
+    background: var(--app-surface, #ffffff);
+    color: var(--app-text, #333);
+    backdrop-filter: none;
+    margin-top: 2rem;
+    animation: fadeInUp 0.6s ease-out 0.6s both;
+    border-radius: 12px;
+    box-shadow: var(--app-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
+    border: 1px solid var(--app-border, rgba(0, 0, 0, 0.1));
+  }
+
+  @keyframes fadeInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  footer p {
+    background: transparent !important;
+    margin: 0.5rem 0 0 0;
+    color: inherit;
+    font-weight: 500;
+  }
+
+  /* Mobile Styles */
+  @media (max-width: 768px) {
+    footer {
+      animation: none;
+    }
+  }
+</style>

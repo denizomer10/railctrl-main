@@ -1,0 +1,193 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+---
+
+<PageLayout title="Tren Saatleri">
+  <section class="tren-saatleri-section">
+    <header class="tren-saatleri-header">
+      <div class="tren-saatleri-copy">
+        <h2 data-pages="title">Tren Saatleri</h2>
+      </div>
+    </header>
+
+    <div class="tren-saatleri-viewer" id="tren-saatleri-viewer">
+      <div class="tren-saatleri-image-container" id="tren-saatleri-image-container">
+        <img
+          id="tren-saatleri-image"
+          src="/files/tren-saatleri.webp"
+          alt="Tren saatleri çizelgesi"
+          draggable="false"
+        />
+      </div>
+      <div class="zoom-indicator" id="tren-saatleri-zoom-indicator">100%</div>
+    </div>
+  </section>
+
+<script>
+  import { initZoomViewer } from '../scripts/zoom-viewer';
+  initZoomViewer({ viewer: 'tren-saatleri-viewer', container: 'tren-saatleri-image-container', indicator: 'tren-saatleri-zoom-indicator' });
+</script>
+</PageLayout>
+
+<style>
+  /* Reuse styles from guzergah.astro with scoped class names */
+  .tren-saatleri-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .tren-saatleri-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .tren-saatleri-copy {
+    width: 100%;
+  }
+
+  .tren-saatleri-copy h2 {
+    margin: 0 0 0.5rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  .tren-saatleri-copy p {
+    margin: 0;
+    color: rgba(0, 0, 0, 0.7);
+    line-height: 1.6;
+  }
+
+  html[data-theme="dark"] .tren-saatleri-copy p {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .tren-saatleri-viewer {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    max-height: 80vh;
+    background: #f5f7fb;
+    border-radius: 16px;
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    overflow: hidden;
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+
+  .tren-saatleri-viewer:active,
+  .tren-saatleri-viewer.dragging {
+    cursor: grabbing;
+  }
+
+  .tren-saatleri-image-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform-origin: center center;
+  }
+
+  .tren-saatleri-image-container img {
+    max-width: 100%;
+    max-height: 100%;
+    display: block;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  .zoom-indicator {
+    position: absolute;
+    bottom: 18px;
+    right: 18px;
+    background: rgba(27, 40, 69, 0.85);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .zoom-indicator.show {
+    opacity: 1;
+  }
+
+  .tren-saatleri-hints {
+    display: grid;
+    gap: 0.5rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: rgba(102, 126, 234, 0.08);
+    border: 1px solid rgba(102, 126, 234, 0.15);
+    margin: 0;
+    list-style: none;
+  }
+
+  .tren-saatleri-hints li {
+    color: rgba(0, 0, 0, 0.75);
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  html[data-theme="dark"] .tren-saatleri-viewer {
+    background: #0e1525;
+    border-color: rgba(102, 126, 234, 0.25);
+  }
+
+  html[data-theme="dark"] .tren-saatleri-hints {
+    background: rgba(102, 126, 234, 0.12);
+    border-color: rgba(102, 126, 234, 0.25);
+  }
+
+  html[data-theme="dark"] .tren-saatleri-hints li {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 0.15rem 0.45rem;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  html[data-theme="dark"] kbd {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  @media (max-width: 768px) {
+    .tren-saatleri-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .tren-saatleri-viewer {
+      height: 60vh;
+      min-height: 320px;
+    }
+
+  }
+
+  @media (max-width: 480px) {
+    .tren-saatleri-viewer {
+      height: 55vh;
+      min-height: 280px;
+    }
+  }
+</style>
+
