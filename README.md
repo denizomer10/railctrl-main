@@ -160,6 +160,10 @@ package-lock.json   Reproducible npm dependency lockfile
 | Database or migration error | Stop the server and make a backup before investigating. Review the terminal error and verify that the runtime can read and write its configured Astro DB storage. Do not delete database files before confirming the data is backed up. |
 | Dependency installation is inconsistent | Run `npm ci` from the repository root to install versions recorded in `package-lock.json`. |
 
+## License
+
+This project is licensed under the **GNU Affero General Public License, version 3 only (AGPL-3.0-only)**. See [`LICENSE`](./LICENSE) for the complete license text. If you modify the application and make it available for network use, the AGPL's corresponding-source requirements apply to those users.
+
 ## Contributing and verification
 
 - Keep changes focused on the current application and its documented behavior.
