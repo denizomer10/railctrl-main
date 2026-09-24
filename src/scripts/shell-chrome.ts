@@ -417,7 +417,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
 
     const now = new Date();
     const requests = [
-      fetch(`/api/mms?search=${q}&limit=5&page=1`, { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch(`/api/problem-records?search=${q}&limit=5&page=1`, { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null),
       fetch(`/api/calisma-izni?search=${q}&limit=5&page=1`, { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null),
       fetch(`/api/notlar?search=${q}`, { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null),
       fetch(`/api/kayip-esya?search=${q}&limit=5&page=1`, { credentials: 'include' }).then((r) => r.ok ? r.json() : null).catch(() => null),
@@ -431,7 +431,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     if ((normalizedQuery.includes('ariza') && normalizedQuery.includes('kaydi') && (normalizedQuery.includes('olustur') || normalizedQuery.includes('ekle'))) || normalizedQuery.includes('ariza kaydi olustur')) {
       pushUnique({
         title: 'Arıza Kaydı Oluştur',
-        subtitle: 'MMS yeni kayıt penceresini aç',
+        subtitle: 'Arıza kaydı yeni kayıt penceresini aç',
         href: '/problem-records?open=new',
         type: 'Hızlı İşlem'
       });
@@ -461,14 +461,14 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     if (wantsMmsReport) {
       if (wantsAllStationsMmsReport) {
         pushUnique({
-          title: 'MMS Arıza Raporu',
+          title: 'Arıza Raporu',
           subtitle: 'Tüm istasyonlar için PDF rapor oluştur',
           href: '/problem-records?report=pdf&allStations=1',
           type: 'Hızlı İşlem'
         });
       } else if (matchedMmsReportStation) {
         pushUnique({
-          title: 'MMS Arıza Raporu',
+          title: 'Arıza Raporu',
           subtitle: `${query.trim()} için PDF rapor oluştur`,
           href: `/problem-records?report=pdf&stationQuery=${encodeURIComponent(matchedMmsReportStation)}`,
           type: 'Hızlı İşlem'
@@ -527,7 +527,7 @@ export function initShellChrome(options: ShellChromeOptions = {}): void {
     }
 
     (mms?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
-      pushUnique({ title: `MMS #${r.mms_numarasi || '-'}`, subtitle: `${clipText(r.ariza_tanimi || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/problem-records?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'MMS', searchValue: query });
+      pushUnique({ title: `Arıza No ${r.mms_numarasi || '-'}`, subtitle: `${clipText(r.ariza_tanimi || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/problem-records?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'Arıza Kaydı', searchValue: query });
     });
     (izin?.records || []).slice(0, 5).forEach((r: Record<string, any>) => {
       pushUnique({ title: `Çalışma ${r.calisma_kodu || '-'}`, subtitle: `${clipText(r.yapilacak_is || '', 52)} • ${clipText(r.istasyon || '-', 14)}`, href: `/calisma-izni?editId=${encodeURIComponent(String(r.id || ''))}`, type: 'Çalışma', searchValue: query });

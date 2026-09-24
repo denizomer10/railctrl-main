@@ -6,7 +6,7 @@ import PageLayout from '../layouts/PageLayout.astro';
 ---
 
 <PageLayout title="Arıza Kayıtları">
-  <div class="mms-page modern-records-page">
+  <div class="problem-records-page modern-records-page">
     <!-- Header -->
     <div class="page-header">
       <div class="header-content">
@@ -32,7 +32,7 @@ import PageLayout from '../layouts/PageLayout.astro';
     <div class="toolbar">
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (MMS No, Arıza, İstasyon)" />
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Arıza No, Arıza Tanımı, İstasyon)" />
         <button id="searchClear" class="search-clear" style="display: none;">✕</button>
       </div>
       <div class="filter-row">
@@ -64,7 +64,7 @@ import PageLayout from '../layouts/PageLayout.astro';
       <table class="data-table">
         <thead>
           <tr>
-            <th>MMS No</th>
+            <th>Arıza No</th>
             <th>Tarih</th>
             <th>Arıza Tanımı</th>
             <th>İstasyon</th>
@@ -97,14 +97,14 @@ import PageLayout from '../layouts/PageLayout.astro';
   <div id="recordModal" class="modal" style="display: none;">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 id="modalTitle">Yeni MMS Kaydı</h3>
+        <h3 id="modalTitle">Yeni Arıza Kaydı</h3>
         <button id="closeModal" class="modal-close">✕</button>
       </div>
       <form id="recordForm">
         <input type="hidden" id="recordId" />
         <div class="form-grid">
           <div class="form-group">
-            <label>MMS Numarası *</label>
+            <label>Arıza Numarası *</label>
             <input type="text" id="mms_numarasi" required placeholder="Örn: 273210" />
           </div>
           <div class="form-group">
@@ -146,7 +146,7 @@ import PageLayout from '../layouts/PageLayout.astro';
   <div id="reportModal" class="modal" style="display: none;">
     <div class="modal-box report-modal-box">
       <div class="modal-header">
-        <h3>📊 MMS Raporu Oluştur</h3>
+        <h3>📊 Arıza Raporu Oluştur</h3>
         <button id="closeReportModal" class="modal-close">✕</button>
       </div>
       <div class="report-form">
@@ -198,7 +198,7 @@ import PageLayout from '../layouts/PageLayout.astro';
 </PageLayout>
 
 <style>
-  .mms-page { max-width: 100%; }
+  .problem-records-page { max-width: 100%; }
   
   .page-header {
     display: flex;
@@ -381,11 +381,11 @@ import PageLayout from '../layouts/PageLayout.astro';
   [data-theme="dark"] .data-table tbody tr:hover { background: #1e1e2e; }
   .data-table td { padding: 0.6rem 0.75rem; vertical-align: middle; }
 
-  .mms-no { font-weight: 700; color: #667eea; font-family: monospace; }
-  [data-theme="dark"] .mms-no { color: #a5b4fc; }
+  .problem-no { font-weight: 700; color: #667eea; font-family: monospace; }
+  [data-theme="dark"] .problem-no { color: #a5b4fc; }
   .date-cell { color: #666; font-size: 0.8rem; white-space: nowrap; }
   .date-cell small { display: block; margin-top: 0.2rem; color: #15803d; font-size: 0.72rem; }
-  .mms-note { margin-top: 0.35rem; color: #64748b; font-size: 0.78rem; white-space: pre-wrap; }
+  .problem-note { margin-top: 0.35rem; color: #64748b; font-size: 0.78rem; white-space: pre-wrap; }
   .optional-label { color: #64748b; font-size: 0.78rem; font-weight: normal; }
   [data-theme="dark"] .date-cell { color: #aaa; }
   .ariza-cell { max-width: 280px; line-height: 1.3; }

@@ -227,7 +227,7 @@ function renderReport(): void {
   const r = state.report;
   const items: Array<[string, number]> = [
     ['Toplam Kullanıcı', r.users],
-    ['MMS Kayıt', r.mms],
+    ['Arıza Kaydı', r.mms],
     ['Çalışma Kayıt', r.calisma],
     ['Kayıp Eşya', r.kayip_esya],
     ['Notlar', r.notlar],
@@ -328,8 +328,8 @@ function renderFeedback(): void {
 }
 
 const RECORD_COLUMNS: Record<string, string[]> = {
-  mms: ['MMS No', 'Arıza Tanımı', 'İstasyon', 'Durum', 'Bildiren', 'Tarih', 'İşlem'],
-  calisma: ['MMS No', 'Çalışma Kodu', 'Yapılacak İş', 'Çalışanlar', 'İstasyon', 'Tarih', 'İşlem'],
+  mms: ['Arıza No', 'Arıza Tanımı', 'İstasyon', 'Durum', 'Bildiren', 'Tarih', 'İşlem'],
+  calisma: ['Arıza No', 'Çalışma Kodu', 'Yapılacak İş', 'Çalışanlar', 'İstasyon', 'Tarih', 'İşlem'],
   dahili: ['Dahili Numara', 'Birim', 'Açıklama', 'Oluşturan', 'Tarih', 'İşlem'],
   vardiya: ['İstasyon', 'Ay / Yıl', 'Personel Sayısı', 'Oluşturan', 'Tarih', 'İşlem'],
   kayip_esya: ['Belge No', 'Eşya Tanımı', 'Durum', 'Teslim Alan', 'Tarih', 'İşlem'],
@@ -512,7 +512,7 @@ async function refreshAll(showToast = false): Promise<void> {
 
 function recordApiPath(moduleKey: string, recordId: string): string {
   const id = encodeURIComponent(String(recordId));
-  if (moduleKey === 'mms') return '/api/mms/' + id;
+  if (moduleKey === 'mms') return '/api/problem-records/' + id;
   if (moduleKey === 'calisma') return '/api/calisma-izni/' + id;
   if (moduleKey === 'dahili') return '/api/dahili-numaralar/' + id;
   if (moduleKey === 'vardiya') return '/api/vardiya/' + id;

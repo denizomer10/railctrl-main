@@ -1,8 +1,8 @@
 /**
- * MMS Tekil Kayıt API Endpoints
- * GET /api/mms/[id] - Kayıt detayı
- * PUT /api/mms/[id] - Kayıt güncelle
- * DELETE /api/mms/[id] - Kayıt sil
+ * Problem record API endpoints
+ * GET /api/problem-records/[id] - Get a record
+ * PUT /api/problem-records/[id] - Update a record
+ * DELETE /api/problem-records/[id] - Delete a record
  */
 
 import type { APIRoute } from 'astro';
@@ -34,7 +34,7 @@ export const GET: APIRoute = async ({ params }) => {
     });
 
   } catch (error: any) {
-    console.error('MMS GET [id] error:', error);
+    console.error('Problem record GET error:', error);
     return new Response(JSON.stringify({ error: 'Kayıt alınırken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -111,8 +111,8 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     if (result.rows[0]?.istasyon) {
       await createStationNotifications(result.rows[0].istasyon, 'notify_mms', {
         category: 'mms',
-        title: 'MMS Güncellendi',
-        message: `${result.rows[0].istasyon} MMS ${result.rows[0].mms_numarasi || ''} kaydı güncellendi`,
+        title: 'Arıza Kaydı Güncellendi',
+        message: `${result.rows[0].istasyon} arıza no ${result.rows[0].mms_numarasi || ''} kaydı güncellendi`,
         resourceType: 'mms_records',
         resourceId: result.rows[0].id,
         station: result.rows[0].istasyon,
@@ -139,7 +139,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     });
 
   } catch (error: any) {
-    console.error('MMS PUT error:', error);
+    console.error('Problem record PUT error:', error);
     return new Response(JSON.stringify({ error: 'Kayıt güncellenirken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
@@ -191,7 +191,7 @@ export const DELETE: APIRoute = async ({ params, locals }) => {
     });
 
   } catch (error: any) {
-    console.error('MMS DELETE error:', error);
+    console.error('Problem record DELETE error:', error);
     return new Response(JSON.stringify({ error: 'Kayıt silinirken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

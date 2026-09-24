@@ -23,7 +23,7 @@ import PageLayout from '../layouts/PageLayout.astro';
     <div class="toolbar">
       <div class="search-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (MMS No, Çalışma Kodu, İş)" />
+        <input type="text" id="searchInput" class="search-input" placeholder="Ara... (Arıza No, Çalışma Kodu, Yapılacak İş)" />
         <button id="searchClear" class="search-clear" style="display: none;">✕</button>
       </div>
       <input id="istasyonFilter" class="select-filter station-select" type="text" placeholder="📍 İstasyon ara" />
@@ -38,7 +38,7 @@ import PageLayout from '../layouts/PageLayout.astro';
       <table class="data-table">
         <thead>
           <tr>
-            <th>MMS No</th>
+            <th>Arıza No</th>
             <th>Çalışma Kodu</th>
             <th>Tarih</th>
             <th>Yapılacak İş</th>
@@ -69,7 +69,7 @@ import PageLayout from '../layouts/PageLayout.astro';
         <input type="hidden" id="recordId" />
         <div class="form-grid">
           <div class="form-group">
-            <label>MMS Numarası</label>
+            <label>Arıza Numarası</label>
             <input type="text" id="mms_numarasi" placeholder="Örn: 273210" />
           </div>
           <div class="form-group">
@@ -192,8 +192,8 @@ import PageLayout from '../layouts/PageLayout.astro';
   .data-table td { padding: 0.6rem 0.75rem; vertical-align: middle; }
   [data-theme="dark"] .data-table td { color: #e0e0e0; }
 
-  .mms-no { font-weight: 700; color: #10b981; font-family: monospace; }
-  [data-theme="dark"] .mms-no { color: #34d399; }
+  .problem-no { font-weight: 700; color: #10b981; font-family: monospace; }
+  [data-theme="dark"] .problem-no { color: #34d399; }
   .kod-badge { display: inline-block; padding: 0.2rem 0.5rem; background: #dbeafe; color: #1e40af; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
   [data-theme="dark"] .kod-badge { background: #1e3a8a; color: #93c5fd; }
   .date-cell { color: #666; font-size: 0.8rem; white-space: nowrap; }

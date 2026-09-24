@@ -148,7 +148,7 @@
           const tarih = r.zaman_damgasi ? new Date(r.zaman_damgasi).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
           
           row.innerHTML = `
-            <td data-label="MMS No"><span class="mms-no">${r.mms_numarasi || '-'}</span></td>
+            <td data-label="Arıza No"><span class="problem-no">${r.mms_numarasi || '-'}</span></td>
             <td data-label="Çalışma Kodu"><span class="kod-badge">${r.calisma_kodu || '-'}</span></td>
             <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
             <td class="is-cell" data-label="Yapılacak İş">${r.yapilacak_is || '-'}</td>
@@ -414,7 +414,7 @@
 
         const tableBody = [
           [
-            { text: 'MMS No', style: 'tableHeader' },
+            { text: 'Arıza No', style: 'tableHeader' },
             { text: 'Çalışma Kodu', style: 'tableHeader' },
             { text: 'Tarih', style: 'tableHeader' },
             { text: 'Yapılacak İş', style: 'tableHeader' },

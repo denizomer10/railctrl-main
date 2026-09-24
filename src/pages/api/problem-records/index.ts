@@ -112,7 +112,7 @@ export const GET: APIRoute = async ({ url }) => {
       },
     });
   } catch (error) {
-    console.error('MMS GET error:', error);
+    console.error('Problem records GET error:', error);
     return jsonResponse({ error: 'Kayıtlar alınırken hata oluştu' }, 500);
   }
 };
@@ -129,7 +129,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
     const body = await request.json();
 
     if (!body.mms_numarasi || !body.ariza_tanimi || !body.istasyon) {
-      return jsonResponse({ error: 'MMS numarası, arıza tanımı ve istasyon zorunludur' }, 400);
+      return jsonResponse({ error: 'Arıza numarası, arıza tanımı ve istasyon zorunludur' }, 400);
     }
 
     const userInfo = await query<any>(`SELECT full_name, department FROM ${Tables.USERS} WHERE id = $1`, [user.id]);
@@ -145,8 +145,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     await createStationNotifications(body.istasyon, 'notify_mms', {
       category: 'mms',
-      title: 'Yeni MMS Kaydı',
-      message: `${body.istasyon} için MMS ${body.mms_numarasi} açıldı`,
+      title: 'Yeni Arıza Kaydı',
+      message: `${body.istasyon} için arıza no ${body.mms_numarasi} ile kayıt açıldı`,
       resourceType: 'mms_records',
       resourceId: result.rows[0].id,
       station: body.istasyon,
@@ -168,13 +168,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     return jsonResponse(
       {
-        message: 'MMS kaydı oluşturuldu',
+        message: 'Arıza kaydı oluşturuldu',
         record: result.rows[0],
       },
       201
     );
   } catch (error) {
-    console.error('MMS POST error:', error);
+    console.error('Problem record POST error:', error);
     return jsonResponse({ error: 'Kayıt oluşturulurken hata oluştu' }, 500);
   }
 };

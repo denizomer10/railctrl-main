@@ -102,9 +102,9 @@ export const GET: APIRoute = async ({ locals, url }) => {
       all_records AS (
         SELECT
           'mms'::text AS module_key,
-          'MMS'::text AS module_label,
+          'Arıza Kaydı'::text AS module_label,
           m.id::text AS record_id,
-          COALESCE(m.mms_numarasi, 'MMS #' || m.id::text) AS record_title,
+          COALESCE(m.mms_numarasi, 'Arıza #' || m.id::text) AS record_title,
           m.istasyon AS location,
           COALESCE(m.created_at, m.zaman_damgasi) AS created_at,
           COALESCE(u1.full_name, m.acan_ad_soyad, u2.full_name) AS creator_name,

@@ -1,5 +1,5 @@
 import { escapeHtml } from './api-client';
-// mms istemcisi. mms.astro tarafından bundled <script> ile çağrılır.
+// Problem-records client, bundled by problem-records.astro.
 
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear') as HTMLElement;
@@ -94,7 +94,7 @@ import { escapeHtml } from './api-client';
       if (!Number.isFinite(autoEditId)) return;
       clearAutoEditQuery();
       try {
-        const res = await fetch(`/api/mms/${autoEditId}`, { credentials: 'include' });
+        const res = await fetch(`/api/problem-records/${autoEditId}`, { credentials: 'include' });
         const data = await res.json();
         if (!res.ok || !data?.record) throw new Error(data?.error || 'Kayıt bulunamadı');
         openEditModal(data.record);
@@ -147,7 +147,7 @@ import { escapeHtml } from './api-client';
         params.set('page', currentPage.toString());
         params.set('limit', limit.toString());
 
-        const response = await fetch(`/api/mms?${params}`);
+        const response = await fetch(`/api/problem-records?${params}`);
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
@@ -183,10 +183,10 @@ import { escapeHtml } from './api-client';
             day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
           }) : '';
           const tarihGosterimi = onarilmaTarihi ? `${tarih}<br><small>Onarıldı: ${onarilmaTarihi}</small>` : tarih;
-          const notGosterimi = r.not ? `<div class="mms-note">Not: ${escapeHtml(r.not)}</div>` : '';
+          const notGosterimi = r.not ? `<div class="problem-note">Not: ${escapeHtml(r.not)}</div>` : '';
           
           row.innerHTML = `
-            <td data-label="MMS No"><span class="mms-no">${r.mms_numarasi || '-'}</span></td>
+            <td data-label="Arıza No"><span class="problem-no">${r.mms_numarasi || '-'}</span></td>
             <td data-label="Tarih"><span class="date-cell">${tarihGosterimi}</span></td>
             <td class="ariza-cell" data-label="Arıza Tanımı">${escapeHtml(r.ariza_tanimi || '-')} ${notGosterimi}</td>
             <td class="istasyon-cell" data-label="İstasyon">${r.istasyon || '-'}</td>
@@ -235,7 +235,7 @@ import { escapeHtml } from './api-client';
     function openNewRecordModal() {
       if (!canCreateMms()) return;
       editingId = null;
-      modalTitle.textContent = 'Yeni MMS Kaydı';
+      modalTitle.textContent = 'Yeni Arıza Kaydı';
       recordForm.reset();
       durumGroup.style.display = 'none';
       notGroup.style.display = 'none';
@@ -279,7 +279,7 @@ import { escapeHtml } from './api-client';
       }
 
       try {
-        const url = editingId ? `/api/mms/${editingId}` : '/api/mms';
+        const url = editingId ? `/api/problem-records/${editingId}` : '/api/problem-records';
         const method = editingId ? 'PUT' : 'POST';
         
         const response = await fetch(url, {
@@ -311,7 +311,7 @@ import { escapeHtml } from './api-client';
       if (!editingId || !confirm('Bu kaydı silmek istediğinizden emin misiniz?')) return;
       
       try {
-        const response = await fetch(`/api/mms/${editingId}`, { method: 'DELETE' });
+        const response = await fetch(`/api/problem-records/${editingId}`, { method: 'DELETE' });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
@@ -469,7 +469,7 @@ import { escapeHtml } from './api-client';
       }
 
       try {
-        const response = await fetch(`/api/mms?${params}`);
+        const response = await fetch(`/api/problem-records?${params}`);
         const data = await response.json();
         
         let reportData = data.records || [];
@@ -502,7 +502,7 @@ import { escapeHtml } from './api-client';
 
         const tableBody = [
           [
-            { text: 'MMS No', style: 'tableHeader' },
+            { text: 'Arıza No', style: 'tableHeader' },
             { text: 'Tarih', style: 'tableHeader' },
             { text: 'İstasyon', style: 'tableHeader' },
             { text: 'Bildiren', style: 'tableHeader' },
@@ -520,7 +520,7 @@ import { escapeHtml } from './api-client';
         ];
 
         const content: any[] = [
-          { text: 'MMS Arıza Raporu', style: 'title' },
+          { text: 'Arıza Raporu', style: 'title' },
           { text: `Tarih Aralığı: ${dateRangeText}`, style: 'subtitle' },
         ];
         if (reportStation.value) content.push({ text: `İstasyon: ${reportStation.value}`, style: 'subtitle' });
@@ -559,7 +559,7 @@ import { escapeHtml } from './api-client';
           content,
         };
 
-        const fileName = `MMS_Rapor_${new Date().toISOString().split('T')[0]}.pdf`;
+        const fileName = `Ariza_Raporu_${new Date().toISOString().split('T')[0]}.pdf`;
         if (openInNewWindow) {
           pdfMakeApi.createPdf(docDefinition).getBlob((blob: Blob) => {
             const blobUrl = URL.createObjectURL(blob);
