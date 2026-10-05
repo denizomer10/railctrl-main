@@ -1,5 +1,7 @@
 // calisma-izni istemcisi. calisma-izni.astro tarafından bundled <script> ile çağrılır.
 
+import { escapeHtml } from './api-client';
+
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear') as HTMLElement;
     const istasyonFilter = document.getElementById('istasyonFilter') as HTMLInputElement;
@@ -148,14 +150,14 @@
           const tarih = r.zaman_damgasi ? new Date(r.zaman_damgasi).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
           
           row.innerHTML = `
-            <td data-label="Arıza No"><span class="problem-no">${r.mms_numarasi || '-'}</span></td>
-            <td data-label="Çalışma Kodu"><span class="kod-badge">${r.calisma_kodu || '-'}</span></td>
-            <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
-            <td class="is-cell" data-label="Yapılacak İş">${r.yapilacak_is || '-'}</td>
-            <td class="calisan-cell" data-label="Çalışanlar">${r.calisanlar || '-'}</td>
-            <td data-label="İstasyon"><span class="istasyon-badge">${r.istasyon || '-'}</span></td>
-            <td data-label="Bildiren">${r.bildiren_ad_soyad || '-'}</td>
-            <td data-label="İşlem">${canEditCalisma() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
+            <td data-label="Arıza No"><span class="problem-no">${escapeHtml(r.mms_numarasi || '-')}</span></td>
+            <td data-label="Çalışma Kodu"><span class="kod-badge">${escapeHtml(r.calisma_kodu || '-')}</span></td>
+            <td data-label="Tarih"><span class="date-cell">${escapeHtml(tarih)}</span></td>
+            <td class="is-cell" data-label="Yapılacak İş">${escapeHtml(r.yapilacak_is || '-')}</td>
+            <td class="calisan-cell" data-label="Çalışanlar">${escapeHtml(r.calisanlar || '-')}</td>
+            <td data-label="İstasyon"><span class="istasyon-badge">${escapeHtml(r.istasyon || '-')}</span></td>
+            <td data-label="Bildiren">${escapeHtml(r.bildiren_ad_soyad || '-')}</td>
+            <td data-label="İşlem">${canEditCalisma() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${escapeHtml(r.id)}">✏️</button></div>` : '-'}</td>
           `;
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
           tableBody.appendChild(row);
@@ -165,7 +167,7 @@
         totalPages = Math.max(1, Number(data.pagination?.totalPages ?? Math.ceil(paginationTotalCount / limit) ?? 1));
         renderPagination();
       } catch (error: any) {
-        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${escapeHtml(error.message)}</td></tr>`;
       }
     }
 

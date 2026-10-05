@@ -123,46 +123,21 @@ const canSeePrivate = user?.role === 'yonetici';
         </div>
 
         <div class="form-group">
-          <label for="icerik">İçerik *</label>
-          <div class="editor-tools" id="editorTools">
-            <button type="button" data-cmd="bold" title="Kalın"><b>B</b></button>
-            <button type="button" data-cmd="italic" title="İtalik"><i>I</i></button>
-            <button type="button" data-cmd="underline" title="Altı Çizili"><u>U</u></button>
-            <button type="button" data-cmd="strikeThrough" title="Üstü Çizili"><s>S</s></button>
-            <button type="button" data-cmd="formatBlock" data-value="h2" title="Başlık">H2</button>
-            <button type="button" data-cmd="formatBlock" data-value="h3" title="Alt Başlık">H3</button>
-            <button type="button" data-cmd="formatBlock" data-value="blockquote" title="Alıntı">❝</button>
-            <button type="button" data-cmd="formatBlock" data-value="pre" title="Kod Blok">{ }</button>
-            <button type="button" data-cmd="insertUnorderedList" title="Madde Listesi">• Liste</button>
-            <button type="button" data-cmd="insertOrderedList" title="Numaralı Liste">1. Liste</button>
-            <button type="button" data-cmd="outdent" title="Girintiyi Azalt">⟵</button>
-            <button type="button" data-cmd="indent" title="Girintiyi Artır">⟶</button>
-            <button type="button" data-cmd="justifyLeft" title="Sola">⟸</button>
-            <button type="button" data-cmd="justifyCenter" title="Ortala">≡</button>
-            <button type="button" data-cmd="justifyRight" title="Sağa">⟹</button>
-            <button type="button" data-link="true" title="Bağlantı">Link</button>
-            <button type="button" data-cmd="unlink" title="Bağlantıyı Kaldır">Unlink</button>
-            <button type="button" data-cmd="insertHorizontalRule" title="Ayraç">―</button>
-            <label class="toolbar-color">
-              A
-              <input type="color" id="textColorPicker" value="#e5e7eb" title="Yazı Rengi" />
-            </label>
-            <label class="toolbar-color">
-              Bg
-              <input type="color" id="bgColorPicker" value="#fff59d" title="Vurgu Rengi" />
-            </label>
-            <button type="button" data-resize="down" title="Resmi Küçült">Resim -</button>
-            <button type="button" data-resize="up" title="Resmi Büyüt">Resim +</button>
-            <button type="button" data-cmd="removeFormat" title="Biçimi Temizle">Tx</button>
+          <label for="richEditor">İçerik *</label>
+          <div class="note-editor-shell" id="editorDropzone">
+            <div class="note-toolbar" id="editorToolbar"></div>
+            <div id="richEditor" class="rich-editor" contenteditable="true" data-placeholder="Not içeriği… Resimleri buraya sürükleyip bırakabilirsiniz."></div>
+            <div class="note-editor-foot">
+              <span class="note-editor-hint">💡 Markdown kısayolları: <code>#</code> başlık, <code>-</code> liste, <code>[]</code> görev, <code>&gt;</code> alıntı, <code>---</code> ayraç</span>
+              <span class="note-editor-status" id="editorStatus">0 kelime · 0 karakter</span>
+            </div>
           </div>
-          <div id="richEditor" class="rich-editor" contenteditable="true" data-placeholder="Not içeriği..."></div>
           <textarea id="icerik" name="icerik" rows="10" style="display: none;"></textarea>
         </div>
 
         <div class="form-group">
-          <label for="mediaFiles">Resim / Medya / Belge</label>
-          <input type="file" id="mediaFiles" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" />
-          <small class="upload-help">Dosyalar `public/files` içine kaydedilir. Maksimum 10MB/dosya.</small>
+          <label>Resim / Medya / Belge</label>
+          <small class="upload-help">Resimleri doğrudan editöre sürükleyip bırakabilir, yapıştırabilir veya dosya seçebilirsiniz. Maksimum 10MB/dosya.</small>
           <div id="mediaList" class="media-list"></div>
         </div>
 
@@ -977,145 +952,374 @@ const canSeePrivate = user?.role === 'yonetici';
     line-height: 1.5;
   }
 
-  .editor-tools {
+  /* ---- Modern not editörü ---- */
+  .note-editor-shell {
+    border: 2px solid #e0e0e0;
+    border-radius: 14px;
+    background: #fff;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .note-editor-shell:focus-within {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  }
+
+  .note-editor-shell.is-dragover {
+    border-color: #f59e0b;
+    background: #fffbeb;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.2);
+  }
+
+  .note-toolbar {
     display: flex;
-    gap: 0.5rem;
+    align-items: center;
+    gap: 0.25rem;
     flex-wrap: wrap;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px 12px 0 0;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid #e5e7eb;
     background: linear-gradient(180deg, #fffbeb 0%, #fff7ed 100%);
   }
 
-  .editor-tools button {
-    border: 1px solid #d1d5db;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 0.3rem 0.55rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  .toolbar-color {
+  .note-toolbar-group {
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.35rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
   }
 
-  .toolbar-color input {
+  .note-toolbar-sep {
+    width: 1px;
+    height: 22px;
+    background: #d1d5db;
+    margin: 0 0.3rem;
+  }
+
+  .note-tool {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid transparent;
+    border-radius: 9px;
+    background: transparent;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .note-tool svg {
+    width: 19px;
+    height: 19px;
+  }
+
+  .note-tool:hover {
+    background: #fff;
+    border-color: #d1d5db;
+    color: #b45309;
+  }
+
+  .note-tool.is-active {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #92400e;
+  }
+
+  .note-tool-danger:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #b91c1c;
+  }
+
+  .note-block-style {
+    height: 34px;
+    padding: 0 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    background: #fff;
+    color: #374151;
+    font-size: 0.82rem;
+    cursor: pointer;
+  }
+
+  .note-color-picker {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .note-color-panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: repeat(5, 22px);
+    gap: 6px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  }
+
+  .note-swatch {
     width: 22px;
-    height: 20px;
+    height: 22px;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  .note-swatch:hover {
+    transform: scale(1.12);
+  }
+
+  .note-swatch-custom {
+    grid-column: span 5;
+    width: 100%;
+    height: 26px;
     padding: 0;
     border: none;
     background: transparent;
     cursor: pointer;
   }
 
-  [data-theme="dark"] .editor-tools button {
-    background: #111827;
-    border-color: #374151;
-    color: #e5e7eb;
-  }
-  [data-theme="dark"] .toolbar-color {
-    background: #111827;
-    border-color: #374151;
-    color: #e5e7eb;
-  }
-
-  [data-theme="dark"] .editor-tools {
-    background: linear-gradient(180deg, #151515 0%, #101010 100%);
-    border-color: #333;
-  }
-  :global(html[data-theme="dark"]) #noteModal .editor-tools {
-    background: linear-gradient(180deg, #151515 0%, #101010 100%) !important;
-    border-color: #333 !important;
-  }
-  :global(html[data-theme="dark"]) #noteModal .editor-tools button {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    border-color: #374151 !important;
-  }
-  :global(html[data-theme="dark"]) #noteModal .toolbar-color {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    border-color: #374151 !important;
+  .note-img-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    margin-left: auto;
   }
 
   .rich-editor {
-    min-height: 220px;
-    border: 2px solid #e0e0e0;
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    padding: 0.95rem 1rem;
-    background: #fff;
-    line-height: 1.6;
+    min-height: 260px;
+    max-height: 60vh;
     overflow-y: auto;
+    padding: 1rem 1.1rem;
+    line-height: 1.65;
+    outline: none;
   }
+
+  .rich-editor.is-empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    pointer-events: none;
+  }
+
+  .rich-editor.is-uploading {
+    opacity: 0.7;
+  }
+
+  .rich-editor p { margin: 0 0 0.6rem; }
+  .rich-editor h1 { font-size: 1.5rem; margin: 0.8rem 0 0.5rem; }
+  .rich-editor h2 { font-size: 1.3rem; margin: 0.8rem 0 0.5rem; }
+  .rich-editor h3 { font-size: 1.12rem; margin: 0.7rem 0 0.4rem; }
+  .rich-editor h4 { font-size: 1rem; margin: 0.6rem 0 0.4rem; }
+  .rich-editor ul, .rich-editor ol { margin: 0.4rem 0 0.7rem 1.4rem; }
+  .rich-editor li { margin: 0.2rem 0; }
+
+  .rich-editor ul.task-list {
+    list-style: none;
+    margin-left: 0.4rem;
+  }
+
+  .rich-editor ul.task-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .rich-editor ul.task-list li.is-checked {
+    text-decoration: line-through;
+    color: #9ca3af;
+  }
+
+  .rich-editor blockquote {
+    margin: 0.6rem 0;
+    padding: 0.5rem 0.9rem;
+    border-left: 4px solid #f59e0b;
+    background: #fffbeb;
+    border-radius: 0 10px 10px 0;
+  }
+
+  .rich-editor pre {
+    margin: 0.6rem 0;
+    padding: 0.8rem 1rem;
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+  }
+
+  .rich-editor code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    background: #f1f5f9;
+    padding: 0.1rem 0.35rem;
+    border-radius: 5px;
+    font-size: 0.88em;
+  }
+
+  .rich-editor pre code {
+    background: transparent;
+    padding: 0;
+  }
+
+  .rich-editor a {
+    color: #1d4ed8;
+    text-decoration: underline;
+  }
+
+  .rich-editor hr {
+    border: none;
+    border-top: 2px solid #e5e7eb;
+    margin: 1rem 0;
+  }
+
+  .rich-editor .note-figure {
+    margin: 0.8rem 0;
+    text-align: center;
+  }
+
+  .rich-editor .note-figure figcaption {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 0.3rem;
+  }
+
   .rich-editor img {
     max-width: 100%;
     height: auto;
     border-radius: 10px;
-    display: block;
-    margin: 0.5rem 0;
     border: 1px solid #e5e7eb;
+    cursor: pointer;
   }
-  .rich-editor img.selected-image {
-    outline: 2px solid #f59e0b;
+
+  .rich-editor img.is-selected {
+    outline: 3px solid #f59e0b;
     outline-offset: 2px;
   }
 
-  .rich-editor:empty::before {
-    content: attr(data-placeholder);
-    color: #9ca3af;
+  .rich-editor video {
+    max-width: 100%;
+    border-radius: 10px;
   }
 
-  .rich-editor:focus {
-    outline: none;
-    border-color: #f59e0b;
+  .rich-editor table.note-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0.6rem 0;
   }
-  .rich-editor.dragover {
-    border-color: #f59e0b;
-    background: #fffbeb;
+
+  .rich-editor table.note-table th,
+  .rich-editor table.note-table td {
+    border: 1px solid #d1d5db;
+    padding: 0.45rem 0.6rem;
+    min-width: 60px;
+  }
+
+  .rich-editor table.note-table th {
+    background: #f8fafc;
+    font-weight: 600;
+  }
+
+  .note-editor-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0.8rem;
+    border-top: 1px solid #e5e7eb;
+    background: #f8fafc;
+    font-size: 0.75rem;
+    color: #6b7280;
+  }
+
+  .note-editor-hint code {
+    background: #eef2ff;
+    color: #4338ca;
+    padding: 0.05rem 0.3rem;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  .note-editor-status {
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-theme="dark"] .note-editor-shell {
+    background: #0a0a0a;
+    border-color: #333;
+  }
+
+  [data-theme="dark"] .note-toolbar {
+    background: linear-gradient(180deg, #151515 0%, #101010 100%);
+    border-bottom-color: #333;
+  }
+
+  [data-theme="dark"] .note-tool {
+    color: #e5e7eb;
+  }
+
+  [data-theme="dark"] .note-tool:hover {
+    background: #1f2937;
+    border-color: #374151;
+    color: #fcd34d;
+  }
+
+  [data-theme="dark"] .note-tool.is-active {
+    background: #2a1e0a;
+    border-color: #78350f;
+    color: #fcd34d;
+  }
+
+  [data-theme="dark"] .note-block-style {
+    background: #111827;
+    border-color: #374151;
+    color: #e5e7eb;
+  }
+
+  [data-theme="dark"] .note-color-panel {
+    background: #111827;
+    border-color: #374151;
   }
 
   [data-theme="dark"] .rich-editor {
-    background: #0a0a0a;
-    border-color: #333;
     color: #e5e7eb;
+    caret-color: #f8fafc;
   }
-  [data-theme="dark"] .rich-editor,
-  [data-theme="dark"] .rich-editor p,
-  [data-theme="dark"] .rich-editor li,
-  [data-theme="dark"] .rich-editor h1,
-  [data-theme="dark"] .rich-editor h2,
-  [data-theme="dark"] .rich-editor h3,
-  [data-theme="dark"] .rich-editor blockquote,
-  [data-theme="dark"] .rich-editor pre,
-  [data-theme="dark"] .rich-editor span,
-  [data-theme="dark"] .rich-editor div {
-    color: #e5e7eb;
+
+  [data-theme="dark"] .rich-editor blockquote {
+    background: #2a1e0a;
   }
-  :global(html[data-theme="dark"]) #noteModal .rich-editor {
-    background: #0a0a0a !important;
-    border-color: #333 !important;
-    color: #e5e7eb !important;
-    caret-color: #f8fafc !important;
+
+  [data-theme="dark"] .rich-editor code {
+    background: #1f2937;
   }
-  :global(html[data-theme="dark"]) #noteModal .rich-editor p,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor li,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h1,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h2,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h3,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor span,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor div {
-    color: #e5e7eb !important;
+
+  [data-theme="dark"] .rich-editor table.note-table th,
+  [data-theme="dark"] .rich-editor table.note-table td {
+    border-color: #374151;
   }
-  [data-theme="dark"] .rich-editor.dragover {
+
+  [data-theme="dark"] .rich-editor table.note-table th {
+    background: #111827;
+  }
+
+  [data-theme="dark"] .rich-editor img {
+    border-color: #374151;
+  }
+
+  [data-theme="dark"] .note-editor-foot {
+    background: #111827;
+    border-top-color: #333;
+    color: #9ca3af;
+  }
+
+  [data-theme="dark"] .note-editor-shell.is-dragover {
     background: #2a1e0a;
   }
 
@@ -1132,16 +1336,8 @@ const canSeePrivate = user?.role === 'yonetici';
     gap: 0.5rem;
   }
 
-  .media-list.dragover {
-    border: 2px dashed #f59e0b;
-    border-radius: 12px;
-    padding: 0.5rem;
-    background: #fffbeb;
-  }
-
   .media-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 0.75rem;
     border: 1px solid #e5e7eb;
@@ -1150,9 +1346,14 @@ const canSeePrivate = user?.role === 'yonetici';
     background: #fff;
   }
 
+  .media-thumb {
+    font-size: 1.1rem;
+  }
+
   .media-name {
+    flex: 1;
     color: #374151;
-    word-break: break-all;
+    word-break: break-word;
     font-size: 0.9rem;
   }
 
@@ -1160,7 +1361,10 @@ const canSeePrivate = user?.role === 'yonetici';
     background: #0a0a0a;
     border-color: #333;
   }
-  [data-theme="dark"] .media-name { color: #e5e7eb; }
+
+  [data-theme="dark"] .media-name {
+    color: #e5e7eb;
+  }
 
   .media-remove {
     border: none;

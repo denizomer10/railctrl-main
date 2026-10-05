@@ -52,6 +52,11 @@ async function pruneDeprecatedUserColumns(): Promise<void> {
 }
 
 async function bootstrapAppSchema(): Promise<void> {
+  // Aynı anda gelen isteklerde SQLITE_BUSY yüzünden 500 dönmemesi için
+  // bağlantı başına yazma kilidi bekleme süresi ve WAL günlük modu.
+  await query(`PRAGMA busy_timeout = 5000`);
+  await query(`PRAGMA journal_mode = WAL`);
+
   await removeUnusedEmptyTables();
   await pruneDeprecatedUserColumns();
 

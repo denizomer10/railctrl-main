@@ -1,5 +1,7 @@
 // kayip-esya istemcisi. kayip-esya.astro tarafından bundled <script> ile çağrılır.
 
+import { escapeHtml } from './api-client';
+
     const chips = document.querySelectorAll('.chip');
     const tableBody = document.getElementById('tableBody') as HTMLElement;
     const noResults = document.getElementById('noResults') as HTMLElement;
@@ -171,7 +173,7 @@ let currentDurum: string | null = null;
       if (d.includes('imha') || d.includes('iett')) return `<span class="status-badge status-danger">🗑️ İmha Edildi</span>`;
       if (d.includes('büroda') || d.includes('depoda') || d === 'depoda') return `<span class="status-badge status-info">📦 Depoda</span>`;
       if (d === '' || d.includes('tcdd hesab') || d.includes('işlem no')) return `<span class="status-badge status-warning">⏳ Beklemede</span>`;
-      return `<span class="status-badge status-secondary">📋 ${durum || 'Belirsiz'}</span>`;
+      return `<span class="status-badge status-secondary">📋 ${escapeHtml(durum || 'Belirsiz')}</span>`;
     }
 
     function renderPagination() {
@@ -242,12 +244,12 @@ params.set('page', currentPage.toString());
           const tarih = r.tarih ? new Date(r.tarih).toLocaleDateString('tr-TR') : '-';
           
           row.innerHTML = `
-            <td data-label="Belge No"><span class="belge-no">${r.belge_no || '-'}</span></td>
-            <td data-label="Tarih"><span class="date-cell">${tarih}</span></td>
-            <td class="esya-cell" data-label="Eşya Tanımı" title="${r.esya_tanimi || ''}">${(r.esya_tanimi || '-').substring(0, 60)}${(r.esya_tanimi?.length > 60) ? '...' : ''}</td>
+            <td data-label="Belge No"><span class="belge-no">${escapeHtml(r.belge_no || '-')}</span></td>
+            <td data-label="Tarih"><span class="date-cell">${escapeHtml(tarih)}</span></td>
+            <td class="esya-cell" data-label="Eşya Tanımı" title="${escapeHtml(r.esya_tanimi || '')}">${escapeHtml((r.esya_tanimi || '-').substring(0, 60))}${(r.esya_tanimi?.length > 60) ? '...' : ''}</td>
             <td data-label="Durum">${getStatusBadge(r.durumu)}</td>
-            <td data-label="Eşya Sahibi">${r.esya_sahibi_ad_soyad || '-'}</td>
-            <td data-label="İşlem"><div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div></td>
+            <td data-label="Eşya Sahibi">${escapeHtml(r.esya_sahibi_ad_soyad || '-')}</td>
+            <td data-label="İşlem"><div class="action-btns"><button class="btn-action btn-edit" data-id="${escapeHtml(r.id)}">✏️</button></div></td>
           `;
           
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
@@ -259,7 +261,7 @@ params.set('page', currentPage.toString());
         renderPagination();
       } catch (error: any) {
         console.error('Load error:', error);
-        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${escapeHtml(error.message)}</td></tr>`;
       }
     }
 

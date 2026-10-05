@@ -186,13 +186,13 @@ import { escapeHtml } from './api-client';
           const notGosterimi = r.not ? `<div class="problem-note">Not: ${escapeHtml(r.not)}</div>` : '';
           
           row.innerHTML = `
-            <td data-label="Arıza No"><span class="problem-no">${r.mms_numarasi || '-'}</span></td>
+            <td data-label="Arıza No"><span class="problem-no">${escapeHtml(r.mms_numarasi || '-')}</span></td>
             <td data-label="Tarih"><span class="date-cell">${tarihGosterimi}</span></td>
             <td class="ariza-cell" data-label="Arıza Tanımı">${escapeHtml(r.ariza_tanimi || '-')} ${notGosterimi}</td>
-            <td class="istasyon-cell" data-label="İstasyon">${r.istasyon || '-'}</td>
-            <td data-label="Bildiren">${r.acan_ad_soyad || '-'}</td>
+            <td class="istasyon-cell" data-label="İstasyon">${escapeHtml(r.istasyon || '-')}</td>
+            <td data-label="Bildiren">${escapeHtml(r.acan_ad_soyad || '-')}</td>
             <td data-label="Durum">${getStatusBadge(r.durum)}</td>
-            <td data-label="İşlem">${canEditMms() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
+            <td data-label="İşlem">${canEditMms() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${escapeHtml(r.id)}">✏️</button></div>` : '-'}</td>
           `;
           
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
@@ -204,7 +204,7 @@ import { escapeHtml } from './api-client';
         renderPagination();
       } catch (error: any) {
         console.error('Load error:', error);
-        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${escapeHtml(error.message)}</td></tr>`;
       }
     }
 

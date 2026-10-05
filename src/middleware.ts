@@ -8,17 +8,22 @@ import { verifyToken, getUserById } from './lib/auth';
 
 const STATIC_ASSET_EXTENSIONS = /\.(?:css|js|mjs|map|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|pdf|json|xml|txt)$/i;
 
+// Yalnızca bu köklerdeki dosyalar statik sayılır. Uzantı tek başına asla
+// yeterli değildir: `/api/media/x.png` gibi bir uç nokta uzantıya bakılırsa
+// kimlik doğrulamasından kaçar ve not ekleri (şifre kartları vb.) herkese açılır.
+const STATIC_ROOTS = ['/css/', '/js/', '/vendor/', '/icons/', '/_astro/', '/assets/'];
+
 function isStaticAssetPath(pathname: string): boolean {
-  return (
-    pathname.startsWith('/css/') ||
-    pathname.startsWith('/js/') ||
-    pathname.startsWith('/files/') ||
-    pathname.startsWith('/vendor/') ||
-    pathname.startsWith('/_astro/') ||
-    pathname === '/sw.js' ||
-    pathname === '/manifest.json' ||
-    STATIC_ASSET_EXTENSIONS.test(pathname)
-  );
+  // API rotaları hiçbir koşulda statik değildir.
+  if (pathname.startsWith('/api/')) return false;
+  // Yüklenmiş medya ve şifreli dosyalar kimlik doğrulamalı uç noktalardan gelir.
+  if (pathname.startsWith('/files/')) return false;
+
+  if (pathname === '/sw.js' || pathname === '/manifest.json') return true;
+  if (STATIC_ROOTS.some((root) => pathname.startsWith(root))) return true;
+
+  // Kök düzeyindeki ikon/favicon dosyaları.
+  return pathname.startsWith('/') && !pathname.slice(1).includes('/') && STATIC_ASSET_EXTENSIONS.test(pathname);
 }
 
 // Public sayfalar (giriş gerektirmeyen)
