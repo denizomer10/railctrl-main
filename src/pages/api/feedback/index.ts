@@ -3,6 +3,7 @@ import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -18,14 +19,14 @@ export const GET: APIRoute = async ({ locals }) => {
       ? await query<any>(
         `SELECT id, user_id, full_name, station, mesaj, status, created_at
              FROM ${Tables.GERI_BILDIRIMLER}
-         ORDER BY created_at DESC
+         ORDER BY created_at DESC, id DESC
          LIMIT 500`
       )
       : await query<any>(
         `SELECT id, user_id, full_name, station, mesaj, status, created_at
              FROM ${Tables.GERI_BILDIRIMLER}
          WHERE user_id = $1
-         ORDER BY created_at DESC
+         ORDER BY created_at DESC, id DESC
          LIMIT 200`,
         [locals.user.id]
       );
@@ -47,7 +48,9 @@ export const POST: APIRoute = async ({ locals, request }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     if (!body?.mesaj || !String(body.mesaj).trim()) {
       return new Response(JSON.stringify({ error: 'Mesaj zorunludur' }), { status: 400, headers: { 'Content-Type': 'application/json' } });

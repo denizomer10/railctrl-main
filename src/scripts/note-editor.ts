@@ -9,7 +9,7 @@
  * `document.execCommand` bağımlılığı tek noktada izole edilir.
  */
 
-import { sanitizeHtml, isSafeUrl } from '../lib/sanitize';
+import { sanitizeHtml, isSafeUrl, escapeHtml } from '../lib/sanitize';
 
 export interface UploadedMedia {
   name: string;
@@ -89,14 +89,6 @@ const ICONS: Record<string, string> = {
 
 function icon(name: string): string {
   return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
-}
-
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
 
 export function createNoteEditor(options: NoteEditorOptions): NoteEditorHandle {

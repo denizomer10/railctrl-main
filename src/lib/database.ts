@@ -216,21 +216,59 @@ function buildExecutableSql(text: string, params: any[] = []): string {
   // 3) Yapisal donusumler, literaller maskeli
   out = withMaskedLiterals(out, applyStructuralTransforms);
   // 4) Parametreler en son yerlestirilir; boylece hicbir donusum veriye dokunmaz
-  return substituteParams(out, params);
+  return params.length ? substituteParams(out, params) : out;
+}
+
+// Parametresiz SQL metinleri (DDL, istatistikler, PRAGMA) her istekte yeniden
+// donusturulmesin. Sonlu bir onbellekle siniirlariz.
+const staticSqlCache = new Map<string, string>();
+const STATIC_SQL_CACHE_LIMIT = 500;
+
+function buildExecutableSqlCached(text: string, params: any[] = []): string {
+  if (params.length > 0) return buildExecutableSql(text, params);
+  const cached = staticSqlCache.get(text);
+  if (cached !== undefined) return cached;
+  const built = buildExecutableSql(text);
+  if (staticSqlCache.size < STATIC_SQL_CACHE_LIMIT) staticSqlCache.set(text, built);
+  return built;
+}
+
+function isBusyError(error: unknown): boolean {
+  const message = String((error as { message?: unknown })?.message ?? error);
+  return message.includes('SQLITE_BUSY') || message.includes('database is locked');
 }
 
 async function runAstroDb(text: string, params?: any[]): Promise<any> {
-  const executable = buildExecutableSql(text, params || []);
-  try {
-    return await db.run(sql.raw(executable));
-  } catch (error) {
-    console.error('SQL exec failed:', executable);
-    throw error;
+  const executable = buildExecutableSqlCached(text, params || []);
+  let attempt = 0;
+  // WAL modunda bile kısa süreli kilit çakışmaları olabilir; küçük bir geri
+  // çekilme ile yeniden denemek 500 dönmesini engeller.
+  for (;;) {
+    try {
+      return await db.run(sql.raw(executable));
+    } catch (error) {
+      if (isBusyError(error) && attempt < 4) {
+        attempt += 1;
+        await new Promise((resolve) => setTimeout(resolve, 20 * attempt));
+        continue;
+      }
+      console.error('SQL exec failed:', executable);
+      throw error;
+    }
   }
 }
 
-export async function getPool(): Promise<typeof db> {
-  return db;
+// Tek libSQL bağlantısı üzerinden BEGIN/COMMIT'in birbirine karışmaması için
+// tüm veritabanı işlemlerini tek bir sıraya alan basit bir FIFO kilit.
+let dbLockChain: Promise<unknown> = Promise.resolve();
+
+function withDbLock<T>(operation: () => Promise<T>): Promise<T> {
+  const result = dbLockChain.then(operation, operation);
+  dbLockChain = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
 }
 
 export async function query<T = any>(
@@ -240,7 +278,7 @@ export async function query<T = any>(
   const start = Date.now();
 
   try {
-    const result = normalizeResult<T>(await runAstroDb(text, params));
+    const result = normalizeResult<T>(await withDbLock(() => runAstroDb(text, params)));
 
     const duration = Date.now() - start;
     if (duration > 100) {
@@ -255,19 +293,25 @@ export async function query<T = any>(
 }
 
 export async function transaction<T>(callback: (client: DBTransactionClient) => Promise<T>): Promise<T> {
-  try {
-    await runAstroDb('BEGIN');
-    const client: DBTransactionClient = {
-      query: async <R = any>(text: string, params?: any[]) =>
-        normalizeResult<R>(await runAstroDb(text, params)),
-    };
-    const result = await callback(client);
-    await runAstroDb('COMMIT');
-    return result;
-  } catch (error) {
-    await runAstroDb('ROLLBACK');
-    throw error;
-  }
+  return withDbLock(async () => {
+    try {
+      await runAstroDb('BEGIN');
+      const client: DBTransactionClient = {
+        query: async <R = any>(text: string, params?: any[]) =>
+          normalizeResult<R>(await runAstroDb(text, params)),
+      };
+      const result = await callback(client);
+      await runAstroDb('COMMIT');
+      return result;
+    } catch (error) {
+      try {
+        await runAstroDb('ROLLBACK');
+      } catch (rollbackError) {
+        console.error('ROLLBACK failed:', rollbackError);
+      }
+      throw error;
+    }
+  });
 }
 
 export async function checkConnection(): Promise<boolean> {
@@ -280,18 +324,11 @@ export async function checkConnection(): Promise<boolean> {
   }
 }
 
-export async function closePool(): Promise<void> {
-  // Astro DB manages connections internally.
-}
-
 export const Tables = {
   USERS: 'users',
   SESSIONS: 'sessions',
   REFRESH_TOKENS: 'refresh_tokens',
-  FILE_CATEGORIES: 'file_categories',
-  FILES: 'files',
   AUDIT_LOGS: 'audit_logs',
-  PROBLEM_RECORDS: 'problem_records',
   MMS_RECORDS: 'mms_records',
   CALISMA_IZINLERI: 'calisma_izinleri',
   NOTLAR: 'notlar',
@@ -305,12 +342,3 @@ export const Tables = {
 } as const;
 
 export type TableName = (typeof Tables)[keyof typeof Tables];
-
-export default {
-  getPool,
-  query,
-  transaction,
-  checkConnection,
-  closePool,
-  Tables,
-};

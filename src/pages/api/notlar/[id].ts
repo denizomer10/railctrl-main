@@ -11,30 +11,10 @@ import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
 import { deleteMediaFile, mediaNameFromAnyPath } from '../../../lib/media';
 import { assertSafeHtml } from '../../../lib/sanitize';
+import { readJsonBody } from '../../../lib/api';
+import { PRIVATE_NOTE_CATEGORY as PRIVATE_CATEGORY, getIstanbulTimestamp, parseMedia } from '../../../lib/notlar';
 
 export const prerender = false;
-
-const PRIVATE_CATEGORY = 'Özel';
-
-function getIstanbulTimestamp(): string {
-  const parts = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date());
-
-  const map: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') map[part.type] = part.value;
-  }
-
-  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
-}
 
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -52,17 +32,6 @@ function parseJsonArray(raw: unknown): string[] {
   } catch {
     // Eski CSV/metin biçimi
     return raw.split(',').map((v) => v.trim()).filter(Boolean);
-  }
-}
-
-function parseMedia(raw: unknown): any[] {
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw !== 'string' || !raw.trim()) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
   }
 }
 
@@ -141,7 +110,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   try {
     await ensureAppSchema();
     const { id } = params;
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const existing = await query<any>('SELECT * FROM notlar WHERE id = $1', [id]);
     if (existing.rows.length === 0) {

@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { query, Tables } from '../../../lib/database';
 import { hashPassword, verifyPassword } from '../../../lib/auth';
 import { ensureAppSchema } from '../../../lib/schema';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -73,7 +74,9 @@ export const PUT: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { full_name, nickname, role, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, current_password, new_password } = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const { full_name, nickname, role, notify_mms, notify_calisma, notify_vardiya, notify_kayip_esya, current_password, new_password } = parsed.data;
 
     if (role !== undefined) {
       return new Response(JSON.stringify({ error: 'Rol yalnızca yönetici tarafından değiştirilebilir' }), {

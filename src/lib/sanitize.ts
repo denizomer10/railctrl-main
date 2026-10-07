@@ -212,13 +212,6 @@ export function escapeHtml(value: unknown): string {
     .replace(/'/g, '&#39;');
 }
 
-/**
- * HTML öznitelik değeri kaçışlama. Çift tırnaklı özniteliklerde güvenlidir.
- */
-export function escapeAttr(value: unknown): string {
-  return escapeHtml(value);
-}
-
 const DANGEROUS_PATTERNS: RegExp[] = [
   /<\s*(script|iframe|object|embed|form|input|button|textarea|select|meta|base|link|style|math|svg)\b/i,
   /\bon[a-z]+\s*=/i,
@@ -248,5 +241,3 @@ export function assertSafeHtml(raw: unknown, field = 'icerik'): void {
     }
   }
 }
-
-export default { sanitizeHtml, assertSafeHtml, isSafeUrl, sanitizeStyleValue, escapeHtml, escapeAttr };

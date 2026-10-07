@@ -6,7 +6,7 @@
 
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
-import { parsePagination } from '../../../lib/api';
+import { parsePagination, readJsonBody } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
 import { Tables } from '../../../lib/database';
@@ -15,7 +15,22 @@ export const prerender = false;
 
 const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
 
-async function ensureIzinIstekleriTableShape(): Promise<void> {
+// Tablo şekli bir kez doğrulanır/migrate edilir; her istekte PRAGMA table_info
+// çalıştırmak gereksiz maliyettir. Başarısızlıkta sıfırlanır ki sonraki istek
+// yeniden denesin.
+let izinIstekleriShapePromise: Promise<void> | null = null;
+
+function ensureIzinIstekleriTableShape(): Promise<void> {
+  if (!izinIstekleriShapePromise) {
+    izinIstekleriShapePromise = migrateIzinIstekleriTableShape().catch((error) => {
+      izinIstekleriShapePromise = null;
+      throw error;
+    });
+  }
+  return izinIstekleriShapePromise;
+}
+
+async function migrateIzinIstekleriTableShape(): Promise<void> {
   const info = await query<any>('PRAGMA table_info(izin_istekleri)');
   if (!info.rows.length) return;
 
@@ -125,7 +140,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         SELECT i.*, u.full_name as kullanici_adi
             FROM ${Tables.IZIN_ISTEKLERI} i
             LEFT JOIN ${Tables.USERS} u ON i.user_id = u.id
-        ORDER BY i.created_at DESC
+        ORDER BY i.created_at DESC, i.id DESC
         LIMIT $1 OFFSET $2
       `;
       params = [limit, offset];
@@ -133,7 +148,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       queryText = `
             SELECT * FROM ${Tables.IZIN_ISTEKLERI} 
         WHERE user_id = $1
-        ORDER BY created_at DESC
+        ORDER BY created_at DESC, id DESC
         LIMIT $2 OFFSET $3
       `;
       params = [user.id, limit, offset];
@@ -171,7 +186,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
     const {
       personel_id,
       ad_soyad,

@@ -6,12 +6,28 @@
 
 import type { APIRoute } from 'astro';
 import { query, Tables } from '../../../lib/database';
+import { readJsonBody } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
 
 export const prerender = false;
 
-async function ensurePersonelTableShape(): Promise<void> {
+// Tablo şekli bir kez doğrulanır/migrate edilir; her istekte PRAGMA table_info
+// çalıştırmak gereksiz maliyettir. Başarısızlıkta sıfırlanır ki sonraki istek
+// yeniden denesin.
+let personelShapePromise: Promise<void> | null = null;
+
+function ensurePersonelTableShape(): Promise<void> {
+  if (!personelShapePromise) {
+    personelShapePromise = migratePersonelTableShape().catch((error) => {
+      personelShapePromise = null;
+      throw error;
+    });
+  }
+  return personelShapePromise;
+}
+
+async function migratePersonelTableShape(): Promise<void> {
   const info = await query<any>('PRAGMA table_info(personel_kayitlari)');
   if (!info.rows.length) return;
 
@@ -152,8 +168,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
       });
     }
 
-    const body = await request.json();
-    const { ad_soyad, birim, gorevi, unvan, telefon, izindeki_adres } = body;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const { ad_soyad, birim, gorevi, unvan, telefon, izindeki_adres } = parsed.data;
 
     // Validasyon
     if (!ad_soyad || !birim || !gorevi) {

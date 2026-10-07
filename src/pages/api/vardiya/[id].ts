@@ -1,31 +1,13 @@
 import type { APIRoute } from 'astro';
-import { query, Tables } from '../../../lib/database';
-import { jsonResponse, requireRole, requireUser } from '../../../lib/api';
+import { query } from '../../../lib/database';
+import { jsonResponse, readJsonBody, requireRole, requireUser } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { normalizePersonnel, normalizeWeekShifts } from '../../../lib/vardiya';
+import { getUserStation, isSameStation } from '../../../lib/vardiya-station';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
 
 export const prerender = false;
-
-function normalizeStationName(value: string | null | undefined): string {
-  return String(value || '')
-    .trim()
-    .toLocaleLowerCase('tr-TR')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/ı/g, 'i')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function looseStationKey(value: string): string {
-  return value.replace(/i/g, '');
-}
-
-async function getUserStation(userId: string): Promise<string | null> {
-  const result = await query<{ istasyon: string | null }>(`SELECT istasyon FROM ${Tables.USERS} WHERE id = $1`, [userId]);
-  return result.rows[0]?.istasyon || null;
-}
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const auth = requireUser(locals);
@@ -49,10 +31,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
     if (auth.user.role === 'personel') {
       const station = auth.user.station || (await getUserStation(auth.user.id));
       if (!station) return jsonResponse({ error: 'Kullanıcının istasyon bilgisi bulunamadı' }, 400);
-      const requestedNorm = normalizeStationName(station);
-      const rowNorm = normalizeStationName(row.istasyon);
-      const isStationMatch = requestedNorm === rowNorm || looseStationKey(requestedNorm) === looseStationKey(rowNorm);
-      if (!isStationMatch) return jsonResponse({ error: 'Bu kaydı görüntüleme yetkiniz yok' }, 403);
+      if (!isSameStation(station, row.istasyon)) return jsonResponse({ error: 'Bu kaydı görüntüleme yetkiniz yok' }, 403);
     }
 
     return jsonResponse({
@@ -77,7 +56,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     const id = params.id;
     if (!id) return jsonResponse({ error: 'Geçersiz kayıt id' }, 400);
 
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const istasyon = String(body.istasyon || '').trim();
     const yil = Number.parseInt(String(body.yil), 10);

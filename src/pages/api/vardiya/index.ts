@@ -1,31 +1,13 @@
 import type { APIRoute } from 'astro';
-import { query, Tables } from '../../../lib/database';
-import { jsonResponse, requireRole, requireUser } from '../../../lib/api';
+import { query } from '../../../lib/database';
+import { jsonResponse, readJsonBody, requireRole, requireUser } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { buildMonthCalendar, normalizePersonnel, normalizeWeekShifts } from '../../../lib/vardiya';
+import { getUserStation, isSameStation, normalizeStationName } from '../../../lib/vardiya-station';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
 
 export const prerender = false;
-
-function normalizeStationName(value: string | null | undefined): string {
-  return String(value || '')
-    .trim()
-    .toLocaleLowerCase('tr-TR')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/ı/g, 'i')
-    .replace(/[^a-z0-9]/g, '');
-}
-
-function looseStationKey(value: string): string {
-  return value.replace(/i/g, '');
-}
-
-async function getUserStation(userId: string): Promise<string | null> {
-  const result = await query<{ istasyon: string | null }>(`SELECT istasyon FROM ${Tables.USERS} WHERE id = $1`, [userId]);
-  return result.rows[0]?.istasyon || null;
-}
 
 export const GET: APIRoute = async ({ url, locals }) => {
   const auth = requireUser(locals);
@@ -67,15 +49,11 @@ export const GET: APIRoute = async ({ url, locals }) => {
       `SELECT id, istasyon, yil, ay, week_shifts, personel, created_at, updated_at
        FROM vardiyalar
        ${whereText}
-       ORDER BY yil DESC, ay DESC, created_at DESC`,
+       ORDER BY yil DESC, ay DESC, created_at DESC, id DESC`,
       params
     );
     const stationFilteredRows = normalizedStation
-      ? result.rows.filter((row) => {
-          const rowNorm = normalizeStationName(row.istasyon);
-          if (rowNorm === normalizedStation) return true;
-          return looseStationKey(rowNorm) === looseStationKey(normalizedStation);
-        })
+      ? result.rows.filter((row) => isSameStation(row.istasyon, station))
       : result.rows;
 
     const records = stationFilteredRows.map((row) => {
@@ -102,7 +80,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const istasyon = String(body.istasyon || '').trim();
     const yil = Number.parseInt(String(body.yil), 10);

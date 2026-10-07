@@ -7,6 +7,7 @@
 import type { APIRoute } from 'astro';
 import { logAudit } from '../../../lib/audit';
 import { deleteMediaFile, isSafeMediaName, listMediaFiles } from '../../../lib/media';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -44,8 +45,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   if (denied) return denied;
 
   try {
-    const body = await request.json();
-    const fileName = String(body?.name || '').trim();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const fileName = String(parsed.data?.name || '').trim();
     if (!isSafeMediaName(fileName)) {
       return json({ error: 'Geçersiz dosya adı' }, 400);
     }

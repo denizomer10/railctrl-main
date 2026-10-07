@@ -29,14 +29,6 @@ function el<T extends HTMLElement>(id: string): T | null {
   return document.getElementById(id) as T | null;
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 function parseMedia(raw: NoteRecord['medya']): UploadedMedia[] {
   if (Array.isArray(raw)) return raw as UploadedMedia[];
   if (typeof raw !== 'string' || !raw.trim()) return [];

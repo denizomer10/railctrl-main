@@ -23,7 +23,7 @@ async function fetchAuditLogs(limit: number): Promise<AuditRow[]> {
             u.full_name as user_name, u.username as user_nickname
      FROM audit_logs al
      LEFT JOIN users u ON u.id = al.user_id
-     ORDER BY al.created_at DESC
+     ORDER BY al.created_at DESC, al.id DESC
      LIMIT $1`,
     [limit]
   );

@@ -12,9 +12,21 @@ export const prerender = false;
 const loginAttempts = new Map<string, { count: number; lastAttempt: number }>();
 const MAX_ATTEMPTS = 5;
 const BLOCK_DURATION = 15 * 60 * 1000; // 15 dakika
+const PRUNE_INTERVAL = 5 * 60 * 1000; // 5 dakika
+let lastPrune = Date.now();
+
+// Süresi geçmiş kayıtları temizle; aksi halde map her farklı IP/IP için sınırsız büyür.
+function pruneLoginAttempts(now: number): void {
+  if (now - lastPrune < PRUNE_INTERVAL) return;
+  lastPrune = now;
+  for (const [key, entry] of loginAttempts) {
+    if (now - entry.lastAttempt > BLOCK_DURATION) loginAttempts.delete(key);
+  }
+}
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfterMs: number } {
   const now = Date.now();
+  pruneLoginAttempts(now);
   const attempts = loginAttempts.get(ip);
 
   if (!attempts) {

@@ -242,17 +242,3 @@ export async function listMediaFiles(): Promise<MediaEntry[]> {
   entries.sort((a, b) => (a.modifiedAt < b.modifiedAt ? 1 : -1));
   return entries;
 }
-
-export default {
-  getMediaDir,
-  guessMimeType,
-  mediaKind,
-  sanitizeMediaName,
-  isSafeMediaName,
-  mediaUrl,
-  mediaNameFromAnyPath,
-  saveMediaFile,
-  readMediaFile,
-  deleteMediaFile,
-  listMediaFiles,
-};

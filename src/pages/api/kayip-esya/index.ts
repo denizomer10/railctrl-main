@@ -6,13 +6,52 @@
 
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
-import { requireRole } from '../../../lib/api';
+import { parsePagination, requireRole, readJsonBody } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createGlobalNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
 
 export const prerender = false;
+
+/**
+ * Durum ve arama filtrelerini tek yerde üretir. Liste ve sayım sorguları aynı
+ * filtre kümesini paylaşsın diye ayrı tutuldu; böylece sıralı parametre
+ * indeksleri iki sorgu arasında kayamaz.
+ */
+function buildKayipEsyaFilters(
+  durum: string | null,
+  search: string | null
+): { clause: string; params: any[] } {
+  let clause = '';
+  const params: any[] = [];
+
+  if (durum !== null && durum !== undefined) {
+    if (durum === 'Beklemede' || durum === '') {
+      // Beklemede = boş, null, tcdd hesabı işlemleri veya tanımsız
+      clause += ` AND (durumu IS NULL OR durumu = '' OR LOWER(durumu) LIKE '%tcdd hesab%' OR LOWER(durumu) LIKE '%işlem no%' OR (LOWER(durumu) NOT LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%imha%' AND LOWER(durumu) NOT LIKE '%iett%' AND LOWER(durumu) NOT LIKE '%büroda%' AND LOWER(durumu) NOT LIKE '%depoda%'))`;
+    } else if (durum === 'Teslim Edildi') {
+      clause += ` AND LOWER(durumu) LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%iett%'`;
+    } else if (durum === 'İmha Edildi') {
+      clause += ` AND (LOWER(durumu) LIKE '%imha%' OR LOWER(durumu) LIKE '%iett%')`;
+    } else if (durum === 'Depoda') {
+      clause += ` AND (LOWER(durumu) LIKE '%büroda%' OR LOWER(durumu) LIKE '%depoda%' OR LOWER(durumu) = 'depoda')`;
+    }
+  }
+
+  if (search) {
+    params.push(`%${search}%`);
+    clause += ` AND (
+      belge_no ILIKE $${params.length} OR
+      esya_tanimi ILIKE $${params.length} OR
+      esya_sahibi_ad_soyad ILIKE $${params.length} OR
+      teslim_alan ILIKE $${params.length} OR
+      durumu ILIKE $${params.length}
+    )`;
+  }
+
+  return { clause, params };
+}
 
 // Kayıp eşya kayıtlarını listele
 export const GET: APIRoute = async ({ locals, url }) => {
@@ -25,78 +64,22 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
   try {
     await ensureAppSchema();
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '50');
+    const { page, limit, offset } = parsePagination(url, { page: 1, limit: 50 }, 200);
     const search = url.searchParams.get('search');
     const durum = url.searchParams.get('durum');
-    const offset = (page - 1) * limit;
 
-    let queryText = `SELECT * FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
-    const params: any[] = [];
-    let paramIndex = 1;
-
-    // Durum filtresi - gerçek veritabanı değerlerine göre LIKE ile
-    if (durum !== null && durum !== undefined) {
-      if (durum === 'Beklemede' || durum === '') {
-        // Beklemede = boş, null, tcdd hesabı işlemleri veya tanımsız
-        queryText += ` AND (durumu IS NULL OR durumu = '' OR LOWER(durumu) LIKE '%tcdd hesab%' OR LOWER(durumu) LIKE '%işlem no%' OR (LOWER(durumu) NOT LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%imha%' AND LOWER(durumu) NOT LIKE '%iett%' AND LOWER(durumu) NOT LIKE '%büroda%' AND LOWER(durumu) NOT LIKE '%depoda%'))`;
-      } else if (durum === 'Teslim Edildi') {
-        queryText += ` AND LOWER(durumu) LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%iett%'`;
-      } else if (durum === 'İmha Edildi') {
-        queryText += ` AND (LOWER(durumu) LIKE '%imha%' OR LOWER(durumu) LIKE '%iett%')`;
-      } else if (durum === 'Depoda') {
-        queryText += ` AND (LOWER(durumu) LIKE '%büroda%' OR LOWER(durumu) LIKE '%depoda%' OR LOWER(durumu) = 'depoda')`;
-      }
-    }
-
-    if (search) {
-      queryText += ` AND (
-        belge_no ILIKE $${paramIndex} OR
-        esya_tanimi ILIKE $${paramIndex} OR
-        esya_sahibi_ad_soyad ILIKE $${paramIndex} OR
-        teslim_alan ILIKE $${paramIndex} OR
-        durumu ILIKE $${paramIndex}
-      )`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    queryText += ` ORDER BY tarih DESC NULLS LAST, id DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
+    const filters = buildKayipEsyaFilters(durum, search);
+    const params = [...filters.params, limit, offset];
+    const queryText = `SELECT * FROM ${Tables.KAYIP_ESYA} WHERE 1=1${filters.clause}
+      ORDER BY tarih DESC NULLS LAST, id DESC
+      LIMIT $${filters.params.length + 1} OFFSET $${filters.params.length + 2}`;
 
     const result = await query<any>(queryText, params);
 
-    // Toplam sayı
-    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.KAYIP_ESYA} WHERE 1=1`;
-    const countParams: any[] = [];
-    let countParamIndex = 1;
-
-    // Durum filtresi - count için (gerçek veritabanı değerlerine göre)
-    if (durum !== null && durum !== undefined) {
-      if (durum === 'Beklemede' || durum === '') {
-        countQuery += ` AND (durumu IS NULL OR durumu = '' OR LOWER(durumu) LIKE '%tcdd hesab%' OR LOWER(durumu) LIKE '%işlem no%' OR (LOWER(durumu) NOT LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%imha%' AND LOWER(durumu) NOT LIKE '%iett%' AND LOWER(durumu) NOT LIKE '%büroda%' AND LOWER(durumu) NOT LIKE '%depoda%'))`;
-      } else if (durum === 'Teslim Edildi') {
-        countQuery += ` AND LOWER(durumu) LIKE '%teslim%' AND LOWER(durumu) NOT LIKE '%iett%'`;
-      } else if (durum === 'İmha Edildi') {
-        countQuery += ` AND (LOWER(durumu) LIKE '%imha%' OR LOWER(durumu) LIKE '%iett%')`;
-      } else if (durum === 'Depoda') {
-        countQuery += ` AND (LOWER(durumu) LIKE '%büroda%' OR LOWER(durumu) LIKE '%depoda%' OR LOWER(durumu) = 'depoda')`;
-      }
-    }
-
-    if (search) {
-      countQuery += ` AND (
-        belge_no ILIKE $${countParamIndex} OR
-        esya_tanimi ILIKE $${countParamIndex} OR
-        esya_sahibi_ad_soyad ILIKE $${countParamIndex} OR
-        teslim_alan ILIKE $${countParamIndex} OR
-        durumu ILIKE $${countParamIndex}
-      )`;
-      countParams.push(`%${search}%`);
-    }
-
-    const countResult = await query<any>(countQuery, countParams);
-    const totalCount = parseInt(countResult.rows[0].count);
+    // Toplam sayı (liste ile aynı filtre kümesini paylaşır)
+    const countQuery = `SELECT COUNT(*) AS count FROM ${Tables.KAYIP_ESYA} WHERE 1=1${filters.clause}`;
+    const countResult = await query<any>(countQuery, filters.params);
+    const totalCount = parseInt(countResult.rows[0].count, 10) || 0;
 
     // İstatistikler - gerçek veri formatına göre
     const statsResult = await query<any>(`
@@ -152,7 +135,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     if (!body.esya_tanimi) {
       return new Response(JSON.stringify({ error: 'Eşya tanımı zorunludur' }), {

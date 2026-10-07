@@ -8,49 +8,17 @@ import type { APIRoute } from 'astro';
 import { query, Tables } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
-import { parsePagination } from '../../../lib/api';
+import { parsePagination, readJsonBody } from '../../../lib/api';
 import { assertSafeHtml } from '../../../lib/sanitize';
+import { PRIVATE_NOTE_CATEGORY as PRIVATE_CATEGORY, getIstanbulTimestamp, parseMedia } from '../../../lib/notlar';
 
 export const prerender = false;
-
-const PRIVATE_CATEGORY = 'Özel';
 
 function json(body: Record<string, unknown>, status = 200): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'Content-Type': 'application/json' },
   });
-}
-
-function getIstanbulTimestamp(): string {
-  const parts = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Europe/Istanbul',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date());
-
-  const map: Record<string, string> = {};
-  for (const part of parts) {
-    if (part.type !== 'literal') map[part.type] = part.value;
-  }
-
-  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}:${map.second}`;
-}
-
-function parseMedia(raw: unknown): any[] {
-  if (Array.isArray(raw)) return raw;
-  if (typeof raw !== 'string' || !raw.trim()) return [];
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
 }
 
 // Notları listele
@@ -166,7 +134,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     const baslik = typeof body.baslik === 'string' ? body.baslik.trim() : '';
     const icerik = typeof body.icerik === 'string' ? body.icerik : '';

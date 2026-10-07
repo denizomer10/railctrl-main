@@ -5,6 +5,7 @@
  */
 
 import type { APIRoute } from 'astro';
+import { readJsonBody } from '../../../../lib/api';
 import { logAudit } from '../../../../lib/audit';
 import {
   deleteMediaFile,
@@ -98,8 +99,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   if (denied) return denied;
 
   try {
-    const body = await request.json();
-    const paths = Array.isArray(body?.paths) ? body.paths : [];
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const paths = Array.isArray(parsed.data?.paths) ? parsed.data.paths : [];
     if (paths.length === 0) {
       return json({ error: 'Silinecek dosya yolu bulunamadı' }, 400);
     }

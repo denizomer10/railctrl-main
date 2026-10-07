@@ -1,11 +1,39 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
-import { jsonResponse, parsePagination, requireRole, requireUser } from '../../../lib/api';
+import { jsonResponse, parsePagination, readJsonBody, requireRole, requireUser } from '../../../lib/api';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 
 export const prerender = false;
+
+/**
+ * Arama ve birim filtrelerini tek yerde üretir; liste ve sayım sorguları aynı
+ * filtre kümesini paylaşır.
+ */
+function buildDahiliFilters(
+  search: string | null,
+  birim: string | null
+): { clause: string; params: any[] } {
+  let clause = '';
+  const params: any[] = [];
+
+  if (search) {
+    params.push(`%${search}%`);
+    clause += ` AND (
+      dahili_numara ILIKE $${params.length} OR
+      birim ILIKE $${params.length} OR
+      aciklama ILIKE $${params.length}
+    )`;
+  }
+
+  if (birim) {
+    params.push(birim);
+    clause += ` AND birim = $${params.length}`;
+  }
+
+  return { clause, params };
+}
 
 export const GET: APIRoute = async ({ locals, url }) => {
   const auth = requireUser(locals);
@@ -19,51 +47,14 @@ export const GET: APIRoute = async ({ locals, url }) => {
     const search = url.searchParams.get('search');
     const birim = url.searchParams.get('birim');
 
-    let queryText = `SELECT * FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
-    const params: any[] = [];
-    let paramIndex = 1;
+    const filters = buildDahiliFilters(search, birim);
+    const queryText = `SELECT * FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1${filters.clause}
+      ORDER BY dahili_numara ASC, id ASC
+      LIMIT $${filters.params.length + 1} OFFSET $${filters.params.length + 2}`;
+    const result = await query<any>(queryText, [...filters.params, limit, offset]);
 
-    if (search) {
-      queryText += ` AND (
-        dahili_numara ILIKE $${paramIndex} OR
-        birim ILIKE $${paramIndex} OR
-        aciklama ILIKE $${paramIndex}
-      )`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    if (birim) {
-      queryText += ` AND birim = $${paramIndex}`;
-      params.push(birim);
-      paramIndex++;
-    }
-
-    queryText += ` ORDER BY dahili_numara ASC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-
-    const result = await query<any>(queryText, params);
-
-    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1`;
-    const countParams: any[] = [];
-    let countParamIndex = 1;
-
-    if (search) {
-      countQuery += ` AND (
-        dahili_numara ILIKE $${countParamIndex} OR
-        birim ILIKE $${countParamIndex} OR
-        aciklama ILIKE $${countParamIndex}
-      )`;
-      countParams.push(`%${search}%`);
-      countParamIndex++;
-    }
-
-    if (birim) {
-      countQuery += ` AND birim = $${countParamIndex}`;
-      countParams.push(birim);
-    }
-
-    const countResult = await query<any>(countQuery, countParams);
+    const countQuery = `SELECT COUNT(*) AS count FROM ${Tables.DAHILI_NUMARALAR} WHERE 1=1${filters.clause}`;
+    const countResult = await query<any>(countQuery, filters.params);
     const totalCount = Number.parseInt(countResult.rows[0].count, 10);
 
     const statsResult = await query<any>(`
@@ -107,7 +98,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     if (!body.dahili_numara || !body.birim) {
       return jsonResponse({ error: 'Dahili numara ve birim alanları zorunludur' }, 400);

@@ -1,12 +1,42 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
-import { jsonResponse, parsePagination, requireRole } from '../../../lib/api';
+import { jsonResponse, parsePagination, readJsonBody, requireRole } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
 
 export const prerender = false;
+
+/**
+ * Arama ve istasyon filtrelerini tek yerde üretir; liste ve sayım sorguları
+ * aynı filtre kümesini paylaşır.
+ */
+function buildCalismaFilters(
+  search: string | null,
+  istasyon: string | null
+): { clause: string; params: any[] } {
+  let clause = '';
+  const params: any[] = [];
+
+  if (search) {
+    params.push(`%${search}%`);
+    clause += ` AND (
+      mms_numarasi ILIKE $${params.length} OR
+      calisma_kodu ILIKE $${params.length} OR
+      yapilacak_is ILIKE $${params.length} OR
+      calisanlar ILIKE $${params.length} OR
+      istasyon ILIKE $${params.length}
+    )`;
+  }
+
+  if (istasyon) {
+    params.push(`%${istasyon}%`);
+    clause += ` AND istasyon ILIKE $${params.length}`;
+  }
+
+  return { clause, params };
+}
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -15,55 +45,14 @@ export const GET: APIRoute = async ({ url }) => {
     const search = url.searchParams.get('search');
     const istasyon = url.searchParams.get('istasyon');
 
-    let queryText = `SELECT * FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
-    const params: any[] = [];
-    let paramIndex = 1;
+    const filters = buildCalismaFilters(search, istasyon);
+    const queryText = `SELECT * FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1${filters.clause}
+      ORDER BY zaman_damgasi DESC, id DESC
+      LIMIT $${filters.params.length + 1} OFFSET $${filters.params.length + 2}`;
+    const result = await query<any>(queryText, [...filters.params, limit, offset]);
 
-    if (search) {
-      queryText += ` AND (
-        mms_numarasi ILIKE $${paramIndex} OR
-        calisma_kodu ILIKE $${paramIndex} OR
-        yapilacak_is ILIKE $${paramIndex} OR
-        calisanlar ILIKE $${paramIndex} OR
-        istasyon ILIKE $${paramIndex}
-      )`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    if (istasyon) {
-      queryText += ` AND istasyon ILIKE $${paramIndex}`;
-      params.push(`%${istasyon}%`);
-      paramIndex++;
-    }
-
-    queryText += ` ORDER BY zaman_damgasi DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-
-    const result = await query<any>(queryText, params);
-
-    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1`;
-    const countParams: any[] = [];
-    let countParamIndex = 1;
-
-    if (search) {
-      countQuery += ` AND (
-        mms_numarasi ILIKE $${countParamIndex} OR
-        calisma_kodu ILIKE $${countParamIndex} OR
-        yapilacak_is ILIKE $${countParamIndex} OR
-        calisanlar ILIKE $${countParamIndex} OR
-        istasyon ILIKE $${countParamIndex}
-      )`;
-      countParams.push(`%${search}%`);
-      countParamIndex++;
-    }
-
-    if (istasyon) {
-      countQuery += ` AND istasyon ILIKE $${countParamIndex}`;
-      countParams.push(`%${istasyon}%`);
-    }
-
-    const countResult = await query<any>(countQuery, countParams);
+    const countQuery = `SELECT COUNT(*) AS count FROM ${Tables.CALISMA_IZINLERI} WHERE 1=1${filters.clause}`;
+    const countResult = await query<any>(countQuery, filters.params);
     const totalCount = Number.parseInt(countResult.rows[0].count, 10);
 
     const statsResult = await query<any>(`
@@ -107,7 +96,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     if (!body.calisma_kodu || !body.yapilacak_is || !body.istasyon) {
       return jsonResponse({ error: 'Çalışma kodu, yapılacak iş ve istasyon zorunludur' }, 400);
