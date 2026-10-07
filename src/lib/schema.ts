@@ -21,7 +21,17 @@ async function addColumnIfMissing(table: string, column: string, definition: str
 }
 
 async function removeUnusedEmptyTables(): Promise<void> {
-  for (const table of ['hakedis', 'izin_takip', 'kimlik_talep', 'periyodik_muayene']) {
+  for (const table of [
+    'hakedis',
+    'izin_takip',
+    'kimlik_talep',
+    'periyodik_muayene',
+    // Eski sürümlerden kalan, artık uygulama tarafından kullanılmayan tablolar.
+    // Yalnızca tamamen boşsa düşürülür; veri varsa korunur.
+    'problem_records',
+    'file_categories',
+    'files',
+  ]) {
     const tableExists = await query<{ name: string }>(
       `SELECT name FROM sqlite_master WHERE type = 'table' AND name = $1`,
       [table]
@@ -52,6 +62,11 @@ async function pruneDeprecatedUserColumns(): Promise<void> {
 }
 
 async function bootstrapAppSchema(): Promise<void> {
+  // Aynı anda gelen isteklerde SQLITE_BUSY yüzünden 500 dönmemesi için
+  // bağlantı başına yazma kilidi bekleme süresi ve WAL günlük modu.
+  await query(`PRAGMA busy_timeout = 5000`);
+  await query(`PRAGMA journal_mode = WAL`);
+
   await removeUnusedEmptyTables();
   await pruneDeprecatedUserColumns();
 
@@ -110,37 +125,6 @@ async function bootstrapAppSchema(): Promise<void> {
   await query(`CREATE INDEX IF NOT EXISTS idx_refresh_tokens_expires ON refresh_tokens(expires_at)`);
 
   await query(`
-    CREATE TABLE IF NOT EXISTS file_categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      slug TEXT NOT NULL UNIQUE,
-      description TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  await query(`
-    CREATE TABLE IF NOT EXISTS files (
-      id TEXT PRIMARY KEY,
-      category_id TEXT,
-      name TEXT NOT NULL,
-      original_name TEXT NOT NULL,
-      mime_type TEXT NOT NULL,
-      file_size INTEGER NOT NULL,
-      content_encrypted BLOB NOT NULL,
-      encryption_iv BLOB NOT NULL,
-      checksum TEXT NOT NULL,
-      metadata TEXT,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  await query(`CREATE INDEX IF NOT EXISTS idx_files_category ON files(category_id)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_files_name ON files(name)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_files_active ON files(is_active)`);
-
-  await query(`
     CREATE TABLE IF NOT EXISTS audit_logs (
       id TEXT PRIMARY KEY,
       user_id TEXT,
@@ -161,24 +145,6 @@ async function bootstrapAppSchema(): Promise<void> {
   await query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_entity ON audit_logs(entity_type, entity_id)`);
 
   await query(`
-    CREATE TABLE IF NOT EXISTS problem_records (
-      id TEXT PRIMARY KEY,
-      problem_no TEXT NOT NULL UNIQUE,
-      baslik TEXT NOT NULL,
-      aciklama TEXT,
-      durum TEXT NOT NULL DEFAULT 'acik',
-      oncelik TEXT NOT NULL DEFAULT 'normal',
-      istasyon TEXT,
-      acan_ad_soyad TEXT,
-      acilan_birim TEXT,
-      created_by TEXT,
-      "not" TEXT,
-      onarilma_tarihi TEXT,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-  await query(`
     CREATE TABLE IF NOT EXISTS mms_records (
       id TEXT PRIMARY KEY,
       zaman_damgasi TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -195,9 +161,9 @@ async function bootstrapAppSchema(): Promise<void> {
       updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_no ON problem_records(problem_no)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_durum ON problem_records(durum)`);
-  await query(`CREATE INDEX IF NOT EXISTS idx_problem_records_istasyon ON problem_records(istasyon)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_mms_records_durum ON mms_records(durum)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_mms_records_istasyon ON mms_records(istasyon)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_mms_records_zaman ON mms_records(zaman_damgasi DESC)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS calisma_izinleri (
@@ -221,6 +187,7 @@ async function bootstrapAppSchema(): Promise<void> {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_calisma_izinleri_durum ON calisma_izinleri(durum)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_calisma_izinleri_istasyon ON calisma_izinleri(istasyon)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_calisma_izinleri_zaman ON calisma_izinleri(zaman_damgasi DESC)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS notlar (
@@ -239,6 +206,7 @@ async function bootstrapAppSchema(): Promise<void> {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_notlar_active ON notlar(is_active)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_notlar_istasyon ON notlar(istasyon)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_notlar_created ON notlar(created_at DESC)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS dahili_numaralar (
@@ -258,6 +226,7 @@ async function bootstrapAppSchema(): Promise<void> {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_dahili_numaralar_birim ON dahili_numaralar(birim)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_dahili_numaralar_active ON dahili_numaralar(is_active)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_dahili_numaralar_numara ON dahili_numaralar(dahili_numara)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS personel_kayitlari (
@@ -317,6 +286,7 @@ async function bootstrapAppSchema(): Promise<void> {
   `);
   await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_status ON geri_bildirimler(status)`);
   await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_user_created ON geri_bildirimler(user_id, created_at DESC)`);
+  await query(`CREATE INDEX IF NOT EXISTS idx_geri_bildirimler_created ON geri_bildirimler(created_at DESC)`);
 
   await query(`
     CREATE TABLE IF NOT EXISTS vardiyalar (
@@ -415,9 +385,6 @@ async function bootstrapAppSchema(): Promise<void> {
   await addColumnIfMissing('audit_logs', 'resource_type', 'TEXT');
   await addColumnIfMissing('audit_logs', 'resource_id', 'TEXT');
   await addColumnIfMissing('audit_logs', 'details', 'TEXT');
-  await addColumnIfMissing('problem_records', 'acan_ad_soyad', 'TEXT');
-  await addColumnIfMissing('problem_records', 'acilan_birim', 'TEXT');
-  await addColumnIfMissing('problem_records', 'created_by', 'TEXT');
   await addColumnIfMissing('calisma_izinleri', 'bildiren_ad_soyad', 'TEXT');
   await addColumnIfMissing('calisma_izinleri', 'baslik', "TEXT NOT NULL DEFAULT ''");
   await addColumnIfMissing('calisma_izinleri', 'aciklama', 'TEXT');
@@ -430,8 +397,6 @@ async function bootstrapAppSchema(): Promise<void> {
   await addColumnIfMissing('calisma_izinleri', 'calisanlar', 'TEXT');
   await addColumnIfMissing('mms_records', 'created_at', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
   await addColumnIfMissing('mms_records', 'updated_at', "TEXT NOT NULL DEFAULT '1970-01-01 00:00:00'");
-  await addColumnIfMissing('problem_records', '"not"', 'TEXT');
-  await addColumnIfMissing('problem_records', 'onarilma_tarihi', 'TEXT');
 
   await addColumnIfMissing('notlar', 'icerik', "TEXT NOT NULL DEFAULT ''");
   await addColumnIfMissing('notlar', 'kategori', 'TEXT');

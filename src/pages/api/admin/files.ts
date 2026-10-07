@@ -1,22 +1,28 @@
+/**
+ * Admin Dosya Yönetimi API Endpoints
+ * GET    /api/admin/files - Medya deposundaki dosyaları listele
+ * DELETE /api/admin/files - Medya deposundan dosya sil
+ */
+
 import type { APIRoute } from 'astro';
-import { readdir, stat, unlink } from 'node:fs/promises';
-import path from 'node:path';
 import { logAudit } from '../../../lib/audit';
+import { deleteMediaFile, isSafeMediaName, listMediaFiles } from '../../../lib/media';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
-function ensureAdmin(locals: App.Locals): Response | null {
-  if (!locals.user || locals.user.role !== 'yonetici') {
-    return new Response(JSON.stringify({ error: 'Bu işlem için admin yetkisi gerekli' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-  return null;
+function json(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
-function isSafeName(name: string): boolean {
-  return !!name && !name.includes('/') && !name.includes('\\') && !name.includes('..');
+function ensureAdmin(locals: App.Locals): Response | null {
+  if (!locals.user || locals.user.role !== 'yonetici') {
+    return json({ error: 'Bu işlem için admin yetkisi gerekli' }, 403);
+  }
+  return null;
 }
 
 export const GET: APIRoute = async ({ locals }) => {
@@ -24,41 +30,13 @@ export const GET: APIRoute = async ({ locals }) => {
   if (denied) return denied;
 
   try {
-    const dir = path.join(process.cwd(), 'public', 'files');
-    const names = await readdir(dir);
-    const files: Array<{ name: string; size: number; modifiedAt: string; url: string }> = [];
-
-    for (const name of names) {
-      if (!isSafeName(name)) continue;
-      const full = path.join(dir, name);
-      const info = await stat(full);
-      if (!info.isFile()) continue;
-      files.push({
-        name,
-        size: info.size,
-        modifiedAt: info.mtime.toISOString(),
-        url: `/files/${encodeURIComponent(name)}`,
-      });
-    }
-
-    files.sort((a, b) => (a.modifiedAt < b.modifiedAt ? 1 : -1));
-
-    return new Response(JSON.stringify({ files }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    const entries = await listMediaFiles();
+    return json({
+      files: entries.map(({ name, size, modifiedAt, path }) => ({ name, size, modifiedAt, url: path })),
     });
-  } catch (error: any) {
-    if (error?.code === 'ENOENT') {
-      return new Response(JSON.stringify({ files: [] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
+  } catch (error) {
     console.error('Admin files list error:', error);
-    return new Response(JSON.stringify({ error: 'Dosyalar listelenemedi' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Dosyalar listelenemedi' }, 500);
   }
 };
 
@@ -67,17 +45,17 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
   if (denied) return denied;
 
   try {
-    const body = await request.json();
-    const fileName = String(body?.name || '').trim();
-    if (!isSafeName(fileName)) {
-      return new Response(JSON.stringify({ error: 'Geçersiz dosya adı' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const fileName = String(parsed.data?.name || '').trim();
+    if (!isSafeMediaName(fileName)) {
+      return json({ error: 'Geçersiz dosya adı' }, 400);
     }
 
-    const dir = path.join(process.cwd(), 'public', 'files');
-    await unlink(path.join(dir, fileName));
+    const removed = await deleteMediaFile(fileName);
+    if (!removed) {
+      return json({ error: 'Dosya bulunamadı' }, 404);
+    }
 
     await logAudit({
       userId: locals.user!.id,
@@ -89,15 +67,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       userAgent: request.headers.get('user-agent'),
     });
 
-    return new Response(JSON.stringify({ message: 'Dosya silindi' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error: any) {
+    return json({ message: 'Dosya silindi' });
+  } catch (error) {
     console.error('Admin file delete error:', error);
-    return new Response(JSON.stringify({ error: 'Dosya silinemedi' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Dosya silinemedi' }, 500);
   }
 };

@@ -1,4 +1,6 @@
 // izin-istegi istemcisi. izin-istegi.astro tarafından bundled <script> ile çağrılır.
+import { escapeHtml } from './api-client';
+
 // State
   const SABIT_BIRIM = '1/ V Trafik ve İstasyon Yönetim Müdürlüğü';
   let selectedType: string | null = null;
@@ -279,43 +281,43 @@
         '<!-- Satır 1: Birimi, Sicil No, Ait Olduğu Yıl -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Birimi:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 25%;">' + (data.birim || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 25%;">' + escapeHtml(data.birim || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 12%;"><strong>Sicil No:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + (data.sicil_no || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 20%;">' + escapeHtml(data.sicil_no || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px; width: 15%;"><strong>Ait Olduğu Yıl:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + (data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px; width: 13%;">' + escapeHtml(data.ait_oldugu_yil || new Date().getFullYear()) + '</td>' +
         '</tr>' +
         '<!-- Satır 2: Adı Soyadı, Başlangıç, Bitiş -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Adı Soyadı:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + (data.ad_soyad || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.ad_soyad || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Başlangıç Tarihi:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + baslangic + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(baslangic) + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Bitiş Tarihi:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + bitis + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(bitis) + '</td>' +
         '</tr>' +
         '<!-- Satır 3: Görevi, Yol İzni, Kullanacağı İzin -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Görevi:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + (data.gorevi || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.gorevi || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Yol izni:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + (data.yol_izni || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.yol_izni || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Kullanacağı İzin Toplamı:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + (data.izin_gun_sayisi || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.izin_gun_sayisi || '') + '</td>' +
         '</tr>' +
         '<!-- Satır 4: Boş, Kalan İzin, İş Başı Tarihi -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px;"></td>' +
           '<td style="border: 1px solid #000; padding: 6px;"></td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Kalan izin:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + (data.kalan_izin || '') + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.kalan_izin || '') + '</td>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>İş başı tarihi:</strong></td>' +
-          '<td style="border: 1px solid #000; padding: 6px;">' + isBasiTarihi + '</td>' +
+          '<td style="border: 1px solid #000; padding: 6px;">' + escapeHtml(isBasiTarihi) + '</td>' +
         '</tr>' +
         '<!-- Satır 5: Açıklama -->' +
         '<tr>' +
           '<td style="border: 1px solid #000; padding: 6px;"><strong>Açıklama:</strong></td>' +
-          '<td colspan="5" style="border: 1px solid #000; padding: 6px;">' + (data.aciklama || '') + '</td>' +
+          '<td colspan="5" style="border: 1px solid #000; padding: 6px;">' + escapeHtml(data.aciklama || '') + '</td>' +
         '</tr>' +
         '<!-- Satır 6: İzindeki Adres Başlık -->' +
         '<tr>' +
@@ -324,8 +326,8 @@
         '</tr>' +
         '<!-- Satır 7: İzindeki Adres Değer -->' +
         '<tr>' +
-          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + (data.izindeki_adres || '') + '</td>' +
-          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + dateStr + '</td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + escapeHtml(data.izindeki_adres || '') + '</td>' +
+          '<td colspan="3" style="border: 1px solid #000; padding: 6px; height: 30px;">' + escapeHtml(dateStr) + '</td>' +
         '</tr>' +
         '<!-- Satır 8: İmza Bölümleri Başlık -->' +
         '<tr>' +

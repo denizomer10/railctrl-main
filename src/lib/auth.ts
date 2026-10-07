@@ -7,8 +7,12 @@ import crypto from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { query, transaction, Tables } from './database';
-import { hashString } from './encryption';
 import { ensureAppSchema } from './schema';
+
+/** Yalnızca karşılaştırma amaçlı sha256 (hex) özeti. */
+function hashString(value: string): string {
+  return crypto.createHash('sha256').update(value).digest('hex');
+}
 
 // Tipler
 export type UserRole = 'personel' | 'yonetici';

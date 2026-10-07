@@ -3,6 +3,7 @@ import { query, Tables } from '../../../lib/database';
 import { hashPassword } from '../../../lib/auth';
 import { ensureAppSchema } from '../../../lib/schema';
 import { logAudit } from '../../../lib/audit';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -20,7 +21,7 @@ export const GET: APIRoute = async ({ locals }) => {
     const result = await query(
       `SELECT id, username AS nickname, full_name AS name, role, is_active, created_at, last_login, notify_mms, notify_calisma
          FROM ${Tables.USERS}
-       ORDER BY created_at DESC`
+       ORDER BY created_at DESC, id DESC`
     );
 
     return new Response(JSON.stringify({ users: result.rows }), {
@@ -47,7 +48,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { nickname, name, password, role, gorevi: requestedJob, notify_mms, notify_calisma } = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const { nickname, name, password, role, gorevi: requestedJob, notify_mms, notify_calisma } = parsed.data;
     const normalizedNickname = String(nickname || '').trim().toLowerCase();
     const gorevi = requestedJob ?? (role === 'yonetici' ? 'yonetici' : 'personel');
 

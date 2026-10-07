@@ -10,13 +10,15 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "ASTRO_TELEMETRY_DISABLED=1 ASTRO_DATABASE_FILE=.astro/build.db astro build",
-    "preview": "astro preview"
+    "build": "ASTRO_TELEMETRY_DISABLED=1 ASTRO_DATABASE_FILE=.astro/content.db astro build",
+    "preview": "astro preview",
+    "start": "node dist/server/entry.mjs",
+    "check": "astro check"
   },
   "dependencies": {
     "@astrojs/db": "^0.21.3",
     "@astrojs/node": "^11.1.6",
-    "astro": "^7.3.4",
+    "astro": "^7.3.5",
     "bcryptjs": "^3.0.3"
   },
   "devDependencies": {

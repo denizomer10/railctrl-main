@@ -1,5 +1,6 @@
 // vardiya istemcisi. vardiya.astro tarafından bundled <script> ile çağrılır.
 import type { PersonnelModel, WeekShiftModel, ShiftType, WeekKey, OffDay } from '../lib/vardiya';
+import { escapeHtml } from './api-client';
 
 type SchedulePerson = { fullName?: string; offDay?: string; week_shifts?: Partial<WeekShiftModel>; izinler?: LeaveEntry[] };
 type ScheduleDay = { date: string; dayName: string; week: number; shift: ShiftType };
@@ -267,7 +268,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
         const off = Boolean(info?.off);
         const leaveCode = String(info?.leaveCode || '').trim();
         const cellClass = leaveCode ? 'leave' : (off ? 'off' : '');
-        return `<td class="${cellClass}">${leaveCode || (off ? 'D' : meta.start)}</td>`;
+        return `<td class="${cellClass}">${escapeHtml(leaveCode) || (off ? 'D' : escapeHtml(meta.start))}</td>`;
       }).join('');
       const secondRow = days.map((_, dayIndex) => {
         const info = personPlan[dayIndex];
@@ -283,16 +284,16 @@ const vardiyaRoot = document.getElementById("vardiya-root");
         const off = Boolean(info?.off);
         const leaveCode = String(info?.leaveCode || '').trim();
         const cellClass = leaveCode ? 'leave' : (off ? 'off' : '');
-        return `<td class="${cellClass}">${leaveCode || (off ? 'D' : meta.code)}</td>`;
+        return `<td class="${cellClass}">${escapeHtml(leaveCode) || (off ? 'D' : escapeHtml(meta.code))}</td>`;
       }).join('');
       return `
         <tr>
-          <th class="left-col off-day" rowspan="2">${p.offDay || ''}</th>
+          <th class="left-col off-day" rowspan="2">${escapeHtml(p.offDay || '')}</th>
           ${firstRow}
         </tr>
         <tr>${secondRow}</tr>
         <tr class="name-row">
-          <th class="left-col name">${p.fullName || ''}</th>
+          <th class="left-col name">${escapeHtml(p.fullName || '')}</th>
           ${thirdRow}
         </tr>
       `;
@@ -304,7 +305,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
 
     matrixSvgWrap.innerHTML = `
       <section class="schedule-shell" aria-label="Aylik vardiya tablosu">
-        <h2 class="matrix-title">${title}</h2>
+        <h2 class="matrix-title">${escapeHtml(title)}</h2>
         <div class="schedule-table-wrap">
           <table class="schedule-table">
             <colgroup>
@@ -367,7 +368,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
         const weekly = normalizeWeekShiftsClient(p?.week_shifts || record.week_shifts || {});
         return `
           <div class="week-item">
-            <div class="week-item-title">${idx + 1}. Personel: <strong>${String(p?.fullName || '').trim()}</strong></div>
+            <div class="week-item-title">${idx + 1}. Personel: <strong>${escapeHtml(String(p?.fullName || '').trim())}</strong></div>
             <div class="week-item-line">1.Hafta: <strong>${shiftLabel(weekly.hafta1)}</strong></div>
             <div class="week-item-line">2.Hafta: <strong>${shiftLabel(weekly.hafta2)}</strong></div>
             <div class="week-item-line">3.Hafta: <strong>${shiftLabel(weekly.hafta3)}</strong></div>
@@ -925,7 +926,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       }
 
       izinPersonTarget.disabled = false;
-      izinPersonTarget.innerHTML = active.map((item) => `<option value="${item.index}">${item.index}. Personel - ${item.name}</option>`).join('');
+      izinPersonTarget.innerHTML = active.map((item) => `<option value="${escapeHtml(item.index)}">${escapeHtml(item.index)}. Personel - ${escapeHtml(item.name)}</option>`).join('');
       const activeIndexes = active.map((item) => item.index);
       if (!activeIndexes.includes(selectedLeavePersonIndex)) selectedLeavePersonIndex = activeIndexes[0];
       izinPersonTarget.value = String(selectedLeavePersonIndex);
@@ -948,7 +949,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
           const day = Number(dateText.slice(-2)) || '-';
           const code = String(entry.code || '');
           const label = leaveTypeLabels[code] || code;
-          return `<button type="button" class="izin-chip" data-remove-izin="${idx}">${day}. gün (${dateText}) - ${code} (${label}) ✕</button>`;
+          return `<button type="button" class="izin-chip" data-remove-izin="${idx}">${escapeHtml(day)}. gün (${escapeHtml(dateText)}) - ${escapeHtml(code)} (${escapeHtml(label)}) ✕</button>`;
         })
         .join('');
 
@@ -1034,7 +1035,7 @@ const vardiyaRoot = document.getElementById("vardiya-root");
       personWeekTarget.disabled = false;
       setWeekInputsDisabled(false);
       personWeekTarget.innerHTML = active
-        .map((item) => `<option value="${item.index}">${item.index}. Personel - ${item.name}</option>`)
+        .map((item) => `<option value="${escapeHtml(item.index)}">${escapeHtml(item.index)}. Personel - ${escapeHtml(item.name)}</option>`)
         .join('');
 
       const requestedIndex = Number(preferredIndex);

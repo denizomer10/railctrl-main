@@ -12,7 +12,8 @@ export const GET: APIRoute = async ({ locals, url }) => {
 
   try {
     await ensureAppSchema();
-    const limit = Math.min(parseInt(url.searchParams.get('limit') || '25', 10), 100);
+    const rawLimit = Number.parseInt(url.searchParams.get('limit') || '25', 10);
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 25;
     const unreadOnly = url.searchParams.get('unread') === '1';
 
     const result = await query<any>(
@@ -20,7 +21,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
            FROM ${Tables.NOTIFICATIONS}
        WHERE user_id = $1
          ${unreadOnly ? 'AND is_read = false' : ''}
-       ORDER BY created_at DESC
+       ORDER BY created_at DESC, id DESC
        LIMIT $2`,
       [locals.user.id, limit]
     );

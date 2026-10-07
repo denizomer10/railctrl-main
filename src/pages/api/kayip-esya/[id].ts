@@ -10,6 +10,7 @@ import { query } from '../../../lib/database';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createGlobalNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -68,7 +69,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   try {
     await ensureAppSchema();
     const { id } = params;
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     // Mevcut kaydı kontrol et
     const existing = await query<any>('SELECT * FROM kayip_esya WHERE id = $1', [id]);

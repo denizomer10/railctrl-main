@@ -1,5 +1,7 @@
 // dahili-numaralar istemcisi. dahili-numaralar.astro tarafından bundled <script> ile çağrılır.
 
+import { escapeHtml } from './api-client';
+
     const searchInput = document.getElementById('searchInput') as HTMLInputElement;
     const searchClear = document.getElementById('searchClear') as HTMLElement;
     const tableBody = document.getElementById('tableBody') as HTMLElement;
@@ -211,10 +213,10 @@
         data.records.forEach((r: any) => {
           const row = document.createElement('tr');
           row.innerHTML = `
-            <td data-label="Dahili Numara"><span class="numara-badge">${r.dahili_numara || '-'}</span></td>
-            <td class="birim-cell" data-label="Birim">${r.birim || '-'}</td>
-            <td class="aciklama-cell" data-label="Açıklama">${r.aciklama || ''}</td>
-            <td data-label="İşlem">${canEditDahili() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${r.id}">✏️</button></div>` : '-'}</td>
+            <td data-label="Dahili Numara"><span class="numara-badge">${escapeHtml(r.dahili_numara || '-')}</span></td>
+            <td class="birim-cell" data-label="Birim">${escapeHtml(r.birim || '-')}</td>
+            <td class="aciklama-cell" data-label="Açıklama">${escapeHtml(r.aciklama || '')}</td>
+            <td data-label="İşlem">${canEditDahili() ? `<div class="action-btns"><button class="btn-action btn-edit" data-id="${escapeHtml(r.id)}">✏️</button></div>` : '-'}</td>
           `;
           row.querySelector('.btn-edit')?.addEventListener('click', () => openEditModal(r));
           tableBody.appendChild(row);
@@ -224,7 +226,7 @@
         totalPages = Math.max(1, Number(data.pagination?.totalPages ?? Math.ceil(paginationTotalCount / limit) ?? 1));
         renderPagination();
       } catch (error: any) {
-        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${error.message}</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:2rem;color:#dc2626;">Hata: ${escapeHtml(error.message)}</td></tr>`;
       }
     }
 

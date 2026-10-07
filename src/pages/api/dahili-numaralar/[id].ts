@@ -8,6 +8,7 @@ import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
 import { logAudit } from '../../../lib/audit';
 import { ensureAppSchema } from '../../../lib/schema';
+import { readJsonBody } from '../../../lib/api';
 
 export const prerender = false;
 
@@ -37,7 +38,7 @@ export const GET: APIRoute = async ({ params, locals }) => {
     });
   } catch (error: any) {
     console.error('Dahili numara detay hatası:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Kayıt alınırken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -62,8 +63,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
   try {
     await ensureAppSchema();
     const id = params.id;
-    const body = await request.json();
-    const { dahili_numara, birim, aciklama } = body;
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const { dahili_numara, birim, aciklama } = parsed.data;
 
     const result = await query(
       `UPDATE dahili_numaralar
@@ -100,7 +102,7 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
     });
   } catch (error: any) {
     console.error('Dahili numara güncelleme hatası:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Kayıt güncellenirken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -154,7 +156,7 @@ export const DELETE: APIRoute = async ({ params, locals, request }) => {
     });
   } catch (error: any) {
     console.error('Dahili numara silme hatası:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: 'Kayıt silinirken hata oluştu' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     });

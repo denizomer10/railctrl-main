@@ -213,7 +213,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
       SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_nickname, details
       FROM all_records
       ${where}
-      ORDER BY created_at DESC NULLS LAST
+      ORDER BY created_at DESC NULLS LAST, module_key ASC, record_id ASC
       LIMIT $${idx++} OFFSET $${idx}
     `;
 
@@ -248,7 +248,7 @@ export const GET: APIRoute = async ({ locals, url }) => {
         SELECT module_key, module_label, record_id, record_title, location, created_at, creator_name, creator_nickname, details
         FROM all_records
         ${where}
-        ORDER BY created_at DESC NULLS LAST
+        ORDER BY created_at DESC NULLS LAST, module_key ASC, record_id ASC
         LIMIT $${exportParamIndex}
       `;
       const exportRowsResult = await query<SystemRecordRow>(

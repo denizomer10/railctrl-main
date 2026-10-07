@@ -1,5 +1,6 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
+import '../styles/note-editor.css';
 
 const user = Astro.locals.user;
 const canSeePrivate = user?.role === 'yonetici';
@@ -123,46 +124,21 @@ const canSeePrivate = user?.role === 'yonetici';
         </div>
 
         <div class="form-group">
-          <label for="icerik">İçerik *</label>
-          <div class="editor-tools" id="editorTools">
-            <button type="button" data-cmd="bold" title="Kalın"><b>B</b></button>
-            <button type="button" data-cmd="italic" title="İtalik"><i>I</i></button>
-            <button type="button" data-cmd="underline" title="Altı Çizili"><u>U</u></button>
-            <button type="button" data-cmd="strikeThrough" title="Üstü Çizili"><s>S</s></button>
-            <button type="button" data-cmd="formatBlock" data-value="h2" title="Başlık">H2</button>
-            <button type="button" data-cmd="formatBlock" data-value="h3" title="Alt Başlık">H3</button>
-            <button type="button" data-cmd="formatBlock" data-value="blockquote" title="Alıntı">❝</button>
-            <button type="button" data-cmd="formatBlock" data-value="pre" title="Kod Blok">{ }</button>
-            <button type="button" data-cmd="insertUnorderedList" title="Madde Listesi">• Liste</button>
-            <button type="button" data-cmd="insertOrderedList" title="Numaralı Liste">1. Liste</button>
-            <button type="button" data-cmd="outdent" title="Girintiyi Azalt">⟵</button>
-            <button type="button" data-cmd="indent" title="Girintiyi Artır">⟶</button>
-            <button type="button" data-cmd="justifyLeft" title="Sola">⟸</button>
-            <button type="button" data-cmd="justifyCenter" title="Ortala">≡</button>
-            <button type="button" data-cmd="justifyRight" title="Sağa">⟹</button>
-            <button type="button" data-link="true" title="Bağlantı">Link</button>
-            <button type="button" data-cmd="unlink" title="Bağlantıyı Kaldır">Unlink</button>
-            <button type="button" data-cmd="insertHorizontalRule" title="Ayraç">―</button>
-            <label class="toolbar-color">
-              A
-              <input type="color" id="textColorPicker" value="#e5e7eb" title="Yazı Rengi" />
-            </label>
-            <label class="toolbar-color">
-              Bg
-              <input type="color" id="bgColorPicker" value="#fff59d" title="Vurgu Rengi" />
-            </label>
-            <button type="button" data-resize="down" title="Resmi Küçült">Resim -</button>
-            <button type="button" data-resize="up" title="Resmi Büyüt">Resim +</button>
-            <button type="button" data-cmd="removeFormat" title="Biçimi Temizle">Tx</button>
+          <label for="richEditor">İçerik *</label>
+          <div class="note-editor-shell" id="editorDropzone">
+            <div class="note-toolbar" id="editorToolbar"></div>
+            <div id="richEditor" class="rich-editor" contenteditable="true" data-placeholder="Not içeriği… Resimleri buraya sürükleyip bırakabilirsiniz."></div>
+            <div class="note-editor-foot">
+              <span class="note-editor-hint">💡 Markdown kısayolları: <code>#</code> başlık, <code>-</code> liste, <code>[]</code> görev, <code>&gt;</code> alıntı, <code>---</code> ayraç</span>
+              <span class="note-editor-status" id="editorStatus">0 kelime · 0 karakter</span>
+            </div>
           </div>
-          <div id="richEditor" class="rich-editor" contenteditable="true" data-placeholder="Not içeriği..."></div>
           <textarea id="icerik" name="icerik" rows="10" style="display: none;"></textarea>
         </div>
 
         <div class="form-group">
-          <label for="mediaFiles">Resim / Medya / Belge</label>
-          <input type="file" id="mediaFiles" multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.txt" />
-          <small class="upload-help">Dosyalar `public/files` içine kaydedilir. Maksimum 10MB/dosya.</small>
+          <label>Resim / Medya / Belge</label>
+          <small class="upload-help">Resimleri doğrudan editöre sürükleyip bırakabilir, yapıştırabilir veya dosya seçebilirsiniz. Maksimum 10MB/dosya.</small>
           <div id="mediaList" class="media-list"></div>
         </div>
 
@@ -753,6 +729,11 @@ const canSeePrivate = user?.role === 'yonetici';
     max-width: 700px;
   }
 
+  /* Editör için daha geniş bir düzen */
+  #noteModal .modal-content {
+    max-width: 780px;
+  }
+
   .modal-header {
     display: flex;
     justify-content: space-between;
@@ -818,115 +799,6 @@ const canSeePrivate = user?.role === 'yonetici';
     color: #aaa;
   }
 
-  .view-content {
-    font-size: 0.95rem;
-    line-height: 1.7;
-    white-space: pre-wrap;
-    font-family: inherit;
-    color: #333;
-    overflow-wrap: anywhere;
-    overflow-x: hidden;
-  }
-  .view-content * {
-    max-width: 100% !important;
-    box-sizing: border-box;
-  }
-
-  [data-theme="dark"] .view-content {
-    color: #e0e0e0;
-  }
-  .view-content img,
-  .view-content video,
-  .view-content iframe {
-    width: auto !important;
-    max-width: 100% !important;
-    max-height: 520px !important;
-    height: auto !important;
-    object-fit: contain !important;
-    display: block;
-    margin: 0.4rem auto;
-    border-radius: 10px;
-  }
-  .view-content table {
-    display: block;
-    max-width: 100%;
-    overflow-x: auto;
-  }
-
-  .view-media {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  .view-media img,
-  .view-media video {
-    width: auto !important;
-    max-width: 100% !important;
-    max-height: 520px !important;
-    height: auto !important;
-    object-fit: contain !important;
-    display: block;
-    margin: 0 auto;
-    border-radius: 10px;
-    border: 1px solid #e5e7eb;
-  }
-
-  .view-media .media-link {
-    display: block;
-    padding: 0.55rem 0.7rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    text-decoration: none;
-    color: #1d4ed8;
-    background: #f8fafc;
-    word-break: break-all;
-  }
-
-  .view-attachments {
-    margin-top: 0.85rem;
-    display: grid;
-    gap: 0.55rem;
-  }
-
-  .view-attachments-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #64748b;
-  }
-
-  .attachment-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.62rem 0.8rem;
-    border-radius: 12px;
-    text-decoration: none;
-    color: #0f172a;
-    background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
-    border: 1px solid #cbd5e1;
-    width: fit-content;
-    max-width: 100%;
-    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
-  }
-
-  .attachment-btn .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 100%;
-  }
-
-  [data-theme="dark"] .view-attachments-title { color: #94a3b8; }
-  [data-theme="dark"] .attachment-btn {
-    color: #e2e8f0;
-    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
-    border-color: #334155;
-    box-shadow: 0 8px 18px rgba(2, 6, 23, 0.45);
-  }
-
   /* Form */
   .note-form {
     padding: 1.25rem;
@@ -977,198 +849,11 @@ const canSeePrivate = user?.role === 'yonetici';
     line-height: 1.5;
   }
 
-  .editor-tools {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px 12px 0 0;
-    background: linear-gradient(180deg, #fffbeb 0%, #fff7ed 100%);
-  }
-
-  .editor-tools button {
-    border: 1px solid #d1d5db;
-    background: #f8fafc;
-    border-radius: 8px;
-    padding: 0.3rem 0.55rem;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-  .toolbar-color {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.35rem;
-    border: 1px solid #d1d5db;
-    border-radius: 8px;
-    background: #fff;
-  }
-
-  .toolbar-color input {
-    width: 22px;
-    height: 20px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-  }
-
-  [data-theme="dark"] .editor-tools button {
-    background: #111827;
-    border-color: #374151;
-    color: #e5e7eb;
-  }
-  [data-theme="dark"] .toolbar-color {
-    background: #111827;
-    border-color: #374151;
-    color: #e5e7eb;
-  }
-
-  [data-theme="dark"] .editor-tools {
-    background: linear-gradient(180deg, #151515 0%, #101010 100%);
-    border-color: #333;
-  }
-  :global(html[data-theme="dark"]) #noteModal .editor-tools {
-    background: linear-gradient(180deg, #151515 0%, #101010 100%) !important;
-    border-color: #333 !important;
-  }
-  :global(html[data-theme="dark"]) #noteModal .editor-tools button {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    border-color: #374151 !important;
-  }
-  :global(html[data-theme="dark"]) #noteModal .toolbar-color {
-    background: #111827 !important;
-    color: #e5e7eb !important;
-    border-color: #374151 !important;
-  }
-
-  .rich-editor {
-    min-height: 220px;
-    border: 2px solid #e0e0e0;
-    border-top: none;
-    border-radius: 0 0 12px 12px;
-    padding: 0.95rem 1rem;
-    background: #fff;
-    line-height: 1.6;
-    overflow-y: auto;
-  }
-  .rich-editor img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 10px;
-    display: block;
-    margin: 0.5rem 0;
-    border: 1px solid #e5e7eb;
-  }
-  .rich-editor img.selected-image {
-    outline: 2px solid #f59e0b;
-    outline-offset: 2px;
-  }
-
-  .rich-editor:empty::before {
-    content: attr(data-placeholder);
-    color: #9ca3af;
-  }
-
-  .rich-editor:focus {
-    outline: none;
-    border-color: #f59e0b;
-  }
-  .rich-editor.dragover {
-    border-color: #f59e0b;
-    background: #fffbeb;
-  }
-
-  [data-theme="dark"] .rich-editor {
-    background: #0a0a0a;
-    border-color: #333;
-    color: #e5e7eb;
-  }
-  [data-theme="dark"] .rich-editor,
-  [data-theme="dark"] .rich-editor p,
-  [data-theme="dark"] .rich-editor li,
-  [data-theme="dark"] .rich-editor h1,
-  [data-theme="dark"] .rich-editor h2,
-  [data-theme="dark"] .rich-editor h3,
-  [data-theme="dark"] .rich-editor blockquote,
-  [data-theme="dark"] .rich-editor pre,
-  [data-theme="dark"] .rich-editor span,
-  [data-theme="dark"] .rich-editor div {
-    color: #e5e7eb;
-  }
-  :global(html[data-theme="dark"]) #noteModal .rich-editor {
-    background: #0a0a0a !important;
-    border-color: #333 !important;
-    color: #e5e7eb !important;
-    caret-color: #f8fafc !important;
-  }
-  :global(html[data-theme="dark"]) #noteModal .rich-editor p,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor li,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h1,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h2,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor h3,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor span,
-  :global(html[data-theme="dark"]) #noteModal .rich-editor div {
-    color: #e5e7eb !important;
-  }
-  [data-theme="dark"] .rich-editor.dragover {
-    background: #2a1e0a;
-  }
-
   .upload-help {
     display: block;
     margin-top: 0.35rem;
     color: #6b7280;
     font-size: 0.78rem;
-  }
-
-  .media-list {
-    margin-top: 0.65rem;
-    display: grid;
-    gap: 0.5rem;
-  }
-
-  .media-list.dragover {
-    border: 2px dashed #f59e0b;
-    border-radius: 12px;
-    padding: 0.5rem;
-    background: #fffbeb;
-  }
-
-  .media-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 0.75rem;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 0.5rem 0.75rem;
-    background: #fff;
-  }
-
-  .media-name {
-    color: #374151;
-    word-break: break-all;
-    font-size: 0.9rem;
-  }
-
-  [data-theme="dark"] .media-item {
-    background: #0a0a0a;
-    border-color: #333;
-  }
-  [data-theme="dark"] .media-name { color: #e5e7eb; }
-
-  .media-remove {
-    border: none;
-    background: #fee2e2;
-    color: #b91c1c;
-    border-radius: 8px;
-    padding: 0.3rem 0.55rem;
-    cursor: pointer;
   }
 
   .form-actions {
@@ -1357,21 +1042,6 @@ const canSeePrivate = user?.role === 'yonetici';
     .data-table { min-width: 0; width: 100%; }
     .modal-overlay { padding: 0.5rem; }
     .modal-content { width: calc(100vw - 1rem); max-width: calc(100vw - 1rem); }
-    .view-content img,
-    .view-content video,
-    .view-content iframe {
-      width: auto !important;
-      max-width: 100% !important;
-      max-height: 42vh !important;
-      margin: 0.35rem auto;
-    }
-    .view-media img,
-    .view-media video {
-      width: auto !important;
-      max-width: 100% !important;
-      max-height: 42vh !important;
-    }
-    .attachment-btn { width: 100%; }
   }
 </style>
 

@@ -37,3 +37,25 @@ export function requireRole(locals: App.Locals, roles: string[]) {
 
   return auth;
 }
+
+/**
+ * İstek gövdesini JSON nesnesi olarak okur. Bozuk, boş ya da nesne olmayan
+ * gövdede 400 döndürür; böylece `await request.json()` istisnası 500'e
+ * dönüşüp istemciye sunucu hatası olarak yansımaz.
+ */
+export async function readJsonBody<T = any>(
+  request: Request
+): Promise<{ ok: true; data: T } | { ok: false; response: Response }> {
+  let data: unknown;
+  try {
+    data = await request.json();
+  } catch {
+    return { ok: false, response: jsonResponse({ error: 'Geçersiz JSON gövdesi' }, 400) };
+  }
+
+  if (data === null || typeof data !== 'object' || Array.isArray(data)) {
+    return { ok: false, response: jsonResponse({ error: 'Geçersiz istek gövdesi' }, 400) };
+  }
+
+  return { ok: true, data: data as T };
+}

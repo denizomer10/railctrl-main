@@ -7,7 +7,6 @@ export const GET: APIRoute = async () => {
   try {
     const dbConnected = await checkConnection();
     const status = dbConnected ? 'healthy' : 'unhealthy';
-    const mode = typeof (globalThis as { WebSocketPair?: unknown }).WebSocketPair !== 'undefined' ? 'node' : 'node';
 
     return new Response(
       JSON.stringify({
@@ -17,7 +16,7 @@ export const GET: APIRoute = async () => {
           database: dbConnected ? 'connected' : 'disconnected',
         },
         version: '2.0.0',
-        mode,
+        mode: 'node',
       }),
       {
         status: dbConnected ? 200 : 503,

@@ -4,6 +4,7 @@ import { hashPassword } from '../../../../lib/auth';
 import { ensureAppSchema } from '../../../../lib/schema';
 import { logAudit } from '../../../../lib/audit';
 import { Tables } from '../../../../lib/database';
+import { readJsonBody } from '../../../../lib/api';
 
 export const prerender = false;
 
@@ -27,7 +28,9 @@ export const PUT: APIRoute = async ({ params, request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const { name, nickname, role, gorevi, password, notify_mms, notify_calisma } = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const { name, nickname, role, gorevi, password, notify_mms, notify_calisma } = parsed.data;
 
     // Build update query dynamically
     const updates: string[] = [];

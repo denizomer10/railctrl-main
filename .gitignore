@@ -26,3 +26,6 @@ pnpm-debug.log*
 .env.*
 !.env.example
 .dev.vars
+
+# Runtime data (uploaded note media)
+.data/

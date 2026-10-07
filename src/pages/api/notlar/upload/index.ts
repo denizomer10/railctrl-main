@@ -1,7 +1,18 @@
+/**
+ * Not Medya Yükleme API Endpoints
+ * POST   /api/notlar/upload - Resim / medya / belge yükle
+ * DELETE /api/notlar/upload - Nottan çıkarılan medyayı sil
+ */
+
 import type { APIRoute } from 'astro';
-import { mkdir, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
+import { readJsonBody } from '../../../../lib/api';
 import { logAudit } from '../../../../lib/audit';
+import {
+  deleteMediaFile,
+  mediaNameFromAnyPath,
+  saveMediaFile,
+  type StoredMedia,
+} from '../../../../lib/media';
 
 export const prerender = false;
 
@@ -14,94 +25,60 @@ const ALLOWED_MIME_TYPES = [
   'application/vnd.ms-excel',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'text/plain',
+  'text/csv',
 ];
 
-function normalizeFileName(name: string): string {
-  return name
-    .normalize('NFKD')
-    .replace(/[^a-zA-Z0-9._-]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '') || 'dosya';
+// SVG, HTML gibi etkin içerik taşıyabilen türler not eki olarak kabul edilmez.
+const BLOCKED_MIME_TYPES = new Set(['image/svg+xml', 'text/html', 'application/xhtml+xml']);
+
+function json(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
 }
 
-function buildPublicUrl(fileName: string): string {
-  return `/files/${encodeURIComponent(fileName)}`;
-}
-
-function fileNameFromPublicPath(publicPath: string): string | null {
-  if (!publicPath.startsWith('/files/')) return null;
-  const name = decodeURIComponent(publicPath.slice('/files/'.length)).trim();
-  if (!name || name.includes('/') || name.includes('\\') || name.includes('..')) return null;
-  return name;
+function requireManager(locals: App.Locals): Response | null {
+  if (!locals.user) return json({ error: 'Yetkisiz erişim' }, 401);
+  if (locals.user.role !== 'yonetici') return json({ error: 'Bu işlem için yetkiniz yok' }, 403);
+  return null;
 }
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  if (!locals.user) {
-    return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  if (locals.user.role !== 'yonetici') {
-    return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const denied = requireManager(locals);
+  if (denied) return denied;
 
   try {
     const formData = await request.formData();
     const uploaded = formData.getAll('files').filter((entry): entry is File => entry instanceof File);
 
     if (uploaded.length === 0) {
-      return new Response(JSON.stringify({ error: 'Yüklenecek dosya bulunamadı' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Yüklenecek dosya bulunamadı' }, 400);
     }
 
-    const filesDir = path.join(process.cwd(), 'public', 'files');
-    await mkdir(filesDir, { recursive: true });
-
-    const records: Array<Record<string, unknown>> = [];
+    const records: StoredMedia[] = [];
 
     for (const file of uploaded) {
       if (file.size > MAX_FILE_SIZE) {
-        return new Response(JSON.stringify({ error: `${file.name} 10MB sınırını aşıyor` }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return json({ error: `${file.name} 10MB sınırını aşıyor` }, 400);
       }
 
       const mimeType = file.type || 'application/octet-stream';
-      const isAllowed = ALLOWED_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix)) || ALLOWED_MIME_TYPES.includes(mimeType);
+      const isAllowed =
+        !BLOCKED_MIME_TYPES.has(mimeType) &&
+        (ALLOWED_MIME_PREFIXES.some((prefix) => mimeType.startsWith(prefix)) ||
+          ALLOWED_MIME_TYPES.includes(mimeType));
+
       if (!isAllowed) {
-        return new Response(JSON.stringify({ error: `${file.name} desteklenmeyen dosya türü` }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json' },
-        });
+        return json({ error: `${file.name} desteklenmeyen dosya türü` }, 400);
       }
 
-      const originalName = normalizeFileName(file.name);
-      const ext = path.extname(originalName);
-      const base = path.basename(originalName, ext);
-      const uniqueName = `${base}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
-      const targetPath = path.join(filesDir, uniqueName);
-      const bytes = Buffer.from(await file.arrayBuffer());
-      await writeFile(targetPath, bytes);
-
-      records.push({
-        name: originalName,
-        path: buildPublicUrl(uniqueName),
-        mimeType,
-        size: file.size,
-        type: mimeType.startsWith('image/') ? 'image' : mimeType.startsWith('video/') ? 'video' : mimeType.startsWith('audio/') ? 'audio' : 'file',
-      });
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      records.push(await saveMediaFile(bytes, file.name, mimeType));
     }
 
     await logAudit({
-      userId: locals.user.id,
+      userId: locals.user!.id,
       action: 'notlar.media.upload',
       resourceType: 'notlar',
       resourceId: null,
@@ -110,61 +87,34 @@ export const POST: APIRoute = async ({ request, locals }) => {
       userAgent: request.headers.get('user-agent'),
     });
 
-    return new Response(JSON.stringify({ files: records }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error: any) {
+    return json({ files: records });
+  } catch (error) {
     console.error('Not media upload error:', error);
-    return new Response(JSON.stringify({ error: 'Dosya yüklenirken hata oluştu' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Dosya yüklenirken hata oluştu' }, 500);
   }
 };
 
 export const DELETE: APIRoute = async ({ request, locals }) => {
-  if (!locals.user) {
-    return new Response(JSON.stringify({ error: 'Yetkisiz erişim' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
-  if (locals.user.role !== 'yonetici') {
-    return new Response(JSON.stringify({ error: 'Bu işlem için yetkiniz yok' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+  const denied = requireManager(locals);
+  if (denied) return denied;
 
   try {
-    const body = await request.json();
-    const paths = Array.isArray(body?.paths) ? body.paths : [];
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const paths = Array.isArray(parsed.data?.paths) ? parsed.data.paths : [];
     if (paths.length === 0) {
-      return new Response(JSON.stringify({ error: 'Silinecek dosya yolu bulunamadı' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return json({ error: 'Silinecek dosya yolu bulunamadı' }, 400);
     }
 
-    const filesDir = path.join(process.cwd(), 'public', 'files');
     const deleted: string[] = [];
-
     for (const p of paths) {
-      if (typeof p !== 'string') continue;
-      const fileName = fileNameFromPublicPath(p);
-      if (!fileName) continue;
-      try {
-        await unlink(path.join(filesDir, fileName));
-        deleted.push(fileName);
-      } catch (error: any) {
-        if (error?.code !== 'ENOENT') console.error('Not media delete error:', error);
-      }
+      const name = mediaNameFromAnyPath(p);
+      if (!name) continue;
+      if (await deleteMediaFile(name)) deleted.push(name);
     }
 
     await logAudit({
-      userId: locals.user.id,
+      userId: locals.user!.id,
       action: 'notlar.media.delete',
       resourceType: 'notlar',
       resourceId: null,
@@ -173,15 +123,9 @@ export const DELETE: APIRoute = async ({ request, locals }) => {
       userAgent: request.headers.get('user-agent'),
     });
 
-    return new Response(JSON.stringify({ deleted }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  } catch (error: any) {
+    return json({ deleted });
+  } catch (error) {
     console.error('Not media delete error:', error);
-    return new Response(JSON.stringify({ error: 'Dosya silinirken hata oluştu' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return json({ error: 'Dosya silinirken hata oluştu' }, 500);
   }
 };

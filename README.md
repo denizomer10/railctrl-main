@@ -26,9 +26,13 @@ The interface supports Turkish and English, with theme preferences available thr
 - Astro DB backed by SQLite for application data
 - TypeScript for browser-side application modules and server code
 - `bcryptjs` for password hashing
-- Node.js cryptography for signed sessions and AES-256-GCM encrypted file content
+- Node.js cryptography for HMAC-signed sessions and AES-256-GCM encrypted file content
 
 The application serves its API from Astro endpoints under `src/pages/api/`. The Node adapter is configured to listen on `0.0.0.0`; the default port is `3000` and can be changed with `PORT`.
+
+### Note attachments and media
+
+Uploaded note media is written to a runtime media store (`.data/media` by default, override with `MEDIA_DIR`) and served through the authenticated `GET /api/media/[name]` endpoint. Nothing under `public/` is used for uploads, so the same code path works in `astro dev` and in the standalone production build. Legacy `/files/<name>` links in older notes are redirected to `/api/media/<name>`.
 
 ## Requirements
 
@@ -73,6 +77,7 @@ Open <http://localhost:3000> in your browser. There is no public self-registrati
 | Variable | Required | Description |
 |---|---:|---|
 | `ENCRYPTION_KEY` | Yes for encrypted file operations | Secret used to derive the AES-256-GCM encryption key. Keep it private and preserve it with encrypted data backups. |
+| `MEDIA_DIR` | No | Directory for uploaded note media. Defaults to `.data/media` in the application directory. |
 | `PORT` | No | HTTP port for the development and preview servers. Defaults to `3000`. |
 | `RAILCTRL_SESSION_KEY_FILE` | No | Optional path for the 32-byte session-signing key. Defaults to `.astro/session.key` in the application directory. |
 | `PUBLIC_ASSET_VERSION` | No | Optional explicit identifier for versioning client assets. |
@@ -91,8 +96,10 @@ The application derives a 32-byte AES key from the configured value, so a secure
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Start the local development server with Astro's development workflow. |
-| `npm run build` | Build the standalone Node server and client assets into `dist/`. The build uses a separate Astro database file at `.astro/build.db`. |
+| `npm run build` | Build the standalone Node server and client assets into `dist/`. Both dev and production use the same Astro database file at `.astro/content.db`. |
 | `npm run preview` | Serve the production build locally for a smoke check. |
+| `npm run start` | Run the built standalone server from `dist/server/entry.mjs`. |
+| `npm run check` | Run Astro's diagnostic checks over the project. |
 
 For example, to build and preview:
 

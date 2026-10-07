@@ -1,0 +1,754 @@
+/**
+ * Notlar sayfasının JavaScript ile üretilen arayüz stilleri.
+ *
+ * Astro'nun bileşen `<style>` blokları kapsamlıdır (scoped): yalnızca şablonda
+ * bulunan elemanlara uygulanır. Zengin editörün araç çubuğu, araç düğmeleri,
+ * renk seçiciler, medya listesi ve not görüntüleme içeriği ise çalışma zamanında
+ * `innerHTML`/`createElement` ile oluşturulduğundan bu kapsam dışında kalır ve
+ * stiller uygulanmaz. Bu yüzden ilgili stiller burada global olarak tanımlanır.
+ */
+
+/* ============================ Zengin editör ============================ */
+
+.note-editor-shell {
+  position: relative;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.note-editor-shell:focus-within {
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.16);
+}
+
+.note-editor-shell.is-dragover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.22);
+}
+
+/* ---------------------------- Araç çubuğu ---------------------------- */
+
+.note-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.15rem;
+  padding: 0.45rem 0.55rem;
+  border-bottom: 1px solid #eceff4;
+  background: linear-gradient(180deg, #fffefb 0%, #fff6e9 100%);
+}
+
+.note-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.note-block-select {
+  margin-right: 0.1rem;
+}
+
+.note-toolbar-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 0.3rem;
+  background: linear-gradient(180deg, transparent, #d8dee7, transparent);
+}
+
+.note-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease, transform 0.14s ease;
+}
+
+.note-tool svg {
+  width: 18px;
+  height: 18px;
+}
+
+.note-tool:hover {
+  background: #fff;
+  border-color: #e2e8f0;
+  color: #b45309;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+}
+
+.note-tool:active {
+  transform: translateY(1px);
+}
+
+.note-tool:focus-visible {
+  outline: 2px solid rgba(245, 158, 11, 0.55);
+  outline-offset: 1px;
+}
+
+.note-tool.is-active {
+  background: #fef3c7;
+  border-color: #fcd34d;
+  color: #92400e;
+}
+
+.note-tool-danger:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.note-block-style {
+  height: 32px;
+  padding: 0 0.6rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.note-block-style:hover {
+  border-color: #cbd5e1;
+}
+
+.note-block-style:focus {
+  outline: none;
+  border-color: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.16);
+}
+
+/* --------------------------- Renk seçiciler --------------------------- */
+
+.note-color-picker {
+  position: relative;
+  display: inline-flex;
+}
+
+.note-color-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(5, 22px);
+  gap: 7px;
+  padding: 10px;
+  background: #fff;
+  border: 1px solid #eceff4;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+  animation: note-editor-pop 0.12s ease-out;
+}
+
+@keyframes note-editor-pop {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+
+.note-swatch {
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 7px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.note-swatch:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.22);
+}
+
+.note-swatch-custom {
+  grid-column: span 5;
+  width: 100%;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.note-img-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-left: auto;
+  padding-left: 0.3rem;
+}
+
+/* --------------------------- Editör yüzeyi --------------------------- */
+
+.rich-editor {
+  min-height: 280px;
+  max-height: 62vh;
+  overflow-y: auto;
+  padding: 1.1rem 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #1f2937;
+  outline: none;
+}
+
+.rich-editor:focus {
+  outline: none;
+}
+
+.rich-editor.is-empty::before {
+  content: attr(data-placeholder);
+  display: block;
+  color: #9aa4b2;
+  pointer-events: none;
+}
+
+.rich-editor.is-uploading {
+  opacity: 0.65;
+}
+
+.rich-editor > *:first-child {
+  margin-top: 0;
+}
+
+.rich-editor p { margin: 0 0 0.65rem; }
+.rich-editor h1 { font-size: 1.55rem; font-weight: 700; margin: 0.9rem 0 0.55rem; line-height: 1.25; }
+.rich-editor h2 { font-size: 1.32rem; font-weight: 700; margin: 0.85rem 0 0.5rem; line-height: 1.3; }
+.rich-editor h3 { font-size: 1.14rem; font-weight: 700; margin: 0.75rem 0 0.45rem; }
+.rich-editor h4 { font-size: 1rem; font-weight: 700; margin: 0.65rem 0 0.4rem; }
+.rich-editor ul,
+.rich-editor ol { margin: 0.4rem 0 0.7rem 1.4rem; }
+.rich-editor li { margin: 0.2rem 0; }
+
+.rich-editor ul.task-list {
+  list-style: none;
+  margin-left: 0.35rem;
+  padding-left: 0;
+}
+
+.rich-editor ul.task-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.rich-editor ul.task-list li input[type="checkbox"] {
+  margin-top: 0.25rem;
+  width: 16px;
+  height: 16px;
+  accent-color: #f59e0b;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.rich-editor ul.task-list li.is-checked {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+.rich-editor blockquote {
+  margin: 0.65rem 0;
+  padding: 0.55rem 0.95rem;
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 0 10px 10px 0;
+  color: #6b4e16;
+}
+
+.rich-editor pre {
+  margin: 0.65rem 0;
+  padding: 0.85rem 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 12px;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.rich-editor code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f1f5f9;
+  padding: 0.1rem 0.38rem;
+  border-radius: 6px;
+  font-size: 0.88em;
+}
+
+.rich-editor pre code {
+  background: transparent;
+  padding: 0;
+}
+
+.rich-editor a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.rich-editor hr {
+  border: none;
+  border-top: 2px dashed #e2e8f0;
+  margin: 1.1rem 0;
+}
+
+.rich-editor .note-figure {
+  margin: 0.85rem 0;
+  text-align: center;
+}
+
+.rich-editor .note-figure figcaption {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.35rem;
+}
+
+.rich-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  cursor: pointer;
+  transition: outline-color 0.15s ease;
+}
+
+.rich-editor img.is-selected {
+  outline: 3px solid #f59e0b;
+  outline-offset: 2px;
+}
+
+.rich-editor video {
+  max-width: 100%;
+  border-radius: 12px;
+}
+
+.rich-editor table.note-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.65rem 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.rich-editor table.note-table th,
+.rich-editor table.note-table td {
+  border: 1px solid #d7dde6;
+  padding: 0.5rem 0.65rem;
+  min-width: 60px;
+}
+
+.rich-editor table.note-table th {
+  background: #f8fafc;
+  font-weight: 600;
+}
+
+/* ------------------------------ Alt bilgi ------------------------------ */
+
+.note-editor-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-top: 1px solid #eceff4;
+  background: #f8fafc;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.note-editor-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.note-editor-hint code {
+  background: #eef2ff;
+  color: #4338ca;
+  padding: 0.06rem 0.34rem;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+}
+
+.note-editor-status {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* ============================ Medya listesi ============================ */
+
+.media-list {
+  margin-top: 0.7rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.media-list > small {
+  color: #94a3b8;
+  font-size: 0.82rem;
+  padding: 0.5rem 0.15rem;
+}
+
+.media-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #e8edf3;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.media-thumb {
+  font-size: 1.15rem;
+  flex: 0 0 auto;
+}
+
+.media-name {
+  flex: 1;
+  color: #334155;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+.media-remove {
+  border: none;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 9px;
+  padding: 0.35rem 0.62rem;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.media-remove:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+/* ======================== Not görüntüleme içeriği ====================== */
+
+.view-content {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: inherit;
+  color: #333;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
+}
+
+.view-content * {
+  max-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.view-content h1 { font-size: 1.5rem; margin: 0.8rem 0 0.5rem; }
+.view-content h2 { font-size: 1.3rem; margin: 0.8rem 0 0.5rem; }
+.view-content h3 { font-size: 1.12rem; margin: 0.7rem 0 0.4rem; }
+.view-content h4 { font-size: 1rem; margin: 0.6rem 0 0.4rem; }
+.view-content ul,
+.view-content ol { margin: 0.4rem 0 0.7rem 1.4rem; }
+.view-content li { margin: 0.2rem 0; }
+.view-content ul.task-list { list-style: none; margin-left: 0.35rem; }
+.view-content ul.task-list li { display: flex; align-items: flex-start; gap: 0.55rem; }
+.view-content ul.task-list li.is-checked { text-decoration: line-through; color: #9ca3af; }
+.view-content blockquote {
+  margin: 0.6rem 0;
+  padding: 0.5rem 0.9rem;
+  border-left: 4px solid #f59e0b;
+  background: #fffbeb;
+  border-radius: 0 10px 10px 0;
+}
+.view-content pre {
+  margin: 0.6rem 0;
+  padding: 0.8rem 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 10px;
+  overflow-x: auto;
+}
+.view-content code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f1f5f9;
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  font-size: 0.88em;
+}
+.view-content pre code { background: transparent; padding: 0; }
+.view-content a { color: #1d4ed8; text-decoration: underline; }
+
+.view-content img,
+.view-content video,
+.view-content iframe {
+  width: auto !important;
+  max-width: 100% !important;
+  max-height: 520px !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block;
+  margin: 0.4rem auto;
+  border-radius: 10px;
+}
+
+.view-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.view-media {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.view-media img,
+.view-media video {
+  width: auto !important;
+  max-width: 100% !important;
+  max-height: 520px !important;
+  height: auto !important;
+  object-fit: contain !important;
+  display: block;
+  margin: 0 auto;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+}
+
+.view-media .media-link {
+  display: block;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #1d4ed8;
+  background: #f8fafc;
+  word-break: break-all;
+  width: 100%;
+}
+
+.view-attachments {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.view-attachments-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.attachment-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.62rem 0.8rem;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+  border: 1px solid #cbd5e1;
+  width: fit-content;
+  max-width: 100%;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.1);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.attachment-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+}
+
+.attachment-btn .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+/* ================================ Karanlık ============================ */
+
+[data-theme="dark"] .note-editor-shell {
+  background: #0f1115;
+  border-color: #2a2f3a;
+}
+
+[data-theme="dark"] .note-toolbar {
+  background: linear-gradient(180deg, #181b21 0%, #12151a 100%);
+  border-bottom-color: #2a2f3a;
+}
+
+[data-theme="dark"] .note-toolbar-sep {
+  background: linear-gradient(180deg, transparent, #3a4150, transparent);
+}
+
+[data-theme="dark"] .note-tool {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .note-tool:hover {
+  background: #1f2937;
+  border-color: #374151;
+  color: #fcd34d;
+  box-shadow: none;
+}
+
+[data-theme="dark"] .note-tool.is-active {
+  background: #2a1e0a;
+  border-color: #78350f;
+  color: #fcd34d;
+}
+
+[data-theme="dark"] .note-block-style {
+  background: #111827;
+  border-color: #374151;
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .note-color-panel {
+  background: #111827;
+  border-color: #374151;
+}
+
+[data-theme="dark"] .rich-editor {
+  color: #e5e7eb;
+  caret-color: #f8fafc;
+}
+
+[data-theme="dark"] .rich-editor blockquote {
+  background: #2a1e0a;
+  color: #f0d9a8;
+}
+
+[data-theme="dark"] .rich-editor code {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .rich-editor table.note-table th,
+[data-theme="dark"] .rich-editor table.note-table td {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .rich-editor table.note-table th {
+  background: #111827;
+}
+
+[data-theme="dark"] .rich-editor hr {
+  border-top-color: #374151;
+}
+
+[data-theme="dark"] .rich-editor img {
+  border-color: #374151;
+}
+
+[data-theme="dark"] .note-editor-foot {
+  background: #12151a;
+  border-top-color: #2a2f3a;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .note-editor-hint code {
+  background: #1e1b4b;
+  color: #c7d2fe;
+}
+
+[data-theme="dark"] .note-editor-shell.is-dragover {
+  background: #2a1e0a;
+}
+
+[data-theme="dark"] .media-item {
+  background: #0f1115;
+  border-color: #2a2f3a;
+}
+
+[data-theme="dark"] .media-name {
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .view-content {
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .view-content blockquote {
+  background: #2a1e0a;
+}
+
+[data-theme="dark"] .view-content code {
+  background: #1f2937;
+}
+
+[data-theme="dark"] .view-media .media-link {
+  background: #111827;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .view-attachments-title {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .attachment-btn {
+  color: #e2e8f0;
+  background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+  border-color: #334155;
+  box-shadow: 0 8px 18px rgba(2, 6, 23, 0.45);
+}
+
+/* ============================== Duyarlı =============================== */
+
+@media (max-width: 768px) {
+  .note-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.55rem;
+  }
+
+  .note-img-tools {
+    margin-left: 0.3rem;
+  }
+
+  .rich-editor {
+    min-height: 220px;
+    max-height: 52vh;
+  }
+
+  .view-content img,
+  .view-content video,
+  .view-content iframe,
+  .view-media img,
+  .view-media video {
+    width: auto !important;
+    max-width: 100% !important;
+    max-height: 42vh !important;
+    margin: 0.35rem auto;
+  }
+
+  .attachment-btn {
+    width: 100%;
+  }
+}

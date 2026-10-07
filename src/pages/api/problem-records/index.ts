@@ -1,12 +1,51 @@
 import type { APIRoute } from 'astro';
 import { query } from '../../../lib/database';
-import { jsonResponse, parsePagination, requireRole } from '../../../lib/api';
+import { jsonResponse, parsePagination, readJsonBody, requireRole } from '../../../lib/api';
 import { ensureAppSchema } from '../../../lib/schema';
 import { createStationNotifications } from '../../../lib/notifications';
 import { logAudit } from '../../../lib/audit';
 import { Tables } from '../../../lib/database';
 
 export const prerender = false;
+
+/**
+ * Durum, istasyon ve arama filtrelerini tek yerde üretir; liste ve sayım
+ * sorguları aynı filtre kümesini paylaşır, böylece parametre indeksleri
+ * aralarında kayamaz.
+ */
+function buildProblemRecordFilters(
+  durum: string | null,
+  istasyon: string | null,
+  search: string | null
+): { clause: string; params: any[] } {
+  let clause = '';
+  const params: any[] = [];
+
+  if (durum !== null && durum !== undefined) {
+    if (durum === '') {
+      clause += " AND (durum IS NULL OR durum = '' OR durum = 'Beklemede')";
+    } else {
+      params.push(durum);
+      clause += ` AND durum = $${params.length}`;
+    }
+  }
+
+  if (istasyon) {
+    params.push(`%${istasyon}%`);
+    clause += ` AND istasyon ILIKE $${params.length}`;
+  }
+
+  if (search) {
+    params.push(`%${search}%`);
+    clause += ` AND (
+      mms_numarasi ILIKE $${params.length} OR
+      ariza_tanimi ILIKE $${params.length} OR
+      istasyon ILIKE $${params.length}
+    )`;
+  }
+
+  return { clause, params };
+}
 
 export const GET: APIRoute = async ({ url }) => {
   try {
@@ -16,71 +55,14 @@ export const GET: APIRoute = async ({ url }) => {
     const istasyon = url.searchParams.get('istasyon');
     const search = url.searchParams.get('search');
 
-    let queryText = `SELECT * FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
-    const params: any[] = [];
-    let paramIndex = 1;
+    const filters = buildProblemRecordFilters(durum, istasyon, search);
+    const queryText = `SELECT * FROM ${Tables.MMS_RECORDS} WHERE 1=1${filters.clause}
+      ORDER BY zaman_damgasi DESC, id DESC
+      LIMIT $${filters.params.length + 1} OFFSET $${filters.params.length + 2}`;
+    const result = await query<any>(queryText, [...filters.params, limit, offset]);
 
-    if (durum !== null && durum !== undefined) {
-      if (durum === '') {
-        queryText += " AND (durum IS NULL OR durum = '' OR durum = 'Beklemede')";
-      } else {
-        queryText += ` AND durum = $${paramIndex}`;
-        params.push(durum);
-        paramIndex++;
-      }
-    }
-
-    if (istasyon) {
-      queryText += ` AND istasyon ILIKE $${paramIndex}`;
-      params.push(`%${istasyon}%`);
-      paramIndex++;
-    }
-
-    if (search) {
-      queryText += ` AND (
-        mms_numarasi ILIKE $${paramIndex} OR
-        ariza_tanimi ILIKE $${paramIndex} OR
-        istasyon ILIKE $${paramIndex}
-      )`;
-      params.push(`%${search}%`);
-      paramIndex++;
-    }
-
-    queryText += ` ORDER BY zaman_damgasi DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    params.push(limit, offset);
-
-    const result = await query<any>(queryText, params);
-
-    let countQuery = `SELECT COUNT(*) AS count FROM ${Tables.MMS_RECORDS} WHERE 1=1`;
-    const countParams: any[] = [];
-    let countParamIndex = 1;
-
-    if (durum !== null && durum !== undefined) {
-      if (durum === '') {
-        countQuery += " AND (durum IS NULL OR durum = '' OR durum = 'Beklemede')";
-      } else {
-        countQuery += ` AND durum = $${countParamIndex}`;
-        countParams.push(durum);
-        countParamIndex++;
-      }
-    }
-
-    if (istasyon) {
-      countQuery += ` AND istasyon ILIKE $${countParamIndex}`;
-      countParams.push(`%${istasyon}%`);
-      countParamIndex++;
-    }
-
-    if (search) {
-      countQuery += ` AND (
-        mms_numarasi ILIKE $${countParamIndex} OR
-        ariza_tanimi ILIKE $${countParamIndex} OR
-        istasyon ILIKE $${countParamIndex}
-      )`;
-      countParams.push(`%${search}%`);
-    }
-
-    const countResult = await query<any>(countQuery, countParams);
+    const countQuery = `SELECT COUNT(*) AS count FROM ${Tables.MMS_RECORDS} WHERE 1=1${filters.clause}`;
+    const countResult = await query<any>(countQuery, filters.params);
     const totalCount = Number.parseInt(countResult.rows[0].count, 10);
 
     const statsResult = await query<any>(`
@@ -126,7 +108,9 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   try {
     await ensureAppSchema();
-    const body = await request.json();
+    const parsed = await readJsonBody(request);
+    if (!parsed.ok) return parsed.response;
+    const body = parsed.data;
 
     if (!body.mms_numarasi || !body.ariza_tanimi || !body.istasyon) {
       return jsonResponse({ error: 'Arıza numarası, arıza tanımı ve istasyon zorunludur' }, 400);
